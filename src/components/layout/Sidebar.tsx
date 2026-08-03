@@ -71,7 +71,8 @@ const divisiNavigation = [
 ]
 
 const personalNavigation = [
-  { name: 'My Dashboard', href: '/personal', icon: LayoutDashboard, roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },
+  // Note: /personal route does not exist yet — link to /personal/tasks which is
+  // the only implemented personal page. Avoid sending users to a 404.
   { name: 'My Tasks', href: '/personal/tasks', icon: CheckSquare, roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },
   { name: 'My KPIs', href: '/personal/kpi', icon: Target, roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },
   { name: 'My SOW', href: '/personal/sow', icon: FileText, roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },

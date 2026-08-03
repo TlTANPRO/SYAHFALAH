@@ -11,11 +11,11 @@ interface BentoGridProps {
   gap?: number
 }
 
-export function BentoGrid({ 
-  children, 
-  className, 
+export function BentoGrid({
+  children,
+  className,
   columns = 'auto',
-  gap = 4 
+  gap = 4
 }: BentoGridProps) {
   const columnClasses = {
     1: 'grid-cols-1',
@@ -24,13 +24,15 @@ export function BentoGrid({
     4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
     auto: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
   }
-
+  // Use inline style for gap because Tailwind v4 JIT can't statically detect
+  // dynamic class names like `gap-${gap}` — without this, gap classes were
+  // silently dropped from the build.
   return (
     <div
+      style={{ gap: `${gap * 0.25}rem` }}
       className={cn(
         'grid',
         columnClasses[columns],
-        `gap-${gap}`,
         className
       )}
     >
