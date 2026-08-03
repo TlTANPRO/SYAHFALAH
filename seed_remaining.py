@@ -10,8 +10,8 @@ from datetime import datetime, timedelta, date
 import random
 
 # Supabase config
-SUPABASE_URL = "https://wzwyiasnjzgnlmphqgkj.supabase.co"
-SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6d3lpYXNuanpnbmxtcGhxZ2tqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NTY0OTQxNSwiZXhwIjoyMTAxMjI1NDE1fQ.ejRM3wZ_uWF9MfYH_nm6uewwvn44Pf4PWooUJdOBZc8"
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://wzwyiasnjzgnlmphqgkj.supabase.co")
+SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 
 headers = {
     "apikey": SERVICE_ROLE_KEY,
