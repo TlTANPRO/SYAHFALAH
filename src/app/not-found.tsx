@@ -2,17 +2,11 @@
 // Branded 404 page — falls back gracefully when users hit missing routes
 // (very common since the sidebar has many links to not-yet-implemented pages).
 
-'use client'
-
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Home, Compass } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
 export default function NotFound() {
-  const router = useRouter()
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="max-w-lg w-full shadow-xl">
@@ -31,16 +25,22 @@ export default function NotFound() {
             atau kembali ke dashboard.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button onClick={() => router.back()} variant="outline" className="gap-2">
+            {/* Plain anchor styled as a button — avoids <Button asChild>
+                Slot/forwardRef conflicts during static prerendering. */}
+            <a
+              href="javascript:history.back()"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-transparent px-4 py-2 text-sm font-medium hover:bg-muted/50 transition-colors"
+            >
               <ArrowLeft className="h-4 w-4" />
               Kembali
-            </Button>
-            <Button asChild className="gap-2">
-              <Link href="/">
-                <Home className="h-4 w-4" />
-                Ke Dashboard
-              </Link>
-            </Button>
+            </a>
+            <Link
+              href="/"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium shadow-xs hover:bg-primary/90 transition-colors"
+            >
+              <Home className="h-4 w-4" />
+              Ke Dashboard
+            </Link>
           </div>
           <p className="text-xs text-muted-foreground mt-8">
             Syahfalah Dashboard · PT Syahfalah Global

@@ -1,6 +1,11 @@
 // app/error.tsx
 // Root-level error boundary so a runtime crash in one page doesn't take
 // down the entire dashboard. Surfaces a retry button instead of a blank page.
+//
+// NOTE: this file MUST be a Client Component ('use client') because `reset`
+// is a function passed in by Next.js that only exists on the client. We also
+// avoid <Button asChild> here because the Slot/forwardRef combination fails
+// during static prerendering of certain pages — styled anchors work fine.
 
 'use client'
 
@@ -18,8 +23,6 @@ export default function GlobalError({
   reset: () => void
 }) {
   useEffect(() => {
-    // Surface to whatever logging the host has. Server-side errors arrive
-    // here without a stack; client errors do.
     console.error('[AppError]', error)
   }, [error])
 
@@ -46,12 +49,13 @@ export default function GlobalError({
               <RefreshCw className="h-4 w-4" />
               Coba Lagi
             </Button>
-            <Button asChild variant="outline" className="gap-2">
-              <Link href="/">
-                <Home className="h-4 w-4" />
-                Ke Beranda
-              </Link>
-            </Button>
+            <Link
+              href="/"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-transparent px-4 py-2 text-sm font-medium hover:bg-muted/50 transition-colors"
+            >
+              <Home className="h-4 w-4" />
+              Ke Beranda
+            </Link>
           </div>
         </CardContent>
       </Card>
