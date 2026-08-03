@@ -21,8 +21,8 @@ export default function MediaDivisionDashboard() {
         .select('*')
         .eq('division_id', '77777777-7777-7777-7777-777777777777')
         .eq('level', 'division')
-        .eq('period_start', '2026-01-01')
-        .eq('period_end', '2026-12-31')
+        .gte('period_start', `${new Date().getFullYear()}-01-01`)
+        .lte('period_end', `${new Date().getFullYear()}-12-31`)
       if (error) throw error
       return data
     },

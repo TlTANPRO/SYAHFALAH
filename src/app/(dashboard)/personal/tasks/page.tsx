@@ -155,6 +155,8 @@ export default function PersonalTasksPage() {
         <div className="flex gap-2">
           <div className="relative">
             <Input
+              id="tasks-search"
+              name="tasks-search"
               placeholder="Cari tugas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

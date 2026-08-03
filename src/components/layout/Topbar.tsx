@@ -86,6 +86,8 @@ export function Topbar() {
           <form onSubmit={handleSearch} className="relative">
             <Search className="absolute left-3 top-1/2 -translate_y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
+              id="global-search"
+              name="global-search"
               placeholder="Search tasks, KPIs, people..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
