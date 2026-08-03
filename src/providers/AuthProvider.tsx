@@ -1,5 +1,10 @@
 // providers/AuthProvider.tsx
 // Authentication provider with Supabase integration
+//
+// The DB row from `public.users` uses snake_case (`full_name`,
+// `division_id`, etc.) but the rest of the frontend reads camelCase
+// (`name`, `divisionId`). normalizeUser() maps once so consumers
+// (Sidebar, Topbar, dashboard pages) don't have to know about the DB.
 
 'use client'
 
@@ -7,6 +12,16 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/authStore'
 import type { User as DomainUser } from '@/types/domain'
+
+function normalizeUser(profile: any): DomainUser {
+  return {
+    ...profile,
+    name: profile.full_name,
+    divisionId: profile.division_id,
+    avatarUrl: profile.avatar_url,
+    isActive: profile.is_active,
+  } as DomainUser
+}
 
 interface AuthContextType {
   user: DomainUser | null
@@ -40,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .single()
         
         if (profile) {
-          setUser(profile as DomainUser)
+          setUser(normalizeUser(profile))
         }
       } else if (storedUser) {
         // Use stored user if no session
@@ -61,9 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .select('*')
           .eq('id', session.user.id)
           .single()
-        
+
         if (profile) {
-          setUser(profile as DomainUser)
+          setUser(normalizeUser(profile))
         }
       } else if (event === 'SIGNED_OUT') {
         setUser(null)
@@ -111,9 +126,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select('*')
         .eq('id', session.user.id)
         .single()
-      
+
       if (profile) {
-        setUser(profile as DomainUser)
+        setUser(normalizeUser(profile))
       }
     }
   }

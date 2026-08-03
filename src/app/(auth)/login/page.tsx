@@ -55,7 +55,20 @@ function LoginForm() {
         return
       }
 
-      setUser(data.user)
+      // Normalize DB shape (`full_name`) into the frontend `User` shape
+      // (`name`). Without this, every consumer reading `user.name` (the
+      // sidebar avatar, the topbar avatar, etc.) silently gets `undefined`,
+      // which then becomes the literal string "undefined" in query params
+      // — visible as /api/avatar?name=undefined 404 in the console.
+      const { full_name, division_id, avatar_url, is_active, ...rest } = data.user
+      const normalizedUser = {
+        ...rest,
+        name: full_name,
+        divisionId: division_id,
+        avatarUrl: avatar_url,
+        isActive: is_active,
+      }
+      setUser(normalizedUser as any)
             // Force full reload so server-side middleware/RSC reads fresh cookies
             // (router.push is client-only and does not re-evaluate middleware)
             window.location.href = redirect
