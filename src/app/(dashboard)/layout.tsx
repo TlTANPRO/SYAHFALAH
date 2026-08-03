@@ -8,7 +8,6 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
-import { cn } from '@/lib/utils'
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -63,14 +62,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Sidebar */}
       <Sidebar />
 
-      {/* Main Content */}
-      <main
-        className={cn(
-          'transition-all duration-300 ease-out-expo',
-          sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-72',
-          isMobile ? 'ml-0' : ''
-        )}
-      >
+      {/* Main Content.
+          NOTE: Tailwind v4 scans literal class strings only. The previous
+          cn('lg:ml-72', 'lg:ml-16', ...) call left those classes out of the
+          generated CSS, so the main column rendered at margin 0 — directly
+          under the fixed sidebar and producing the visible overlap.
+          Use literal class lists so the scanner always picks them up. */}
+      <main className={`min-h-screen transition-all duration-300 ease-out-expo ${
+        isMobile ? 'ml-0' : sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-72'
+      }`}>
         {/* Topbar */}
         <Topbar />
 
