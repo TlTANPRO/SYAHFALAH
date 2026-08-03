@@ -18,6 +18,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, isLoading, isAuthenticated } = useAuthStore()
   const { sidebarCollapsed, isMobile } = useUIStore()
 
+  // Rehydrate persisted auth store on mount so middleware-protected pages
+  // see isAuthenticated=true on the very first render after a hard nav.
+  useEffect(() => {
+    useAuthStore.persist.rehydrate()
+  }, [])
+
   // Handle mobile sidebar behavior
   useEffect(() => {
     const handleResize = () => {

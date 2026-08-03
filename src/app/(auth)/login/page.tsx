@@ -56,8 +56,9 @@ function LoginForm() {
       }
 
       setUser(data.user)
-      router.push(redirect)
-      router.refresh()
+            // Force full reload so server-side middleware/RSC reads fresh cookies
+            // (router.push is client-only and does not re-evaluate middleware)
+            window.location.href = redirect
     } catch {
       setError('Terjadi kesalahan. Silakan coba lagi.')
     } finally {

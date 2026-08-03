@@ -48,11 +48,30 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect to dashboard if accessing login while authenticated
-  if (request.nextUrl.pathname === '/login' && user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/'
-    return NextResponse.redirect(url)
-  }
+    if (request.nextUrl.pathname === '/login' && user) {
+      // Redirect by role so user lands on the right dashboard,
+      // not a generic '/' that itself may redirect to /login when cookies
+      // are not yet visible to the server-side RSC after a soft nav.
+      let dest = '/personal/tasks'
+      switch (user.role) {
+        case 'owner':
+          dest = '/owner'
+          break
+        case 'kepala_kantor':
+          dest = '/kepala-kantor'
+          break
+        case 'pic_divisi':
+          dest = `/divisi/${user.divisionId}`
+          break
+        case 'staff':
+        default:
+          dest = '/personal/tasks'
+          break
+      }
+      const url = request.nextUrl.clone()
+      url.pathname = dest
+      return NextResponse.redirect(url)
+    }
 
   return NextResponse.next()
 }

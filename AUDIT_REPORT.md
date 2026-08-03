@@ -3,7 +3,7 @@
 **Repo**: https://github.com/TlTANPRO/SYAHFALAH  
 **Live URL**: https://syahfalah-dashboard.vercel.app  
 **Tanggal**: 2026-08-04  
-**Audit method**: 100% source code review (browser daemon down selama audit, fallback ke static analysis)
+**Audit method**: 100% source code review + partial live (login page captured OK, post-login dashboard gagal di-capture — daemon crash EOF)
 
 ---
 
@@ -289,6 +289,7 @@ Repo ini punya leak service_role key + anon key di git history. **wajib rotate s
 
 ## ✅ Yang Sudah Bagus
 
+- **Login page**: render clean, no console error, dark theme solid
 - **Schema solid**: 15 tables, RLS enabled di semua, generated columns untuk KPI progress/status
 - **TypeScript strict mode**: on
 - **Domain types lengkap**: User, KPI, SOW, Task, Notification, Reward — semua typed
