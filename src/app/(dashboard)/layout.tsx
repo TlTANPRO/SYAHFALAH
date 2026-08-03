@@ -63,14 +63,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <Sidebar />
 
       {/* Main Content.
-          NOTE: Tailwind v4 scans literal class strings only. The previous
-          cn('lg:ml-72', 'lg:ml-16', ...) call left those classes out of the
-          generated CSS, so the main column rendered at margin 0 — directly
-          under the fixed sidebar and producing the visible overlap.
-          Use literal class lists so the scanner always picks them up. */}
-      <main className={`min-h-screen transition-all duration-300 ease-out-expo ${
-        isMobile ? 'ml-0' : sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-72'
-      }`}>
+          NOTE: Tailwind v4 source scanner doesn't pick up dynamic class
+          strings inside ternary expressions, so `lg:ml-72`/`lg:ml-16`
+          were never emitted into the compiled CSS — verified by grep on
+          .next/static/css/*.css (0 matches).
+          Fix: combine literal Tailwind classes (always scanned) with an
+          inline `style` for the dynamic margin, so the layout works
+          regardless of which breakpoint class names v4 picked up. */}
+      <main
+        className="min-h-screen transition-all duration-300 ease-out-expo"
+        style={{
+          marginLeft: isMobile ? 0 : sidebarCollapsed ? 64 : 288,
+        }}
+      >
         {/* Topbar */}
         <Topbar />
 
