@@ -1,7 +1,9 @@
 // components/ui/command-palette.tsx
-// Cmd+K launcher. Wraps the CommandPalette from command.tsx in a
-// modal dialog and adds a global keyboard listener so pressing
-// ⌘K / Ctrl-K anywhere on a dashboard page opens the palette.
+// Cmd+K launcher. The keyboard listener has to be installed
+// unconditionally (regardless of `open` state) so the user can
+// press ⌘K to open the dialog. The previous version only
+// attached the listener inside the `if (!open) return null`
+// branch, which meant the first Cmd+K was always swallowed.
 
 'use client'
 
@@ -14,21 +16,27 @@ interface CommandDialogProps {
 }
 
 export function CommandDialog({ open, onOpenChange }: CommandDialogProps) {
-  // Global ⌘K / Ctrl-K listener. Avoids duplicating the same handler
-  // in every page that mounts the dialog.
+  // Always-on listener. Captures `open` via closure but doesn't
+  // depend on it — the user must be able to press ⌘K even when
+  // the dialog is closed. Use the capture phase so the event
+  // reaches us before the focused <input> swallows Ctrl/Cmd+K
+  // (Chrome tries to focus the address bar on Ctrl+K, which
+  // preventDefault stops).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
+        e.stopPropagation()
         onOpenChange(!open)
-      }
-      if (e.key === 'Escape' && open) {
+      } else if (e.key === 'Escape' && open) {
+        e.preventDefault()
         onOpenChange(false)
       }
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onOpenChange])
+    window.addEventListener('keydown', onKey, { capture: true })
+    return () => window.removeEventListener('keydown', onKey, { capture: true } as EventListenerOptions)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   if (!open) return null
 
