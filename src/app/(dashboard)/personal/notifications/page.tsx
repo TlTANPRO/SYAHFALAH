@@ -1,12 +1,9 @@
 // personal/notifications/page.tsx
-// Personal notifications. Reads the notifications table joined with
-// notifications_with_user view for author info.
+// Notifikasi personal. Pakai design tokens, copy manusia.
 
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { verifyAccessToken } from '@/lib/auth/jwt'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Bell, CheckCircle2, AlertTriangle, Info, Award } from 'lucide-react'
 
 interface Notif {
@@ -41,8 +38,11 @@ const typeIcon: Record<string, any> = {
   info: Info,
   reward: Award,
 }
-const priorityVariant: Record<string, 'default' | 'info' | 'warning' | 'destructive'> = {
-  low: 'default', normal: 'info', high: 'warning', urgent: 'destructive',
+const PRIORITY_VARIANT: Record<string, string> = {
+  low: 'neutral',
+  normal: 'info',
+  high: 'warning',
+  urgent: 'danger',
 }
 
 export default async function Page() {
@@ -57,41 +57,41 @@ export default async function Page() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-bold">Notifications</h1>
-        <p className="text-muted-foreground">{unread} belum dibaca dari total {notifs.length}</p>
+        <h1 className="display-lg">Notifikasi</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+          {unread > 0 ? `${unread} belum dibaca dari total ${notifs.length}.` : `Semua sudah dibaca. Total ${notifs.length}.`}
+        </p>
       </div>
 
       <div className="space-y-2">
         {notifs.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Bell className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-              <h3 className="font-medium mb-1">Belum ada notifikasi</h3>
-              <p className="text-sm text-muted-foreground">Notifikasi akan muncul di sini ketika ada update penting.</p>
-            </CardContent>
-          </Card>
+          <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-12 text-center">
+            <Bell className="h-12 w-12 text-[var(--color-text-tertiary)] mx-auto mb-3" />
+            <h3 className="font-heading text-lg font-semibold mb-1">Belum ada notifikasi</h3>
+            <p className="text-sm text-[var(--color-text-secondary)]">Update penting akan muncul di sini.</p>
+          </div>
         ) : (
           notifs.map(n => {
             const Icon = typeIcon[n.type] || Info
             return (
-              <Card key={n.id} className={!n.is_read ? 'border-primary/30' : ''}>
-                <CardContent className="p-4 flex items-start gap-3">
-                  <Icon className={`h-4 w-4 mt-0.5 flex-shrink-0 ${!n.is_read ? 'text-primary' : 'text-muted-foreground'}`} />
+              <div key={n.id} className={`card ${!n.is_read ? 'border-l-2 border-l-[var(--color-brand-500)]' : ''}`}>
+                <div className="card-body flex items-start gap-3">
+                  <Icon className={`h-4 w-4 mt-0.5 flex-shrink-0 ${!n.is_read ? 'text-[var(--color-brand-500)]' : 'text-[var(--color-text-tertiary)]'}`} />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium">{n.title}</span>
-                      <Badge variant={priorityVariant[n.priority] || 'default'}>{n.priority}</Badge>
-                      {!n.is_read && <span className="h-2 w-2 rounded-full bg-primary" />}
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <p className="font-medium">{n.title}</p>
+                      <span className="pill" data-variant={PRIORITY_VARIANT[n.priority] || 'neutral'}>{n.priority}</span>
+                      {!n.is_read && <span className="h-2 w-2 rounded-full bg-[var(--color-brand-500)]" />}
                     </div>
                     {n.message && (
-                      <p className="text-sm text-muted-foreground">{n.message}</p>
+                      <p className="text-sm text-[var(--color-text-secondary)]">{n.message}</p>
                     )}
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1 font-mono">
                       {new Date(n.created_at).toLocaleString('id-ID')}
                     </p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )
           })
         )}

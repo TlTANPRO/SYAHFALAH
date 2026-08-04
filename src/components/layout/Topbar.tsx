@@ -94,7 +94,7 @@ export function Topbar() {
               id="global-search"
               name="global-search"
               type="text"
-              placeholder="Search tasks, KPIs, leads, people…"
+              placeholder="Cari task, KPI, leads, nama…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => openCommandPalette()}

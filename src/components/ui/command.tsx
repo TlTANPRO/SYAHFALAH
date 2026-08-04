@@ -11,10 +11,10 @@ import { Search, X, ChevronRight } from 'lucide-react'
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   return (
     <Command>
-      <CommandInput placeholder="Type a command or search..." />
+      <CommandInput placeholder="Ketik perintah atau cari..." />
       <CommandList>
-        <CommandEmpty>No commands found.</CommandEmpty>
-        <CommandGroup heading="Navigation">
+        <CommandEmpty>Perintah tidak ditemukan.</CommandEmpty>
+        <CommandGroup heading="Navigasi">
           {[
             { name: 'Dashboard', href: '/', icon: 'LayoutDashboard' },
             { name: 'My Tasks', href: '/personal/tasks', icon: 'CheckSquare' },
@@ -33,18 +33,18 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
             </CommandItem>
           ))}
         </CommandGroup>
-        <CommandGroup heading="Quick Actions">
+        <CommandGroup heading="Aksi cepat">
           <CommandItem onSelect={() => { }}>
             <span className="h-4 w-4 mr-2" data-lucide="Plus" />
-            New Task
+            Tambah Task
           </CommandItem>
           <CommandItem onSelect={() => { }}>
             <span className="h-4 w-4 mr-2" data-lucide="Plus" />
-            New KPI
+            Tambah KPI
           </CommandItem>
           <CommandItem onSelect={() => { }}>
             <span className="h-4 w-4 mr-2" data-lucide="Bell" />
-            View Notifications
+            Lihat Notifikasi
           </CommandItem>
         </CommandGroup>
       </CommandList>

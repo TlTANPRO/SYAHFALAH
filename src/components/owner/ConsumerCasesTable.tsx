@@ -40,7 +40,7 @@ export function ConsumerCasesTable({ cases, clusters }: {
       <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-8 text-center">
         <FileSignature className="h-8 w-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
         <p className="text-sm text-[var(--color-text-secondary)]">
-          Belum ada kasus konsumen. Apply migration 011 untuk mengaktifkan.
+          Belum ada berkas konsumen. Jalankan migration 011 untuk lihat tracker SP3K.
         </p>
       </div>
     )

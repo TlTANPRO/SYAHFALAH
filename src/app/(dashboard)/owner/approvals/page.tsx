@@ -1,13 +1,9 @@
 // owner/approvals/page.tsx
-// Pending approvals for the owner. Uses the notifications table as the
-// approval queue. Items with priority "urgent" or "high" are surfaced
-// first; once we wire up an approvals-specific table this page will
-// switch its source.
+// Persetujuan eksekutif. Pakai tabel notifications dengan priority
+// urgent/high. Sudah punya data morning briefings dari sebelumnya.
 
 import { createClient } from '@supabase/supabase-js'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { CheckSquare, Clock, AlertTriangle } from 'lucide-react'
+import { CheckSquare, Clock, AlertTriangle, FileSignature } from 'lucide-react'
 
 interface Notif {
   id: string
@@ -33,53 +29,80 @@ async function load() {
   return (data ?? []) as Notif[]
 }
 
-const priorityVariant: Record<string, 'default' | 'info' | 'warning' | 'destructive'> = {
-  low: 'default', normal: 'info', high: 'warning', urgent: 'destructive',
+const PRIORITY_VARIANT: Record<string, string> = {
+  low: 'neutral',
+  normal: 'info',
+  high: 'warning',
+  urgent: 'danger',
 }
 
 export default async function Page() {
   const notifs = await load()
   const pending = notifs.filter(n => !n.is_read).length
+  const urgent = notifs.filter(n => n.priority === 'urgent').length
+  const high = notifs.filter(n => n.priority === 'high').length
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-bold">Approvals</h1>
-        <p className="text-muted-foreground">{pending} persetujuan menunggu · {notifs.length} notifikasi prioritas</p>
+        <h1 className="display-lg">Persetujuan</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+          {pending} belum dibaca · {urgent} urgent · {high} high. Review dari yang paling urgent.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <div className="card">
+          <div className="card-body p-3">
+            <p className="text-xs text-[var(--color-text-tertiary)]">Total</p>
+            <p className="font-mono text-2xl font-bold tabular-nums">{notifs.length}</p>
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-body p-3">
+            <p className="text-xs text-[var(--color-text-tertiary)]">Urgent</p>
+            <p className="font-mono text-2xl font-bold tabular-nums text-[var(--color-danger)]">{urgent}</p>
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-body p-3">
+            <p className="text-xs text-[var(--color-text-tertiary)]">High</p>
+            <p className="font-mono text-2xl font-bold tabular-nums text-[var(--color-warning)]">{high}</p>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-2">
         {notifs.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <CheckSquare className="h-12 w-12 text-success/70 mx-auto mb-4" />
-              <h3 className="font-medium mb-1">Tidak ada persetujuan tertunda</h3>
-              <p className="text-sm text-muted-foreground">Semua permintaan sudah diproses.</p>
-            </CardContent>
-          </Card>
+          <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-12 text-center">
+            <CheckSquare className="h-12 w-12 text-[var(--color-success)] mx-auto mb-3" />
+            <h3 className="font-heading text-lg font-semibold mb-1">Semua sudah diproses</h3>
+            <p className="text-sm text-[var(--color-text-secondary)]">Tidak ada persetujuan yang menunggu.</p>
+          </div>
         ) : (
           notifs.map(n => (
-            <Card key={n.id} className={!n.is_read ? 'border-warning/30' : ''}>
-              <CardContent className="p-4 flex items-start gap-3">
+            <div key={n.id} className={`card ${!n.is_read ? 'border-l-2 border-l-[var(--color-warning)]' : ''}`}>
+              <div className="card-body flex items-start gap-3">
                 {n.priority === 'urgent' ? (
-                  <AlertTriangle className="h-4 w-4 mt-0.5 text-destructive" />
+                  <AlertTriangle className="h-4 w-4 mt-0.5 text-[var(--color-danger)] flex-shrink-0" />
                 ) : (
-                  <Clock className="h-4 w-4 mt-0.5 text-warning" />
+                  <Clock className="h-4 w-4 mt-0.5 text-[var(--color-warning)] flex-shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium">{n.title}</span>
-                    <Badge variant={priorityVariant[n.priority] || 'default'}>{n.priority}</Badge>
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <p className="font-medium">{n.title}</p>
+                    <span className="pill" data-variant={PRIORITY_VARIANT[n.priority] || 'neutral'}>{n.priority}</span>
                   </div>
                   {n.message && (
-                    <p className="text-sm text-muted-foreground">{n.message}</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] line-clamp-3">{n.message}</p>
                   )}
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-[var(--color-text-tertiary)] mt-1 font-mono">
                     {new Date(n.created_at).toLocaleString('id-ID')}
                   </p>
                 </div>
-              </CardContent>
-            </Card>
+                <FileSignature className="h-4 w-4 text-[var(--color-text-tertiary)] flex-shrink-0" />
+              </div>
+            </div>
           ))
         )}
       </div>

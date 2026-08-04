@@ -1,10 +1,7 @@
 // owner/kpi/page.tsx
-// Company-level KPI table for the owner. Same data as /kpi but framed
-// for the executive reader, plus broader period coverage.
+// Daftar KPI strategis level 1 & 2. Filter yang ditampilkan: current year.
 
 import { createClient } from '@supabase/supabase-js'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Target } from 'lucide-react'
 
 interface KpiRow {
@@ -34,16 +31,36 @@ async function load() {
       .in('level', ['company', 'division'])
       .order('progress', { ascending: false })
       .limit(100),
-    supabase.from('divisions').select('id, name'),
+    supabase.from('divisions').select('id, name').eq('is_active', true),
   ])
   return { kpis: (kpis ?? []) as KpiRow[], divisions: (divs ?? []) as { id: string; name: string }[] }
 }
 
-const statusVariant: Record<string, 'achieved' | 'on-track' | 'at-risk' | 'off-track'> = {
-  achieved: 'achieved', on_track: 'on-track', at_risk: 'at-risk', off_track: 'off-track',
+const STATUS_VARIANT: Record<string, string> = {
+  achieved: 'success',
+  on_track: 'success',
+  at_risk: 'warning',
+  off_track: 'danger',
+  pending: 'neutral',
 }
-const statusLabel: Record<string, string> = {
-  achieved: 'Achieved', on_track: 'On Track', at_risk: 'At Risk', off_track: 'Off Track',
+
+const STATUS_LABEL: Record<string, string> = {
+  achieved: 'Achieved',
+  on_track: 'On Track',
+  at_risk: 'At Risk',
+  off_track: 'Off Track',
+  pending: 'Pending',
+}
+
+function formatValue(v: number | null, unit: string | null): string {
+  if (v == null) return '—'
+  if (unit === 'IDR' || unit === 'Rp') {
+    if (v >= 1e9) return `Rp ${(v / 1e9).toFixed(1)}M`
+    if (v >= 1e6) return `Rp ${(v / 1e6).toFixed(0)}jt`
+    return `Rp ${v.toLocaleString('id-ID')}`
+  }
+  if (unit === '%') return `${v}%`
+  return `${v}${unit || ''}`
 }
 
 export default async function Page() {
@@ -53,63 +70,65 @@ export default async function Page() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-bold">Company KPIs</h1>
-        <p className="text-muted-foreground">Level 1 & 2 — KPI strategis untuk PT Syahfalah Global</p>
+        <h1 className="display-lg">KPI Strategis</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+          Level 1 (company) dan Level 2 (divisi). Diurutkan dari progress tertinggi.
+        </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            {kpis.length} KPI aktif
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left p-3 font-medium text-muted-foreground">KPI</th>
-                  <th className="text-left p-3 font-medium text-muted-foreground">Level</th>
-                  <th className="text-left p-3 font-medium text-muted-foreground">Divisi</th>
-                  <th className="text-right p-3 font-medium text-muted-foreground">Progress</th>
-                  <th className="text-right p-3 font-medium text-muted-foreground">Target / Actual</th>
-                  <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {kpis.map(k => (
-                  <tr key={k.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                    <td className="p-3">
-                      <div className="font-medium">{k.name || '—'}</div>
-                      <div className="font-mono text-xs text-muted-foreground">{k.code || '—'}</div>
-                    </td>
-                    <td className="p-3">
-                      <Badge variant="outline">{k.level}</Badge>
-                    </td>
-                    <td className="p-3 text-muted-foreground">
-                      {k.division_id ? divName.get(k.division_id) || '—' : '—'}
-                    </td>
-                    <td className="p-3 text-right tabular-nums font-medium">
-                      {k.progress != null ? `${Math.round(k.progress)}%` : '—'}
-                    </td>
-                    <td className="p-3 text-right tabular-nums text-muted-foreground">
-                      {k.baseline_target_value != null ? `${k.baseline_target_value}${k.unit || ''}` : '—'} / {k.actual_value != null ? `${k.actual_value}${k.unit || ''}` : '—'}
-                    </td>
-                    <td className="p-3">
-                      {k.status && (
-                        <Badge variant={statusVariant[k.status] || 'default'}>
-                          {statusLabel[k.status] || k.status}
-                        </Badge>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <div className="card overflow-hidden">
+        <div className="card-header">
+          <div className="flex items-center gap-2">
+            <Target className="h-4 w-4 text-[var(--color-text-tertiary)]" />
+            <h2 className="font-heading text-base font-semibold">{kpis.length} KPI aktif</h2>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>KPI</th>
+              <th>Level</th>
+              <th>Divisi</th>
+              <th className="text-right">Progress</th>
+              <th className="text-right">Target / Actual</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {kpis.length === 0 ? (
+              <tr><td colSpan={6} className="text-center text-[var(--color-text-tertiary)] py-8">Belum ada KPI.</td></tr>
+            ) : kpis.map(k => (
+              <tr key={k.id}>
+                <td>
+                  <p className="font-medium">{k.name || '—'}</p>
+                  <p className="text-xs text-[var(--color-text-tertiary)] font-mono">{k.code || '—'}</p>
+                </td>
+                <td>
+                  <span className="pill" data-variant={k.level === 'company' ? 'info' : 'neutral'}>
+                    {k.level}
+                  </span>
+                </td>
+                <td className="text-sm text-[var(--color-text-secondary)]">
+                  {k.division_id ? divName.get(k.division_id) || '—' : '—'}
+                </td>
+                <td className="text-right">
+                  <span className="font-mono text-sm font-semibold">{k.progress != null ? `${Math.round(k.progress)}%` : '—'}</span>
+                </td>
+                <td className="text-right font-mono text-xs text-[var(--color-text-secondary)]">
+                  {formatValue(k.baseline_target_value, k.unit)} / {formatValue(k.actual_value, k.unit)}
+                </td>
+                <td>
+                  {k.status && (
+                    <span className="pill" data-variant={STATUS_VARIANT[k.status] || 'neutral'}>
+                      {STATUS_LABEL[k.status] || k.status}
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

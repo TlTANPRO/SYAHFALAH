@@ -34,7 +34,7 @@ export function ClusterGrid({ clusters }: { clusters: Cluster[] }) {
       <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-8 text-center">
         <Building2 className="h-8 w-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
         <p className="text-sm text-[var(--color-text-secondary)]">
-          Belum ada data cluster. Apply migration 011 untuk mengaktifkan.
+          Belum ada cluster. Jalankan migration 011 supaya data cluster masuk.
         </p>
       </div>
     )

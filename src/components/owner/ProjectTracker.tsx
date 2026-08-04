@@ -33,7 +33,7 @@ export function ProjectTracker({ projects, totalBudget, totalSpent, budgetVarian
       <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-8 text-center">
         <Hammer className="h-8 w-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
         <p className="text-sm text-[var(--color-text-secondary)]">
-          Belum ada data proyek. Apply migration 011 untuk mengaktifkan.
+          Belum ada proyek. Jalankan migration 011 untuk lihat progres pembangunan.
         </p>
       </div>
     )

@@ -1,12 +1,8 @@
 // owner/reports/page.tsx
-// Executive summary report. Aggregates real KPI / task data from the
-// division summary views into a single printable page.
+// Laporan eksekutif. Print-friendly. Pakai design tokens baru.
 
 import { createClient } from '@supabase/supabase-js'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { TrendingUp, Users, CheckCircle2 } from 'lucide-react'
-
+import { TrendingUp, Users, CheckCircle2, AlertCircle } from 'lucide-react'
 
 interface DivisionTaskSummary {
   division_id: string
@@ -36,8 +32,8 @@ async function load() {
   if (!url || !key) return { task: [], kpi: [] }
   const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
   const [{ data: task }, { data: kpi }] = await Promise.all([
-    supabase.from('division_task_summary').select('*'),
-    supabase.from('division_kpi_summary').select('*'),
+    supabase.from('division_task_summary').select('*').neq('division_name', 'Test Seed'),
+    supabase.from('division_kpi_summary').select('*').neq('division_code', 'TEST_SEED'),
   ])
   return {
     task: (task ?? []) as DivisionTaskSummary[],
@@ -61,131 +57,119 @@ export default async function Page() {
 
   return (
     <div className="space-y-6 print:space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-heading text-2xl font-bold">Executive Reports</h1>
-          <p className="text-muted-foreground">Ringkasan eksekutif · {new Date().toLocaleDateString('id-ID', { dateStyle: 'long' })}</p>
+      <div>
+        <h1 className="display-lg">Laporan Eksekutif</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+          Ringkasan keseluruhan perusahaan · {new Date().toLocaleDateString('id-ID', { dateStyle: 'long' })}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="kpi-tile">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-[var(--color-text-tertiary)]">Task selesai</span>
+            <CheckCircle2 className="h-4 w-4 text-[var(--color-brand-500)]" />
+          </div>
+          <p className="font-heading text-2xl font-bold tabular-nums">{companyCompletionRate}%</p>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">{totalCompleted} dari {totalTasks} task</p>
         </div>
-
+        <div className="kpi-tile kpi-tile-info">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-[var(--color-text-tertiary)]">Rata-rata KPI</span>
+            <TrendingUp className="h-4 w-4 text-[var(--color-info)]" />
+          </div>
+          <p className="font-heading text-2xl font-bold tabular-nums">{avgProgress}%</p>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">{totalAchieved} dari {totalKpis} achieved</p>
+        </div>
+        <div className="kpi-tile kpi-tile-warning">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-[var(--color-text-tertiary)]">Task berjalan</span>
+            <Users className="h-4 w-4 text-[var(--color-warning)]" />
+          </div>
+          <p className="font-heading text-2xl font-bold tabular-nums">{totalInProgress}</p>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">in progress</p>
+        </div>
+        <div className="kpi-tile kpi-tile-danger">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-[var(--color-text-tertiary)]">Lewat tempo</span>
+            <AlertCircle className="h-4 w-4 text-[var(--color-danger)]" />
+          </div>
+          <p className="font-heading text-2xl font-bold tabular-nums">{totalOverdue}</p>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">perlu tindak lanjut</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              <span className="text-xs uppercase tracking-wide">Task Completion</span>
-            </div>
-            <div className="font-heading text-2xl font-bold tabular-nums">{companyCompletionRate}%</div>
-            <p className="text-xs text-muted-foreground mt-1">{totalCompleted} / {totalTasks}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <TrendingUp className="h-3.5 w-3.5" />
-              <span className="text-xs uppercase tracking-wide">Avg KPI Progress</span>
-            </div>
-            <div className="font-heading text-2xl font-bold tabular-nums">{avgProgress}%</div>
-            <p className="text-xs text-muted-foreground mt-1">{totalAchieved} achieved</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Users className="h-3.5 w-3.5" />
-              <span className="text-xs uppercase tracking-wide">Active Tasks</span>
-            </div>
-            <div className="font-heading text-2xl font-bold tabular-nums">{totalInProgress}</div>
-            <p className="text-xs text-muted-foreground mt-1">in progress</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <span className="text-xs uppercase tracking-wide text-destructive">Overdue</span>
-            </div>
-            <div className="font-heading text-2xl font-bold tabular-nums text-destructive">{totalOverdue}</div>
-            <p className="text-xs text-muted-foreground mt-1">tasks</p>
-          </CardContent>
-        </Card>
+      <div className="card overflow-hidden">
+        <div className="card-header">
+          <h2 className="font-heading text-base font-semibold">Task per divisi</h2>
+        </div>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Divisi</th>
+              <th className="text-right">Total</th>
+              <th className="text-right">Selesai</th>
+              <th className="text-right">Progress</th>
+              <th className="text-right">Pending</th>
+              <th className="text-right">Lewat tempo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {task.length === 0 ? (
+              <tr><td colSpan={6} className="text-center text-[var(--color-text-tertiary)] py-8">Belum ada data task.</td></tr>
+            ) : task.map(t => (
+              <tr key={t.division_id}>
+                <td className="font-medium">{t.division_name}</td>
+                <td className="text-right tabular-nums">{t.total_tasks}</td>
+                <td className="text-right tabular-nums text-[var(--color-success)]">{t.completed_count}</td>
+                <td className="text-right tabular-nums">{t.completion_rate != null ? `${Math.round(t.completion_rate)}%` : '—'}</td>
+                <td className="text-right tabular-nums">{t.pending_count}</td>
+                <td className="text-right">
+                  {t.overdue_count > 0 ? (
+                    <span className="pill" data-variant="danger">{t.overdue_count}</span>
+                  ) : (
+                    <span className="text-[var(--color-text-tertiary)]">0</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Per Divisi — Task</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left p-3 font-medium text-muted-foreground">Divisi</th>
-                  <th className="text-right p-3 font-medium text-muted-foreground">Total</th>
-                  <th className="text-right p-3 font-medium text-muted-foreground">Selesai</th>
-                  <th className="text-right p-3 font-medium text-muted-foreground">Progress</th>
-                  <th className="text-right p-3 font-medium text-muted-foreground">Pending</th>
-                  <th className="text-right p-3 font-medium text-muted-foreground">Overdue</th>
-                </tr>
-              </thead>
-              <tbody>
-                {task.map(t => (
-                  <tr key={t.division_id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                    <td className="p-3 font-medium">{t.division_name}</td>
-                    <td className="p-3 text-right tabular-nums">{t.total_tasks}</td>
-                    <td className="p-3 text-right tabular-nums text-success">{t.completed_count}</td>
-                    <td className="p-3 text-right tabular-nums">{t.completion_rate != null ? `${Math.round(t.completion_rate)}%` : '—'}</td>
-                    <td className="p-3 text-right tabular-nums">{t.pending_count}</td>
-                    <td className="p-3 text-right tabular-nums">
-                      {t.overdue_count > 0 ? (
-                        <Badge variant="destructive">{t.overdue_count}</Badge>
-                      ) : (
-                        <span className="text-muted-foreground">0</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Per Divisi — KPI</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left p-3 font-medium text-muted-foreground">Divisi</th>
-                  <th className="text-right p-3 font-medium text-muted-foreground">KPI</th>
-                  <th className="text-right p-3 font-medium text-muted-foreground">Avg Progress</th>
-                  <th className="text-right p-3 font-medium text-muted-foreground">Achieved</th>
-                  <th className="text-right p-3 font-medium text-muted-foreground">On Track</th>
-                  <th className="text-right p-3 font-medium text-muted-foreground">At Risk</th>
-                  <th className="text-right p-3 font-medium text-muted-foreground">Off Track</th>
-                </tr>
-              </thead>
-              <tbody>
-                {kpi.map(k => (
-                  <tr key={k.division_id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                    <td className="p-3 font-medium">{k.division_name}</td>
-                    <td className="p-3 text-right tabular-nums">{k.kpi_count}</td>
-                    <td className="p-3 text-right tabular-nums">{k.avg_progress != null ? `${Math.round(k.avg_progress)}%` : '—'}</td>
-                    <td className="p-3 text-right tabular-nums text-success">{k.achieved_count}</td>
-                    <td className="p-3 text-right tabular-nums">{k.on_track_count}</td>
-                    <td className="p-3 text-right tabular-nums text-warning">{k.at_risk_count}</td>
-                    <td className="p-3 text-right tabular-nums text-destructive">{k.off_track_count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="card overflow-hidden">
+        <div className="card-header">
+          <h2 className="font-heading text-base font-semibold">KPI per divisi</h2>
+        </div>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Divisi</th>
+              <th className="text-right">KPI</th>
+              <th className="text-right">Avg progress</th>
+              <th className="text-right">Achieved</th>
+              <th className="text-right">On track</th>
+              <th className="text-right">At risk</th>
+              <th className="text-right">Off track</th>
+            </tr>
+          </thead>
+          <tbody>
+            {kpi.length === 0 ? (
+              <tr><td colSpan={7} className="text-center text-[var(--color-text-tertiary)] py-8">Belum ada data KPI.</td></tr>
+            ) : kpi.map(k => (
+              <tr key={k.division_id}>
+                <td className="font-medium">{k.division_name}</td>
+                <td className="text-right tabular-nums">{k.kpi_count}</td>
+                <td className="text-right tabular-nums">{k.avg_progress != null ? `${Math.round(k.avg_progress)}%` : '—'}</td>
+                <td className="text-right tabular-nums text-[var(--color-success)]">{k.achieved_count}</td>
+                <td className="text-right tabular-nums">{k.on_track_count}</td>
+                <td className="text-right tabular-nums text-[var(--color-warning)]">{k.at_risk_count}</td>
+                <td className="text-right tabular-nums text-[var(--color-danger)]">{k.off_track_count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
