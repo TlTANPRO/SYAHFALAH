@@ -70,7 +70,11 @@ export const useUIStore = create<UIState>((set, get) => ({
   // Sidebar
   sidebarOpen: true,
   sidebarCollapsed: false,
-  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+  // Toggle the visual state that drives the sidebar's width — i.e. the
+  // collapsed flag, not `sidebarOpen` (which is only relevant for the
+  // mobile overlay). The previous implementation toggled the wrong
+  // variable, so the collapse button had no effect on layout.
+  toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
   
