@@ -84,16 +84,30 @@ export function Topbar() {
         {/* Global Search */}
         <div className="flex-1 max-w-xl">
           <form onSubmit={handleSearch} className="relative">
-            <Search className="absolute left-3 top-1/2 -translate_y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
               id="global-search"
               name="global-search"
               placeholder="Search tasks, KPIs, people..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-10 bg-muted/50 border-border/50 focus:bg-background focus:border-primary"
+              onKeyDown={(e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+                  e.preventDefault()
+                  return
+                }
+              }}
+              className="pl-10 pr-20 h-10 bg-muted/50 border-border/50 focus:bg-background focus:border-primary"
               aria-label="Global search"
             />
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', code: 'KeyK', ctrlKey: true, bubbles: true, cancelable: true }))}
+              className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 rounded border border-border/50 bg-muted/70 px-1.5 h-6 text-[10px] font-mono text-muted-foreground hover:bg-muted transition-colors"
+              aria-label="Open command palette (Ctrl+K)"
+            >
+              <span className="text-xs">⌘</span>K
+            </button>
           </form>
         </div>
 

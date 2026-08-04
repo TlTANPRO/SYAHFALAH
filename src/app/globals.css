@@ -42,14 +42,25 @@
   
   --color-info: 199 89% 48%;
   --color-info-foreground: 210 40% 98%;
-  
+
   --radius: 0.75rem;
-  
+
+  /* Charts - colour palette for Recharts */
+  --color-chart-1: 142.1 76.2% 36.3%; /* emerald (achieved) */
+  --color-chart-2: 199 89% 48%;        /* blue (on-track) */
+  --color-chart-3: 38 92% 50%;         /* amber (at-risk) */
+  --color-chart-4: 0 84.2% 60.2%;      /* red (off-track) */
+  --color-chart-5: 217.2 32.6% 17.5%;  /* slate (idle) */
+
   /* Fonts - Inter (UI) + Plus Jakarta Sans (Headings) */
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-  
+
+  /* Easing - cubic-bezier(), use as `ease-out-expo` etc. */
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-in-out-expo: cubic-bezier(0.87, 0, 0.13, 1);
+
   /* Animations */
   --animate-fade-in: fadeIn 200ms ease-out;
   --animate-fade-out: fadeOut 150ms ease-in;
@@ -110,6 +121,19 @@
   
   .skip-link:focus {
     top: 1rem;
+  }
+
+  /* Honour the user's motion preferences. Disable all non-essential
+     animations when prefers-reduced-motion: reduce is set. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
@@ -1076,4 +1100,15 @@
   .safe-right {
     padding-right: env(safe-area-inset-right);
   }
+}
+
+/* Print stylesheet — hide chrome, simplify for paper output */
+@media print {
+  aside, header, .no-print, [role="navigation"] { display: none !important; }
+  body { background: white !important; color: black !important; }
+  main { margin: 0 !important; padding: 1rem !important; }
+  .card, [class*="border"] { border: 1px solid #ccc !important; box-shadow: none !important; }
+  a { color: #000 !important; text-decoration: underline !important; }
+  h1, h2, h3 { page-break-after: avoid; }
+  tr, .card { page-break-inside: avoid; }
 }

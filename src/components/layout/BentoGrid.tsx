@@ -56,13 +56,13 @@ interface BentoCardProps {
   onClick?: () => void
 }
 
-export function BentoCard({ 
-  children, 
-  className, 
-  span, 
+export function BentoCard({
+  children,
+  className,
+  span,
   accent = false,
   interactive = false,
-  onClick 
+  onClick
 }: BentoCardProps) {
   const style = span ? {
     gridColumn: span.colStart && span.colEnd ? `${span.colStart} / ${span.colEnd}` : undefined,
@@ -73,9 +73,15 @@ export function BentoCard({
     <div
       style={style as React.CSSProperties}
       className={cn(
-        'relative rounded-xl border bg-card p-6 shadow-xs transition-all duration-200 ease-out-expo',
+        // Base
+        'relative rounded-xl border bg-card p-6 shadow-xs',
+        // Micro-interactions
+        'transition-all duration-200 ease-out-expo',
+        'hover:shadow-md hover:-translate-y-0.5',
+        // Accent
         accent && 'bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20',
-        interactive && 'cursor-pointer hover:shadow-md hover:border-primary/30',
+        // Interactive
+        interactive && 'cursor-pointer hover:border-primary/30 hover:shadow-primary/5',
         className
       )}
       onClick={onClick}
@@ -106,7 +112,7 @@ export function SectionLabel({ number, title, subtitle, action, className }: Sec
   return (
     <div className={cn('flex items-baseline justify-between gap-3 mb-4', className)}>
       <div className="flex items-baseline gap-3">
-        <span className="font-mono text-xs text-primary letter-spacing-wide">
+        <span className="font-mono text-xs text-primary tracking-wide">
           {number.toString().padStart(2, '0')}
         </span>
         <h2 className="font-heading text-lg font-semibold tracking-tight">{title}</h2>

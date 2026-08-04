@@ -4,6 +4,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -44,8 +45,6 @@ const navigation = [
 const ownerNavigation = [
   { name: 'Executive Overview', href: '/owner', icon: BarChart3, roles: ['owner'] },
   { name: 'Company KPIs', href: '/owner/kpi', icon: Target, roles: ['owner'] },
-  { name: 'RACI Matrix', href: '/raci', icon: GitBranch, roles: ['owner'] },
-  { name: 'Rewards & Punishment', href: '/rewards', icon: Award, roles: ['owner'] },
   { name: 'Approvals', href: '/owner/approvals', icon: ClipboardCheck, roles: ['owner'] },
   { name: 'Reports', href: '/owner/reports', icon: FileText, roles: ['owner'] },
 ]
@@ -192,9 +191,12 @@ export function Sidebar() {
       {!sidebarCollapsed && (
         <div className="p-3 border-t border-border">
           <div className="flex items-center gap-3">
-            <img
+            <Image
               src={user.avatarUrl || `/api/avatar?name=${encodeURIComponent(user.name)}`}
               alt={user.name}
+              width={40}
+              height={40}
+              unoptimized
               className="h-10 w-10 rounded-full bg-muted object-cover"
             />
             <div className="flex-1 min-w-0">

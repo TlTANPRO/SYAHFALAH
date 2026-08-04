@@ -36,7 +36,7 @@ export function PersonalKpiTable({
     <TableCard title={title} subtitle={total}>
       <table className="w-full">
         <thead>
-          <tr className="border-b border-border">
+          <tr className="border-b border-border/50 hover:bg-muted/30 transition-colors">
             <th className="text-left p-3 font-medium text-muted-foreground">Team Member</th>
             <th className="text-left p-3 font-medium text-muted-foreground">Division</th>
             <th className="text-left p-3 font-medium text-muted-foreground">KPIs</th>
