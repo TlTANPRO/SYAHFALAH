@@ -39,7 +39,7 @@ async function loadDivisions(): Promise<{ divisions: Division[]; summaries: Map<
       .order('sort_order', { ascending: true })
       .order('name', { ascending: true }),
     supabase
-      .from('division_task_summary')
+      .from('division_task_summary').select('*').neq('division_name', 'Test Seed')
       .select('division_id, total_tasks, pending_count, in_progress_count, completed_count, overdue_count'),
   ])
   // The view column is `division_id` (not `id`); build a map keyed by division_id.

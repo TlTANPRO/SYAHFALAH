@@ -1,5 +1,6 @@
 // owner/kpi/page.tsx
-// Daftar KPI strategis level 1 & 2. Filter yang ditampilkan: current year.
+// KPI strategis level perusahaan + divisi. Dikumpulkan dari semua
+// period aktif, diagregat per definisi.
 
 import { createClient } from '@supabase/supabase-js'
 import { Target } from 'lucide-react'
@@ -10,125 +11,168 @@ interface KpiRow {
   name: string | null
   level: string
   unit: string | null
+  division_id: string | null
   baseline_target_value: number | null
   actual_value: number | null
   progress: number | null
   status: string | null
-  period_start: string | null
-  period_end: string | null
-  division_id: string | null
-}
-
-async function load() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) return { kpis: [], divisions: [] }
-  const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
-  const [{ data: kpis }, { data: divs }] = await Promise.all([
-    supabase
-      .from('kpis')
-      .select('id, code, name, level, unit, baseline_target_value, actual_value, progress, status, period_start, period_end, division_id')
-      .in('level', ['company', 'division'])
-      .order('progress', { ascending: false })
-      .limit(100),
-    supabase.from('divisions').select('id, name').eq('is_active', true),
-  ])
-  return { kpis: (kpis ?? []) as KpiRow[], divisions: (divs ?? []) as { id: string; name: string }[] }
+  period_start: string
 }
 
 const STATUS_VARIANT: Record<string, string> = {
   achieved: 'success',
-  on_track: 'success',
+  on_track: 'info',
   at_risk: 'warning',
   off_track: 'danger',
-  pending: 'neutral',
 }
-
 const STATUS_LABEL: Record<string, string> = {
-  achieved: 'Achieved',
-  on_track: 'On Track',
-  at_risk: 'At Risk',
-  off_track: 'Off Track',
-  pending: 'Pending',
+  achieved: 'Tercapai',
+  on_track: 'On track',
+  at_risk: 'At risk',
+  off_track: 'Off track',
 }
 
 function formatValue(v: number | null, unit: string | null): string {
   if (v == null) return '—'
-  if (unit === 'IDR' || unit === 'Rp') {
-    if (v >= 1e9) return `Rp ${(v / 1e9).toFixed(1)}M`
-    if (v >= 1e6) return `Rp ${(v / 1e6).toFixed(0)}jt`
-    return `Rp ${v.toLocaleString('id-ID')}`
+  if (unit === '%') return `${v.toFixed(1)}%`
+  if (unit === 'IDR') return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v)
+  if (unit === 'count') return `${v.toFixed(1)}`
+  return unit ? `${v.toFixed(1)} ${unit}` : v.toFixed(1)
+}
+
+async function loadData() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return { rows: [] as KpiRow[], divisions: [] as { id: string; name: string }[] }
+  const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+  const year = new Date().getFullYear()
+
+  const [{ data: kpis }, { data: divs }] = await Promise.all([
+    supabase
+      .from('kpis')
+      .select('id, code, name, level, unit, division_id, baseline_target_value, actual_value, progress, status, period_start')
+      .in('level', ['company', 'division'])
+      .gte('period_start', `${year}-01-01`)
+      .lte('period_start', `${year}-12-31`)
+      .order('progress', { ascending: false })
+      .limit(200),
+    supabase.from('divisions').select('id, name').eq('is_active', true).order('sort_order'),
+  ])
+  return {
+    rows: (kpis ?? []) as KpiRow[],
+    divisions: (divs ?? []) as { id: string; name: string }[],
   }
-  if (unit === '%') return `${v}%`
-  return `${v}${unit || ''}`
 }
 
 export default async function Page() {
-  const { kpis, divisions } = await load()
+  const { rows, divisions } = await loadData()
   const divName = new Map(divisions.map(d => [d.id, d.name]))
+
+  // Group by KPI code → keep latest period
+  const grouped = new Map<string, KpiRow>()
+  for (const r of rows) {
+    const key = r.code ?? r.id
+    if (!grouped.has(key)) grouped.set(key, r)
+  }
+  const uniq = Array.from(grouped.values()).sort((a, b) => (b.progress ?? 0) - (a.progress ?? 0))
+
+  const achieved = uniq.filter(r => r.status === 'achieved').length
+  const onTrack = uniq.filter(r => r.status === 'on_track').length
+  const atRisk = uniq.filter(r => r.status === 'at_risk' || r.status === 'off_track').length
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="display-lg">KPI Strategis</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          Level 1 (company) dan Level 2 (divisi). Diurutkan dari progress tertinggi.
+          Level 1 (perusahaan) dan Level 2 (divisi). Diurutkan dari progress tertinggi.
         </p>
       </div>
 
-      <div className="card overflow-hidden">
-        <div className="card-header">
-          <div className="flex items-center gap-2">
-            <Target className="h-4 w-4 text-[var(--color-text-tertiary)]" />
-            <h2 className="font-heading text-base font-semibold">{kpis.length} KPI aktif</h2>
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="card">
+          <div className="card-body">
+            <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">Total KPI</p>
+            <p className="mt-2 text-3xl font-heading font-bold tabular-nums">{uniq.length}</p>
           </div>
         </div>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>KPI</th>
-              <th>Level</th>
-              <th>Divisi</th>
-              <th className="text-right">Progress</th>
-              <th className="text-right">Target / Actual</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {kpis.length === 0 ? (
-              <tr><td colSpan={6} className="text-center text-[var(--color-text-tertiary)] py-8">Belum ada KPI.</td></tr>
-            ) : kpis.map(k => (
-              <tr key={k.id}>
-                <td>
-                  <p className="font-medium">{k.name || '—'}</p>
-                  <p className="text-xs text-[var(--color-text-tertiary)] font-mono">{k.code || '—'}</p>
-                </td>
-                <td>
-                  <span className="pill" data-variant={k.level === 'company' ? 'info' : 'neutral'}>
-                    {k.level}
-                  </span>
-                </td>
-                <td className="text-sm text-[var(--color-text-secondary)]">
-                  {k.division_id ? divName.get(k.division_id) || '—' : '—'}
-                </td>
-                <td className="text-right">
-                  <span className="font-mono text-sm font-semibold">{k.progress != null ? `${Math.round(k.progress)}%` : '—'}</span>
-                </td>
-                <td className="text-right font-mono text-xs text-[var(--color-text-secondary)]">
-                  {formatValue(k.baseline_target_value, k.unit)} / {formatValue(k.actual_value, k.unit)}
-                </td>
-                <td>
-                  {k.status && (
-                    <span className="pill" data-variant={STATUS_VARIANT[k.status] || 'neutral'}>
-                      {STATUS_LABEL[k.status] || k.status}
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="card bg-emerald-500/10">
+          <div className="card-body">
+            <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">Tercapai</p>
+            <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-emerald-500">{achieved}</p>
+          </div>
+        </div>
+        <div className="card bg-sky-500/10">
+          <div className="card-body">
+            <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">On track</p>
+            <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-sky-500">{onTrack}</p>
+          </div>
+        </div>
+        <div className="card bg-amber-500/10">
+          <div className="card-body">
+            <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">Perlu perhatian</p>
+            <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-amber-500">{atRisk}</p>
+          </div>
+        </div>
       </div>
+
+      {uniq.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-12 text-center">
+          <Target className="h-12 w-12 text-[var(--color-text-tertiary)] mx-auto mb-3" />
+          <p className="text-sm text-[var(--color-text-secondary)]">Belum ada KPI strategis di periode aktif.</p>
+        </div>
+      ) : (
+        <div className="card overflow-hidden">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>KPI</th>
+                <th>Level</th>
+                <th>Divisi</th>
+                <th className="text-right">Progress</th>
+                <th className="text-right">Target</th>
+                <th className="text-right">Actual</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {uniq.map(k => (
+                <tr key={k.id}>
+                  <td>
+                    <p className="font-medium">{k.name}</p>
+                    <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] mt-0.5">{k.code}</p>
+                  </td>
+                  <td className="text-sm">
+                    <span className="pill" data-variant={k.level === 'company' ? 'brand' : 'neutral'}>
+                      {k.level === 'company' ? 'Perusahaan' : 'Divisi'}
+                    </span>
+                  </td>
+                  <td className="text-sm text-[var(--color-text-secondary)]">
+                    {k.division_id ? divName.get(k.division_id) ?? '—' : '—'}
+                  </td>
+                  <td className="text-right tabular-nums font-mono font-semibold">
+                    {k.progress != null ? `${k.progress.toFixed(0)}%` : '—'}
+                  </td>
+                  <td className="text-right tabular-nums font-mono text-sm">
+                    {formatValue(k.baseline_target_value, k.unit)}
+                  </td>
+                  <td className="text-right tabular-nums font-mono text-sm">
+                    {formatValue(k.actual_value, k.unit)}
+                  </td>
+                  <td>
+                    {k.status && (
+                      <span className="pill" data-variant={STATUS_VARIANT[k.status] ?? 'neutral'}>
+                        {STATUS_LABEL[k.status] ?? k.status}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }

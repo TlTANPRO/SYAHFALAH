@@ -1,78 +1,53 @@
 // components/kpi/PersonalKpiTable.tsx
-// Table of team members' personal KPI rollups. Used by the executive
-// dashboard and the kepala-kantor management view. Was previously
-// inlined in owner/page.tsx and kepala-kantor/page.tsx.
+// Tabel KPI personal tim. Tampil di halaman divisi & KK.
 
-import { TableCard } from '@/components/layout/BentoGrid'
-import { formatPercent } from '@/lib/utils'
-
-export type PersonalKpiRow = {
+export interface PersonalKpiRow {
   user_id: string
-  /** View column is `name`, not `full_name` (the underlying users table column). */
   name: string
   position?: string | null
-  division_name: string | null
-  kpi_count: number
-  avg_progress: number | null
-  achieved_count?: number
-  on_track_count?: number
-  at_risk_count?: number
-  off_track_count?: number
+  kpi_count?: number
+  avg_progress?: number | null
+  achieved_count?: number | null
+  on_track_count?: number | null
+  at_risk_count?: number | null
+  off_track_count?: number | null
 }
 
-interface PersonalKpiTableProps {
-  members: PersonalKpiRow[]
-  title?: string
-  subtitle?: string
-}
-
-export function PersonalKpiTable({
-  members,
-  title = 'Personal KPI Status',
-  subtitle,
-}: PersonalKpiTableProps) {
-  const total = subtitle ?? `${members.length} active team members`
+export function PersonalKpiTable({ members }: { members: PersonalKpiRow[] }) {
   return (
-    <TableCard title={title} subtitle={total}>
-      <table className="w-full">
+    <div className="card overflow-hidden">
+      <table className="data-table">
         <thead>
-          <tr className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-            <th className="text-left p-3 font-medium text-muted-foreground">Team Member</th>
-            <th className="text-left p-3 font-medium text-muted-foreground">Division</th>
-            <th className="text-left p-3 font-medium text-muted-foreground">KPIs</th>
-            <th className="text-left p-3 font-medium text-muted-foreground">Avg Progress</th>
-            <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+          <tr>
+            <th>Nama</th>
+            <th>Posisi</th>
+            <th className="text-right">KPI</th>
+            <th className="text-right">Progress</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
-          {members.map((m) => (
-            <tr key={m.user_id} className="border-b border-border/50">
-              <td className="p-3">
-                <div className="font-medium">{m.name}</div>
-                {m.position && (
-                  <div className="text-sm text-muted-foreground">{m.position}</div>
-                )}
-              </td>
-              <td className="p-3 text-muted-foreground">{m.division_name ?? '—'}</td>
-              <td className="p-3 tabular-nums">{m.kpi_count} KPIs</td>
-              <td className="p-3 font-medium tabular-nums">{formatPercent(m.avg_progress)}</td>
-              <td className="p-3 text-xs">
-                <span className="text-success">{m.achieved_count ?? 0} ✓</span>{' '}
-                <span className="text-info">{m.on_track_count ?? 0} ↗</span>{' '}
-                <span className="text-warning">{m.at_risk_count ?? 0} ⚠</span>{' '}
-                <span className="text-destructive">{m.off_track_count ?? 0} ✗</span>
-              </td>
-            </tr>
-          ))}
-          {members.length === 0 && (
-            <tr>
-              <td colSpan={5} className="p-6 text-center text-muted-foreground">
-                Tidak ada data personal KPI
-              </td>
-            </tr>
-          )}
+          {members.map((m) => {
+            const progress = Number(m.avg_progress ?? 0)
+            return (
+              <tr key={m.user_id}>
+                <td className="font-medium">{m.name}</td>
+                <td className="text-sm text-[var(--color-text-secondary)]">{m.position ?? '—'}</td>
+                <td className="text-right tabular-nums font-mono">{m.kpi_count ?? 0}</td>
+                <td className="text-right tabular-nums font-mono font-semibold">{progress.toFixed(1)}%</td>
+                <td>
+                  <div className="flex flex-wrap gap-1">
+                    <span className="pill" data-variant="success">{m.achieved_count ?? 0} tercapai</span>
+                    <span className="pill" data-variant="info">{m.on_track_count ?? 0} on track</span>
+                    {(m.at_risk_count ?? 0) > 0 && <span className="pill" data-variant="warning">{m.at_risk_count} at risk</span>}
+                    {(m.off_track_count ?? 0) > 0 && <span className="pill" data-variant="danger">{m.off_track_count} off</span>}
+                  </div>
+                </td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
-    </TableCard>
+    </div>
   )
 }

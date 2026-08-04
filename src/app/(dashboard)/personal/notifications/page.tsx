@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { verifyAccessToken } from '@/lib/auth/jwt'
 import { Bell, CheckCircle2, AlertTriangle, Info, Award } from 'lucide-react'
+import { formatRelativeTime } from '@/lib/utils'
 
 interface Notif {
   id: string
@@ -87,7 +88,7 @@ export default async function Page() {
                       <p className="text-sm text-[var(--color-text-secondary)]">{n.message}</p>
                     )}
                     <p className="text-xs text-[var(--color-text-tertiary)] mt-1 font-mono">
-                      {new Date(n.created_at).toLocaleString('id-ID')}
+                      {formatRelativeTime(n.created_at)}
                     </p>
                   </div>
                 </div>

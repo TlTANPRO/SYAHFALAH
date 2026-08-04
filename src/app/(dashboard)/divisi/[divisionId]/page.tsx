@@ -1,208 +1,279 @@
-// app/(dashboard)/divisi/[divisionId]/page.tsx
-// Division Dashboard for PIC Divisi
+// divisi/[divisionId]/page.tsx
+// Halaman divisi untuk PIC / Kepala Kantor / Owner. Query division_name
+// dari Supabase berdasarkan divisionId di URL.
 
 'use client'
 
 import { useParams } from 'next/navigation'
-import { SectionLabel } from '@/components/layout/BentoGrid'
-import { KPICard, BentoGrid, ChartCard, TableCard } from '@/components/layout/BentoGrid'
+import { useQuery } from '@tanstack/react-query'
 import { Target, TrendingUp, DollarSign, Users, CheckCircle, AlertTriangle, Building2, ClipboardList, Shield, FileText, Calendar, Home } from 'lucide-react'
 import { formatCurrency, formatPercent } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
-import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
-
-const divisionInfo: Record<string, { name: string; code: string; icon: React.ReactNode; color: string; bg: string }> = {
-  '44444444-4444-4444-4444-444444444444': { name: 'Marketing & Sales', code: 'MKT', icon: <Users className="h-6 w-6" />, color: 'text-blue-500', bg: 'bg-blue-500/10 border-blue-500/20' },
-  '55555555-5555-5555-5555-555555555555': { name: 'Proyek & Konstruksi', code: 'PRJ', icon: <Building2 className="h-6 w-6" />, color: 'text-amber-500', bg: 'bg-amber-500/10 border-amber-500/20' },
-  '66666666-6666-6666-6666-666666666666': { name: 'Operasional & Admin', code: 'OPS', icon: <ClipboardList className="h-6 w-6" />, color: 'text-green-500', bg: 'bg-green-500/10 border-green-500/20' },
-  '33333333-3333-3333-3333-333333333333': { name: 'Legal / Compliance', code: 'LGL', icon: <Shield className="h-6 w-6" />, color: 'text-purple-500', bg: 'bg-purple-500/10 border-purple-500/20' },
-  '77777777-7777-7777-7777-777777777777': { name: 'Media & Konten Kreatif', code: 'MED', icon: <FileText className="h-6 w-6" />, color: 'text-pink-500', bg: 'bg-pink-500/10 border-pink-500/20' },
-  '22222222-2222-2222-2222-222222222222': { name: 'Owner / Director', code: 'OWN', icon: <Home className="h-6 w-6" />, color: 'text-gray-500', bg: 'bg-gray-500/10 border-gray-500/20' },
-}
+import { TopPageHero } from '@/components/layout/TopPageHero'
+import { StatCard } from '@/components/layout/StatCard'
+import { KpiTile } from '@/components/layout/KpiTile'
+import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
 
 export default function DivisionDashboard() {
   const params = useParams()
   const divisionId = params.divisionId as string
-  const info = divisionInfo[divisionId] || { name: 'Division', code: 'DIV', icon: <Target className="h-6 w-6" />, color: 'text-primary', bg: 'bg-primary/10 border-primary/20' }
   const supabase = createClient()
 
-  // Fetch division KPIs
-  const { data: divisionKPIs } = useQuery({
-    queryKey: ['kpis', { division: divisionId, level: 'division' }],
+  // 1. Fetch division meta by ID
+  const { data: division, isLoading: divLoading } = useQuery({
+    queryKey: ['division', divisionId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('kpis')
-        .select('*')
-        .eq('division_id', divisionId)
-        .eq('level', 'division')
-        .gte('period_start', `${new Date().getFullYear()}-01-01`)
-        .lte('period_end', `${new Date().getFullYear()}-12-31`)
+        .from('divisions')
+        .select('id, name, code, description, head_user_id')
+        .eq('id', divisionId)
+        .eq('is_active', true)
+        .maybeSingle()
       if (error) throw error
       return data
     },
     enabled: !!divisionId,
   })
 
-  // Fetch team personal KPIs
+  // 2. Fetch division KPIs (current year)
+  const { data: divisionKPIs } = useQuery({
+    queryKey: ['kpis', { division: divisionId, level: 'division' }],
+    queryFn: async () => {
+      const year = new Date().getFullYear()
+      const { data, error } = await supabase
+        .from('kpis')
+        .select('id, code, name, target, actual, progress, status, unit, period_start')
+        .eq('division_id', divisionId)
+        .eq('level', 'division')
+        .gte('period_start', `${year}-01-01`)
+        .lte('period_start', `${year}-12-31`)
+        .order('period_start', { ascending: false })
+        .limit(12)
+      if (error) throw error
+      return data ?? []
+    },
+    enabled: !!divisionId,
+  })
+
+  // 3. Fetch team personal KPIs (current)
   const { data: teamKPIs } = useQuery({
     queryKey: ['team-kpis', divisionId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('team_personal_kpis')
-        .select('*')
+        .select('user_id, name, position, kpi_count, avg_progress, achieved_count, on_track_count, at_risk_count, off_track_count')
         .eq('division_id', divisionId)
+        .neq('division_name', 'Test Seed')
+        .order('avg_progress', { ascending: false })
       if (error) throw error
-      return data
+      return data ?? []
     },
     enabled: !!divisionId,
   })
 
-  // Fetch division tasks
+  // 4. Fetch task summary (this division only)
   const { data: taskSummary } = useQuery({
     queryKey: ['division-task-summary', divisionId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('division_task_summary')
-        .select('*')
+        .select('division_id, division_name, completion_rate, completed_count, pending_count, in_progress_count, overdue_count, carry_over_count')
         .eq('division_id', divisionId)
+        .maybeSingle()
       if (error) throw error
       return data
     },
     enabled: !!divisionId,
   })
 
-  // Fetch SOW for this division
+  // 5. Fetch SOW
   const { data: sows } = useQuery({
     queryKey: ['sows', divisionId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sow_with_tasks')
-        .select('*')
+        .select('id, position_name, tujuan_posisi, tools, task_count, kpi_ringkasan, status')
         .eq('division_id', divisionId)
+        .order('status')
       if (error) throw error
-      return data
+      return data ?? []
     },
     enabled: !!divisionId,
   })
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <SectionLabel number={0} title={info.name} subtitle={`Division Dashboard • ${info.code}`} />
+  if (divLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-24 rounded-lg bg-[var(--color-surface-2)] animate-pulse" />
+        <div className="grid grid-cols-4 gap-4">
+          {[1,2,3,4].map(i => <div key={i} className="h-24 rounded-lg bg-[var(--color-surface-2)] animate-pulse" />)}
         </div>
-        <span className={`px-3 py-1 ${info.bg} ${info.color} text-sm rounded-full font-medium`}>{info.code}</span>
+      </div>
+    )
+  }
+
+  if (!division) {
+    return (
+      <div className="space-y-6">
+        <TopPageHero
+          title="Divisi tidak ditemukan"
+          subtitle={`ID ${divisionId} tidak ada di data aktif.`}
+        />
+        <Link href="/" className="text-sm text-[var(--color-brand-500)] hover:underline">← Kembali ke dashboard</Link>
+      </div>
+    )
+  }
+
+  const completionRate = taskSummary?.completion_rate ?? 0
+
+  return (
+    <div className="space-y-8">
+      {/* Hero header */}
+      <TopPageHero
+        title={division.name}
+        subtitle={division.description || 'Ringkasan divisi, target, dan tim.'}
+        rightSlot={
+          <span className="font-mono text-xs uppercase tracking-wider text-[var(--color-text-tertiary)]">
+            {division.code}
+          </span>
+        }
+      />
+
+      {/* Stats: task progress + team size + KPI count */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard
+          label="Task selesai"
+          value={`${completionRate.toFixed(0)}%`}
+          accent="brand"
+          hint={taskSummary ? `${taskSummary.completed_count} dari ${taskSummary.completed_count + taskSummary.pending_count + taskSummary.in_progress_count}` : '—'}
+        />
+        <StatCard
+          label="Lewat tempo"
+          value={taskSummary?.overdue_count ?? 0}
+          accent={taskSummary && taskSummary.overdue_count > 0 ? 'danger' : 'neutral'}
+        />
+        <StatCard
+          label="KPI divisi aktif"
+          value={divisionKPIs?.length ?? 0}
+          accent="info"
+        />
+        <StatCard
+          label="Anggota tim"
+          value={teamKPIs?.length ?? 0}
+          accent="neutral"
+        />
       </div>
 
-      {/* Division KPIs */}
-      <SectionLabel number={1} title="Division KPIs (Level 3)" subtitle="Strategic targets for this division" />
-      <BentoGrid columns={4}>
-        {divisionKPIs?.map((kpi) => (
-          <KPICard
-            key={kpi.id}
-            label={kpi.name}
-            value={kpi.unit === 'IDR' ? formatCurrency(Number(kpi.actual)) : 
-                   kpi.unit === '%' ? formatPercent(Number(kpi.actual)) :
-                   String(kpi.actual)}
-            target={kpi.unit === 'IDR' ? formatCurrency(Number(kpi.target)) : 
-                   kpi.unit === '%' ? formatPercent(Number(kpi.target)) :
-                   String(kpi.target)}
-            progress={Number(kpi.progress)}
-            status={kpi.status as any}
-            icon={
-              kpi.code?.includes('REV') ? <DollarSign className="h-5 w-5" /> :
-              kpi.code?.includes('MARGIN') ? <TrendingUp className="h-5 w-5" /> :
-              kpi.code?.includes('UNIT') ? <CheckCircle className="h-5 w-5" /> :
-              <Target className="h-5 w-5" />
-            }
-          />
-        ))}
-      </BentoGrid>
-
-      {/* Team KPIs */}
-      <SectionLabel number={2} title="Team Personal KPIs (Level 4)" subtitle="Individual team member performance" />
-      <TableCard
-        title="Team KPI Status"
-        subtitle={`${teamKPIs?.length || 0} team members`}
-      >
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="text-left p-3 font-medium text-muted-foreground">Team Member</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Position</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">KPIs</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Avg Progress</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {teamKPIs?.map((member) => (
-              <tr key={member.user_id} className="border-b border-border/50 hover:bg-muted/50">
-                <td className="p-3 font-medium">{member.name}</td>
-                <td className="p-3 text-sm text-muted-foreground">{member.position}</td>
-                <td className="p-3 text-sm">{member.kpi_count} KPIs</td>
-                <td className="p-3 font-medium tabular-nums">{formatPercent(member.avg_progress)}</td>
-                <td className="p-3">
-                  <div className="flex flex-wrap gap-2">
-                    <span className="badge-status badge-achieved">{member.achieved_count} ✓</span>
-                    <span className="badge-status badge-on_track">{member.on_track_count} ↗</span>
-                    <span className="badge-status badge-at_risk">{member.at_risk_count} ⚠</span>
-                    <span className="badge-status badge-off_track">{member.off_track_count} ✗</span>
-                  </div>
-                </td>
-              </tr>
+      {/* Division KPIs (Level 3) */}
+      <section>
+        <header className="mb-4">
+          <h2 className="display-md">Target KPI Divisi</h2>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1">Level 3 — apa yang harus dicapai divisi {division.name} di tahun ini.</p>
+        </header>
+        {divisionKPIs && divisionKPIs.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {divisionKPIs.map((kpi: any) => (
+              <KpiTile
+                key={kpi.id}
+                code={kpi.code}
+                name={kpi.name}
+                target={kpi.unit === 'IDR' ? formatCurrency(Number(kpi.target)) :
+                       kpi.unit === '%' ? formatPercent(Number(kpi.target)) :
+                       `${kpi.target}${kpi.unit ? ' ' + kpi.unit : ''}`}
+                actual={kpi.unit === 'IDR' ? formatCurrency(Number(kpi.actual)) :
+                        kpi.unit === '%' ? formatPercent(Number(kpi.actual)) :
+                        `${kpi.actual}${kpi.unit ? ' ' + kpi.unit : ''}`}
+                progress={Number(kpi.progress)}
+                status={kpi.status}
+              />
             ))}
-          </tbody>
-        </table>
-      </TableCard>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-8 text-center">
+            <Target className="h-8 w-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
+            <p className="text-sm text-[var(--color-text-secondary)]">Belum ada target KPI untuk divisi ini di tahun {new Date().getFullYear()}.</p>
+          </div>
+        )}
+      </section>
 
-      {/* Task Summary */}
-      <SectionLabel number={3} title="Today's Task Completion" subtitle="Division task progress" />
-      <BentoGrid columns={2}>
-        {taskSummary?.map((div) => (
-          <ChartCard
-            key={div.division_id}
-            title={div.division_name}
-            subtitle={`${div.completion_rate}% completion rate`}
-          >
-            <div className="h-full flex flex-col justify-center">
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div><p className="font-heading text-3xl font-bold text-foreground">{div.completed_count}</p><p className="text-sm text-success">Completed</p></div>
-                <div><p className="font-heading text-3xl font-bold text-foreground">{div.pending_count}</p><p className="text-sm text-muted-foreground">Pending</p></div>
-                <div><p className="font-heading text-3xl font-bold text-foreground">{div.in_progress_count}</p><p className="text-sm text-info">In Progress</p></div>
-                <div><p className="font-heading text-3xl font-bold text-foreground">{div.overdue_count}</p><p className="text-sm text-destructive">Overdue</p></div>
-              </div>
-              <div className="mt-4 text-center text-sm text-muted-foreground">{div.carry_over_count} carry-over tasks</div>
-            </div>
-          </ChartCard>
-        ))}
-      </BentoGrid>
+      {/* Team personal KPIs (Level 4) */}
+      <section>
+        <header className="mb-4">
+          <h2 className="display-md">Performa Tim</h2>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1">{teamKPIs?.length ?? 0} anggota dengan KPI personal aktif.</p>
+        </header>
+        {teamKPIs && teamKPIs.length > 0 ? (
+          <PersonalKpiTable members={teamKPIs as any} />
+        ) : (
+          <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-8 text-center">
+            <Users className="h-8 w-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
+            <p className="text-sm text-[var(--color-text-secondary)]">Belum ada anggota dengan KPI personal di divisi ini.</p>
+          </div>
+        )}
+      </section>
 
-      {/* SOW Overview */}
-      <SectionLabel number={4} title="Scope of Work" subtitle="Active SOWs in this division" />
-      <BentoGrid columns={3}>
-        {sows?.map((sow) => (
-          <ChartCard key={sow.id} title={sow.position_name} className={info.bg}>
-            <div className="h-full space-y-3">
-              <p className="text-sm text-muted-foreground line-clamp-2">{sow.tujuan_posisi}</p>
-              <div className="flex gap-2 flex-wrap">
-                {sow.tools?.slice(0, 4).map((tool: string) => (
-                  <span key={tool} className="px-2 py-1 bg-muted text-xs rounded border">{tool}</span>
-                ))}
+      {/* Task completion breakdown */}
+      <section>
+        <header className="mb-4">
+          <h2 className="display-md">Status Task</h2>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1">Jumlah task berdasarkan statusnya.</p>
+        </header>
+        {taskSummary ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard label="Selesai" value={taskSummary.completed_count} accent="success" />
+            <StatCard label="Berjalan" value={taskSummary.in_progress_count} accent="info" />
+            <StatCard label="Tertunda" value={taskSummary.pending_count} accent="warning" />
+            <StatCard label="Lewat tempo" value={taskSummary.overdue_count} accent={taskSummary.overdue_count > 0 ? 'danger' : 'neutral'} />
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-8 text-center">
+            <ClipboardList className="h-8 w-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
+            <p className="text-sm text-[var(--color-text-secondary)]">Belum ada task untuk divisi ini.</p>
+          </div>
+        )}
+      </section>
+
+      {/* SOW */}
+      <section>
+        <header className="mb-4">
+          <h2 className="display-md">Scope of Work</h2>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1">SOW aktif di divisi {division.name}.</p>
+        </header>
+        {sows && sows.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {sows.map((sow: any) => (
+              <div key={sow.id} className="card">
+                <div className="card-body space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-heading text-base font-semibold">{sow.position_name}</p>
+                    <span className="pill" data-variant={sow.status === 'in_progress' ? 'info' : sow.status === 'planned' ? 'neutral' : 'success'}>{sow.status}</span>
+                  </div>
+                  <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2">{sow.tujuan_posisi}</p>
+                  {sow.tools && sow.tools.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {sow.tools.slice(0, 4).map((tool: string) => (
+                        <span key={tool} className="pill" data-variant="neutral">{tool}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="pt-2 border-t border-[var(--color-border-default)] flex items-center justify-between">
+                    <p className="text-xs text-[var(--color-text-tertiary)] font-mono">{sow.task_count} tasks</p>
+                    <Link href={`/divisi/${divisionId}/kpi`} className="text-xs text-[var(--color-brand-500)] hover:underline font-medium">
+                      Detail KPI →
+                    </Link>
+                  </div>
+                </div>
               </div>
-              <div className="pt-2 border-t border-border">
-                <p className="text-xs text-muted-foreground">{sow.task_count} tasks</p>
-                <p className="text-xs font-medium text-primary">{sow.kpi_ringkasan}</p>
-              </div>
-              <Link href={`/divisi/${divisionId}/kpi`} className="text-primary hover:underline text-sm font-medium">
-                View Division KPIs →
-              </Link>
-            </div>
-          </ChartCard>
-        ))}
-      </BentoGrid>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-8 text-center">
+            <FileText className="h-8 w-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
+            <p className="text-sm text-[var(--color-text-secondary)]">Belum ada SOW aktif untuk divisi ini.</p>
+          </div>
+        )}
+      </section>
     </div>
   )
 }

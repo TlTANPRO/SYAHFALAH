@@ -33,7 +33,7 @@ async function load() {
   const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
   const [{ data: task }, { data: kpi }] = await Promise.all([
     supabase.from('division_task_summary').select('*').neq('division_name', 'Test Seed'),
-    supabase.from('division_kpi_summary').select('*').neq('division_code', 'TEST_SEED'),
+    supabase.from('division_kpi_summary').select('*').neq('division_name', 'Test Seed').neq('division_code', 'TEST_SEED'),
   ])
   return {
     task: (task ?? []) as DivisionTaskSummary[],

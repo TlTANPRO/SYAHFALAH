@@ -15,6 +15,7 @@ import {
   Home,
 } from 'lucide-react'
 import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
+import { KpiTrendChart } from '@/components/charts/KpiTrendChart'
 import { PipelineFunnel } from '@/components/owner/PipelineFunnel'
 import { ClusterGrid } from '@/components/owner/ClusterGrid'
 import { ProjectTracker } from '@/components/owner/ProjectTracker'
@@ -36,15 +37,37 @@ async function loadData() {
     }
   }
 
-  const [clusters, leads, projects, consumerCases, teamKPIs] = await Promise.all([
+  // ambil KPI trend: avg progress per divisi per bulan
+  const kpiTrend = await safe<any[]>(sb
+    .from('kpis')
+    .select('division_id, period_start, progress')
+    .in('level', ['division', 'company'])
+    .gte('period_start', '2025-08-01')
+    .lte('period_start', '2026-07-31')
+    .limit(3000))
+  // group by division_id + period_start
+  const trendMap = new Map<string, { sum: number; count: number }>()
+  for (const r of kpiTrend as any[]) {
+    if (r.progress == null) continue
+    const period = (r.period_start as string).slice(0, 7) // YYYY-MM
+    const key = `${r.division_id}::${period}`
+    const cur = trendMap.get(key) ?? { sum: 0, count: 0 }
+    cur.sum += r.progress
+    cur.count += 1
+    trendMap.set(key, cur)
+  }
+
+  const [clusters, leads, projects, consumerCases, teamKPIs, divs] = await Promise.all([
     safe<any[]>(sb.from('clusters').select('*').eq('is_active', true).order('name')),
     safe<any[]>(sb.from('leads').select('id, stage, source, estimated_value_rupiah, created_at, cluster_id, customer_name, assigned_to_id, contacted_at, surveyed_at')),
     safe<any[]>(sb.from('projects').select('id, code, name, cluster_id, total_units, units_completed, start_date, target_completion_date, budget_rupiah, spent_rupiah, status, project_manager_id')),
     safe<any[]>(sb.from('consumer_cases').select('id, code, consumer_name, unit_code, cluster_id, stage, sp3k_deadline, bast_date, amount_rupiah, is_overdue, assigned_to_id')),
     safe<any[]>(sb.from('team_personal_kpis').select('user_id, name, position, division_id, division_name, kpi_count, avg_progress, achieved_count, on_track_count, at_risk_count, off_track_count').order('avg_progress', { ascending: false }).limit(12)),
+    safe<any[]>(sb.from('divisions').select('id, name').eq('is_active', true).order('sort_order')),
+    safe<any[]>(sb.from('kpis').select('division_id, period_start, progress').in('level', ['division', 'company']).gte('period_start', '2025-08-01').lte('period_start', '2026-07-31').limit(3000)),
   ])
 
-  return { clusters, leads, projects, consumerCases, teamKPIs, dbReady: true }
+  return { clusters, leads, projects, consumerCases, teamKPIs, divisions: divs, kpiTrend, dbReady: true }
 }
 
 function shortNumber(n: number): string {
@@ -62,7 +85,53 @@ export default async function Page() {
     projects = [],
     consumerCases = [],
     teamKPIs = [],
+    divisions = [],
+    kpiTrend = [],
   } = data
+
+  // KPI trend per divisi per bulan
+  const trendByDiv = new Map<string, Map<string, { sum: number; count: number }>>()
+  for (const r of kpiTrend as any[]) {
+    if (r.progress == null) continue
+    const period = (r.period_start as string).slice(0, 7)
+    if (!trendByDiv.has(r.division_id)) trendByDiv.set(r.division_id, new Map())
+    const m = trendByDiv.get(r.division_id)!
+    const cur = m.get(period) ?? { sum: 0, count: 0 }
+    cur.sum += r.progress
+    cur.count += 1
+    m.set(period, cur)
+  }
+  // collect all periods
+  const periodSet = new Set<string>()
+  for (const r of kpiTrend as any[]) {
+    if (r.progress == null) continue
+    periodSet.add((r.period_start as string).slice(0, 7))
+  }
+  const periods = Array.from(periodSet).sort()
+  // pick top 5 divisions by data density
+  const divDataCount = new Map<string, number>()
+  for (const [divId, m] of trendByDiv) {
+    let total = 0
+    for (const v of m.values()) total += v.count
+    divDataCount.set(divId, total)
+  }
+  const topDivs = Array.from(divDataCount.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([id]) => id)
+  const divName = new Map((divisions as any[]).map(d => [d.id, d.name]))
+  const kpiTrendSeries = topDivs.map(id => ({
+    code: `D${id.slice(0, 4)}`,
+    name: divName.get(id) ?? id.slice(0, 6),
+  }))
+  const kpiTrendData = periods.map(period => {
+    const row: any = { label: period }
+    for (const divId of topDivs) {
+      const v = trendByDiv.get(divId)?.get(period)
+      row[`D${divId.slice(0, 4)}`] = v ? +(v.sum / v.count).toFixed(1) : null
+    }
+    return row
+  })
 
   // Hitung metrik pipeline
   const leadsByStage = (leads as any[]).reduce((acc: any, l: any) => {
@@ -228,7 +297,7 @@ export default async function Page() {
       </div>
       <ConsumerCasesTable cases={consumerCases} clusters={clusters} />
 
-      {/* Section: Tim */}
+      {/* Section: Tren KPI 12 bulan */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="display-md">Performa tim</h2>

@@ -1,11 +1,11 @@
 // kpi/page.tsx
-// KPI Explorer — browse every KPI definition across the company. Source
-// is the `kpis` view (3,316 rows of period rollups).
+// KPI Explorer — daftar KPI definitif (satu row per definisi), agregat
+// rata-rata progress dari semua periodenya. Plus filter divisi + level.
 
 import { createClient } from '@supabase/supabase-js'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Target, ChevronRight } from 'lucide-react'
+import { Target, ChevronRight, Filter } from 'lucide-react'
+import Link from 'next/link'
+import { ExportKpiButton } from '@/components/kpi/ExportKpiButton'
 
 interface KpiRow {
   id: string
@@ -13,118 +13,287 @@ interface KpiRow {
   name: string | null
   level: string
   unit: string | null
+  division_id: string | null
+}
+
+interface PeriodRollup {
+  kpi_id: string
+  period_start: string
+  period_end: string
   baseline_target_value: number | null
   actual_value: number | null
   progress: number | null
   status: string | null
-  period_start: string | null
-  period_end: string | null
-  division_id: string | null
 }
 
-async function loadKpis() {
+interface AggregatedKpi {
+  code: string
+  name: string
+  level: string
+  unit: string | null
+  division_id: string | null
+  periods: number
+  avgProgress: number | null
+  avgActual: number | null
+  latestTarget: number | null
+  latestActual: number | null
+  latestProgress: number | null
+  latestStatus: string | null
+}
+
+const STATUS_VARIANT: Record<string, string> = {
+  achieved: 'success',
+  on_track: 'info',
+  at_risk: 'warning',
+  off_track: 'danger',
+}
+const STATUS_LABEL: Record<string, string> = {
+  achieved: 'Tercapai',
+  on_track: 'On track',
+  at_risk: 'At risk',
+  off_track: 'Off track',
+}
+const LEVEL_LABEL: Record<string, string> = {
+  company: 'Perusahaan',
+  division: 'Divisi',
+  personal: 'Personal',
+}
+
+function formatValue(v: number | null, unit: string | null): string {
+  if (v == null) return '—'
+  if (unit === '%') return `${v.toFixed(1)}%`
+  if (unit === 'IDR') return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v)
+  if (unit === 'count') return `${v.toFixed(1)} unit`
+  return unit ? `${v.toFixed(1)} ${unit}` : v.toFixed(1)
+}
+
+async function loadData() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) return { kpis: [], divisions: [] }
+  if (!url || !key) return { kpis: [] as AggregatedKpi[], divisions: [] as { id: string; name: string }[] }
   const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
-  const [{ data: kpis }, { data: divs }] = await Promise.all([
+
+  const [{ data: defs }, { data: rollups }, { data: divs }] = await Promise.all([
     supabase
       .from('kpis')
-      .select('id, code, name, level, unit, baseline_target_value, actual_value, progress, status, period_start, period_end, division_id')
-      .order('progress', { ascending: false })
-      .limit(60),
-    supabase.from('divisions').select('id, name'),
+      .select('id, code, name, level, unit, division_id')
+      .order('code')
+      .limit(500),
+    supabase
+      .from('kpis')
+      .select('id, code, name, baseline_target_value, actual_value, progress, status, period_start, period_end, level, unit, division_id')
+      .order('period_start', { ascending: false })
+      .limit(2000),
+    supabase.from('divisions').select('id, name').eq('is_active', true).order('sort_order'),
   ])
-  return { kpis: (kpis ?? []) as KpiRow[], divisions: (divs ?? []) as { id: string; name: string }[] }
+
+  // group rollups by KPI id
+  const byId = new Map<string, AggregatedKpi>()
+  for (const d of defs ?? []) {
+    byId.set(d.id, {
+      code: d.code ?? '—',
+      name: d.name ?? '—',
+      level: d.level,
+      unit: d.unit,
+      division_id: d.division_id,
+      periods: 0,
+      avgProgress: null,
+      avgActual: null,
+      latestTarget: null,
+      latestActual: null,
+      latestProgress: null,
+      latestStatus: null,
+    })
+  }
+
+  // walk rollups to compute avg + latest
+  const rollupByKpi = new Map<string, PeriodRollup[]>()
+  for (const r of rollups ?? []) {
+    if (!byId.has(r.id)) continue
+    if (!rollupByKpi.has(r.id)) rollupByKpi.set(r.id, [])
+    rollupByKpi.get(r.id)!.push({
+      kpi_id: r.id,
+      period_start: r.period_start,
+      period_end: r.period_end,
+      baseline_target_value: r.baseline_target_value,
+      actual_value: r.actual_value,
+      progress: r.progress,
+      status: r.status,
+    })
+  }
+
+  for (const [kpiId, list] of rollupByKpi) {
+    const agg = byId.get(kpiId)!
+    agg.periods = list.length
+    const progresses = list.map(r => r.progress).filter((v): v is number => v != null)
+    const actuals = list.map(r => r.actual_value).filter((v): v is number => v != null)
+    agg.avgProgress = progresses.length ? progresses.reduce((a, b) => a + b, 0) / progresses.length : null
+    agg.avgActual = actuals.length ? actuals.reduce((a, b) => a + b, 0) / actuals.length : null
+    // latest
+    const latest = list[0] // sorted desc by period_start
+    if (latest) {
+      agg.latestTarget = latest.baseline_target_value
+      agg.latestActual = latest.actual_value
+      agg.latestProgress = latest.progress
+      agg.latestStatus = latest.status
+    }
+  }
+
+  return {
+    kpis: Array.from(byId.values()).filter(k => k.periods > 0),
+    divisions: (divs ?? []) as { id: string; name: string }[],
+  }
 }
 
-const statusVariant: Record<string, 'achieved' | 'on-track' | 'at-risk' | 'off-track'> = {
-  achieved: 'achieved',
-  on_track: 'on-track',
-  at_risk: 'at-risk',
-  off_track: 'off-track',
-}
-const statusLabel: Record<string, string> = {
-  achieved: 'Achieved',
-  on_track: 'On Track',
-  at_risk: 'At Risk',
-  off_track: 'Off Track',
-}
+export default async function Page({
+  searchParams,
+}: {
+  searchParams?: Promise<{ division?: string; level?: string }>
+}) {
+  const { kpis, divisions } = await loadData()
+  const sp = (await searchParams) ?? {}
+  const filterDivision = sp.division
+  const filterLevel = sp.level
 
-export default async function Page() {
-  const { kpis, divisions } = await loadKpis()
   const divName = new Map(divisions.map(d => [d.id, d.name]))
+  const filtered = kpis.filter(k => {
+    if (filterDivision && k.division_id !== filterDivision) return false
+    if (filterLevel && k.level !== filterLevel) return false
+    return true
+  })
 
-  const byLevel = kpis.reduce<Record<string, KpiRow[]>>((acc, k) => {
-    acc[k.level] = acc[k.level] || []
-    acc[k.level].push(k)
-    return acc
-  }, {})
+  const byLevel: Record<string, AggregatedKpi[]> = {}
+  for (const k of filtered) {
+    if (!byLevel[k.level]) byLevel[k.level] = []
+    byLevel[k.level].push(k)
+  }
   const levels = Object.keys(byLevel).sort()
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-heading text-2xl font-bold">KPI Explorer</h1>
-        <p className="text-muted-foreground">Menampilkan 60 KPI terbaru dari total periode aktif</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="display-lg">KPI Explorer</h1>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+            {filtered.length} definisi KPI, diagregat dari semua period aktif.
+          </p>
+        </div>
+        <ExportKpiButton rows={filtered} divisions={divisions} />
       </div>
 
-      {levels.map(level => (
-        <section key={level}>
-          <div className="flex items-center gap-2 mb-3">
-            <Target className="h-4 w-4 text-primary" />
-            <h2 className="font-heading text-lg font-semibold capitalize">{level}</h2>
-            <Badge variant="outline">{byLevel[level].length}</Badge>
-          </div>
-          <Card>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left p-3 font-medium text-muted-foreground">KPI</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground">Divisi</th>
-                      <th className="text-right p-3 font-medium text-muted-foreground">Progress</th>
-                      <th className="text-right p-3 font-medium text-muted-foreground">Target</th>
-                      <th className="text-right p-3 font-medium text-muted-foreground">Actual</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">
+          <Filter className="h-3 w-3" /> Filter
+        </span>
+        <Link
+          href="/kpi"
+          className={`pill ${!filterDivision && !filterLevel ? 'pill-active' : ''}`}
+          data-variant={!filterDivision && !filterLevel ? 'brand' : 'neutral'}
+        >
+          Semua ({kpis.length})
+        </Link>
+        <span className="text-[var(--color-text-tertiary)] text-xs">Level:</span>
+        {(['company', 'division', 'personal'] as const).map(lv => {
+          const count = kpis.filter(k => k.level === lv).length
+          const active = filterLevel === lv
+          return (
+            <Link
+              key={lv}
+              href={`/kpi?level=${lv}${filterDivision ? `&division=${filterDivision}` : ''}`}
+              className="pill"
+              data-variant={active ? 'brand' : 'neutral'}
+            >
+              {LEVEL_LABEL[lv]} ({count})
+            </Link>
+          )
+        })}
+        {divisions.length > 0 && (
+          <>
+            <span className="text-[var(--color-text-tertiary)] text-xs">Divisi:</span>
+            {divisions.map(d => {
+              const active = filterDivision === d.id
+              return (
+                <Link
+                  key={d.id}
+                  href={`/kpi?division=${d.id}${filterLevel ? `&level=${filterLevel}` : ''}`}
+                  className="pill"
+                  data-variant={active ? 'brand' : 'neutral'}
+                >
+                  {d.name}
+                </Link>
+              )
+            })}
+          </>
+        )}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-12 text-center">
+          <Target className="h-12 w-12 text-[var(--color-text-tertiary)] mx-auto mb-3" />
+          <p className="text-sm text-[var(--color-text-secondary)]">Tidak ada KPI yang cocok dengan filter.</p>
+          <Link href="/kpi" className="text-xs text-[var(--color-brand-500)] hover:underline mt-2 inline-block">
+            Reset filter
+          </Link>
+        </div>
+      ) : (
+        levels.map(level => (
+          <section key={level}>
+            <header className="mb-3 flex items-center gap-2">
+              <Target className="h-4 w-4 text-[var(--color-brand-500)]" />
+              <h2 className="display-md">{LEVEL_LABEL[level] || level}</h2>
+              <span className="pill" data-variant="neutral">{byLevel[level].length}</span>
+            </header>
+            <div className="card overflow-hidden">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>KPI</th>
+                    <th>Divisi</th>
+                    <th className="text-right">Progress rata-rata</th>
+                    <th className="text-right">Target</th>
+                    <th className="text-right">Actual (terbaru)</th>
+                    <th>Status</th>
+                    <th>Periode</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {byLevel[level].map(k => (
+                    <tr key={k.code}>
+                      <td>
+                        <p className="font-medium">{k.name}</p>
+                        <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] mt-0.5">{k.code}</p>
+                      </td>
+                      <td className="text-sm text-[var(--color-text-secondary)]">
+                        {k.division_id ? divName.get(k.division_id) ?? '—' : '—'}
+                      </td>
+                      <td className="text-right tabular-nums font-mono font-semibold">
+                        {k.avgProgress != null ? `${k.avgProgress.toFixed(0)}%` : '—'}
+                      </td>
+                      <td className="text-right tabular-nums font-mono text-sm">
+                        {formatValue(k.latestTarget, k.unit)}
+                      </td>
+                      <td className="text-right tabular-nums font-mono text-sm">
+                        {formatValue(k.latestActual, k.unit)}
+                      </td>
+                      <td>
+                        {k.latestStatus && (
+                          <span className="pill" data-variant={STATUS_VARIANT[k.latestStatus] ?? 'neutral'}>
+                            {STATUS_LABEL[k.latestStatus] ?? k.latestStatus}
+                          </span>
+                        )}
+                      </td>
+                      <td className="text-xs text-[var(--color-text-tertiary)] font-mono">
+                        {k.periods}x
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {byLevel[level].map(k => (
-                      <tr key={k.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                        <td className="p-3">
-                          <div className="font-medium">{k.name || '—'}</div>
-                          <div className="font-mono text-xs text-muted-foreground">{k.code || '—'}</div>
-                        </td>
-                        <td className="p-3 text-muted-foreground">
-                          {k.division_id ? divName.get(k.division_id) || '—' : '—'}
-                        </td>
-                        <td className="p-3 text-right tabular-nums font-medium">
-                          {k.progress != null ? `${Math.round(k.progress)}%` : '—'}
-                        </td>
-                        <td className="p-3 text-right tabular-nums text-muted-foreground">
-                          {k.baseline_target_value != null ? `${k.baseline_target_value}${k.unit || ''}` : '—'}
-                        </td>
-                        <td className="p-3 text-right tabular-nums text-muted-foreground">
-                          {k.actual_value != null ? `${k.actual_value}${k.unit || ''}` : '—'}
-                        </td>
-                        <td className="p-3">
-                          {k.status && (
-                            <Badge variant={statusVariant[k.status] || 'default'}>
-                              {statusLabel[k.status] || k.status}
-                            </Badge>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-      ))}
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ))
+      )}
     </div>
   )
 }

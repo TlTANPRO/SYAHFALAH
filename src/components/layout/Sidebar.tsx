@@ -10,6 +10,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useUIStore } from '@/stores/uiStore'
 import {
   BarChart3,
   Calendar,
@@ -143,6 +144,7 @@ export function Sidebar() {
   const { user } = useAuthStore()
   const { sidebarCollapsed, toggleSidebar } = useUIStore()
   const pathname = usePathname()
+  const { sidebarCollapsed, toggleSidebar } = useUIStore()
 
   if (!user) return null
 
@@ -161,10 +163,22 @@ export function Sidebar() {
   sections.push({ title: 'Library', items: libraryNav.filter((n) => n.roles.includes(role)) })
 
   return (
+    <>
+    {/* Mobile backdrop */}
+    {!sidebarCollapsed && (
+      <div
+        className="md:hidden fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
+        onClick={toggleSidebar}
+        aria-hidden="true"
+      />
+    )}
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen border-r border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] transition-[width] duration-300 ease-[cubic-bezier(0.19,1,0.22,1)] flex flex-col',
-        sidebarCollapsed ? 'w-16' : 'w-64',
+        'fixed left-0 top-0 z-40 h-screen border-r border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] transition-[width,transform] duration-300 ease-[cubic-bezier(0.19,1,0.22,1)] flex flex-col',
+        // mobile: hidden by default, slide-in when not collapsed
+        sidebarCollapsed
+          ? 'w-16 -translate-x-full md:translate-x-0'
+          : 'w-72 translate-x-0 md:w-64',
       )}
     >
       {/* Brand header */}
@@ -251,5 +265,6 @@ export function Sidebar() {
         </button>
       )}
     </aside>
+    </>
   )
 }

@@ -42,6 +42,7 @@ async function load(divisionId: string) {
     supabase
       .from('division_kpi_summary')
       .select('division_id, division_name, kpi_count, avg_progress, achieved_count, on_track_count, at_risk_count, off_track_count')
+      .neq('division_name', 'Test Seed')
       .eq('division_id', divisionId)
       .single(),
     supabase
@@ -65,8 +66,8 @@ export default async function Page({ params }: { params: Promise<{ divisionId: s
   if (!division) {
     return (
       <div className="space-y-4">
-        <h1 className="font-heading text-2xl font-bold">Divisi tidak ditemukan</h1>
-        <p className="text-muted-foreground">ID: {divisionId}</p>
+        <h1 className="display-lg">Divisi tidak ditemukan</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">ID: {divisionId}</p>
       </div>
     )
   }
@@ -74,8 +75,8 @@ export default async function Page({ params }: { params: Promise<{ divisionId: s
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-bold">{division.name}</h1>
-        <p className="text-muted-foreground">
+        <h1 className="display-lg">{division.name}</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
           <Badge variant="outline" className="mr-2">{division.code}</Badge>
           {summary ? `${summary.kpi_count} KPI · ${members.length} anggota` : 'Belum ada KPI'}
         </p>
@@ -100,7 +101,7 @@ export default async function Page({ params }: { params: Promise<{ divisionId: s
                 <CheckCircle className="h-3.5 w-3.5" />
                 <span className="text-xs uppercase tracking-wide">Achieved</span>
               </div>
-              <div className="font-heading text-2xl font-bold tabular-nums text-success">{summary.achieved_count}</div>
+              <div className="mt-2 text-3xl font-heading font-bold tabular-nums text-emerald-500">{summary.achieved_count}</div>
             </CardContent>
           </Card>
           <Card>
@@ -117,7 +118,7 @@ export default async function Page({ params }: { params: Promise<{ divisionId: s
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <span className="text-xs uppercase tracking-wide">At Risk / Off Track</span>
               </div>
-              <div className="font-heading text-2xl font-bold tabular-nums text-destructive">
+              <div className="mt-2 text-3xl font-heading font-bold tabular-nums text-rose-500">
                 {summary.at_risk_count + summary.off_track_count}
               </div>
             </CardContent>

@@ -78,11 +78,11 @@ export function Topbar() {
           {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
 
-        {/* Breadcrumb-ish path */}
+        {/* Path */}
         <div className="hidden md:flex items-center gap-1.5 text-sm">
           <Sparkles className="h-3.5 w-3.5 text-[var(--color-brand-500)]" />
-          <span className="text-[var(--color-text-tertiary)] font-mono uppercase tracking-wider text-[11px]">
-            {pathname === '/' ? 'Dashboard' : pathname.split('/').filter(Boolean).join(' / ')}
+          <span className="text-[var(--color-text-tertiary)] font-medium">
+            {pathname === '/' ? 'Beranda' : pathname.split('/').filter(Boolean).join(' / ').toUpperCase()}
           </span>
         </div>
 

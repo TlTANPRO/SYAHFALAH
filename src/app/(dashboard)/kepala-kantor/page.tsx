@@ -1,39 +1,54 @@
-// app/(dashboard)/kepala-kantor/page.tsx
-// Kepala Kantor Overview Dashboard
+// kepala-kantor/page.tsx
+// Halaman Kepala Kantor — semua divisi + performa tim + ritme kerja.
+// Samakan dengan /owner/overview tapi fokusnya operasional lintas divisi.
 
 'use client'
 
-import { SectionLabel } from '@/components/layout/BentoGrid'
-import { KPICard, BentoGrid, ChartCard, TableCard } from '@/components/layout/BentoGrid'
-import { Target, TrendingUp, DollarSign, Users, CheckCircle, AlertTriangle, BarChart3, Building2, ClipboardList, Shield, FileText, Calendar, UserCog } from 'lucide-react'
-import { formatCurrency, formatPercent } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
 import { useQuery } from '@tanstack/react-query'
+import Link from 'next/link'
+import { Target, Building2, ClipboardList, Shield, FileText, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react'
+import { formatPercent } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
+import { TopPageHero } from '@/components/layout/TopPageHero'
+import { StatCard } from '@/components/layout/StatCard'
+import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
+
+const DIVISION_ICON: Record<string, React.ReactNode> = {
+  MARKETING: <Target className="h-5 w-5" />,
+  FINANCE: <ClipboardList className="h-5 w-5" />,
+  CONSTRUCTION: <Building2 className="h-5 w-5" />,
+  MAINTENANCE: <Shield className="h-5 w-5" />,
+  MEDIA: <FileText className="h-5 w-5" />,
+  PURCHASING: <ClipboardList className="h-5 w-5" />,
+}
 
 export default function KepalaKantorDashboard() {
   const supabase = createClient()
 
-  // Fetch division summaries
+  // Fetch division summary
   const { data: divisionSummaries } = useQuery({
-    queryKey: ['division-summaries'],
+    queryKey: ['division-kpi-summary'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('division_kpi_summary')
-        .select('*')
+        .select('*').neq('division_name', 'Test Seed')
+        .order('avg_progress', { ascending: false })
       if (error) throw error
-      return data
+      return data ?? []
     },
   })
 
   // Fetch team personal KPIs
   const { data: teamKPIs } = useQuery({
-    queryKey: ['team-kpis'],
+    queryKey: ['team-personal-kpis'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('team_personal_kpis')
-        .select('*')
+        .select('user_id, name, position, division_id, division_name, kpi_count, avg_progress, achieved_count, on_track_count, at_risk_count, off_track_count')
+        .neq('division_name', 'Test Seed')
+        .order('avg_progress', { ascending: false })
       if (error) throw error
-      return data
+      return data ?? []
     },
   })
 
@@ -43,205 +58,191 @@ export default function KepalaKantorDashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('division_task_summary')
-        .select('*')
+        .select('*').neq('division_name', 'Test Seed')
+        .order('division_name')
       if (error) throw error
-      return data
+      return data ?? []
     },
   })
 
-  // Fetch company KPIs
-  const { data: companyKPIs } = useQuery({
-    queryKey: ['kpis', { level: 'company' }],
+  // Fetch divisions for cross-link
+  const { data: divisions } = useQuery({
+    queryKey: ['divisions-active'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('kpis')
-        .select('*')
-        .eq('level', 'company')
-        .gte('period_start', `${new Date().getFullYear()}-01-01`)
-        .lte('period_end', `${new Date().getFullYear()}-12-31`)
+        .from('divisions')
+        .select('id, name, code')
+        .eq('is_active', true)
+        .order('sort_order')
       if (error) throw error
-      return data
+      return data ?? []
     },
   })
 
-  const divisionIcons: Record<string, React.ReactNode> = {
-    'MKT': <Users className="h-5 w-5" />,
-    'PRJ': <Building2 className="h-5 w-5" />,
-    'OPS': <ClipboardList className="h-5 w-5" />,
-    'LGL': <Shield className="h-5 w-5" />,
-    'MED': <FileText className="h-5 w-5" />,
-  }
+  const totalTasksCompleted = taskSummary?.reduce((sum, t) => sum + (t.completed_count ?? 0), 0) ?? 0
+  const totalTasksOverdue = taskSummary?.reduce((sum, t) => sum + (t.overdue_count ?? 0), 0) ?? 0
+  const avgProgress = teamKPIs?.length
+    ? teamKPIs.reduce((sum, m) => sum + (Number(m.avg_progress) || 0), 0) / teamKPIs.length
+    : 0
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <SectionLabel number={0} title="Kepala Kantor Dashboard" subtitle="Real-time overview of all divisions & team performance" />
+    <div className="space-y-8">
+      <TopPageHero
+        title="Ringkasan Operasional"
+        subtitle="Performa lintas divisi dan ritme kerja tim. Update otomatis saat data berubah."
+      />
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard
+          label="Anggota tim aktif"
+          value={teamKPIs?.length ?? 0}
+          accent="brand"
+          hint={teamKPIs ? `${teamKPIs.filter(m => (Number(m.avg_progress) || 0) >= 80).length} di atas 80%` : undefined}
+        />
+        <StatCard
+          label="Rata-rata progress"
+          value={`${avgProgress.toFixed(0)}%`}
+          accent={avgProgress >= 80 ? 'success' : avgProgress >= 60 ? 'info' : 'warning'}
+        />
+        <StatCard
+          label="Task selesai"
+          value={totalTasksCompleted.toLocaleString('id-ID')}
+          accent="success"
+        />
+        <StatCard
+          label="Lewat tempo"
+          value={totalTasksOverdue.toLocaleString('id-ID')}
+          accent={totalTasksOverdue > 0 ? 'danger' : 'neutral'}
+        />
       </div>
 
-      {/* Company KPI Scorecards */}
-      <SectionLabel number={1} title="Company KPIs (Level 1)" subtitle="Strategic targets for PT Syahfalah Global" />
-      <BentoGrid columns={4}>
-        {companyKPIs?.map((kpi) => (
-          <KPICard
-            key={kpi.id}
-            label={kpi.name}
-            value={kpi.unit === 'IDR' ? formatCurrency(Number(kpi.actual)) : 
-                   kpi.unit === '%' ? formatPercent(Number(kpi.actual)) :
-                   String(kpi.actual)}
-            target={kpi.unit === 'IDR' ? formatCurrency(Number(kpi.target)) : 
-                   kpi.unit === '%' ? formatPercent(Number(kpi.target)) :
-                   String(kpi.target)}
-            progress={Number(kpi.progress)}
-            status={kpi.status as any}
-            icon={
-              kpi.code === 'COM-REV-01' ? <DollarSign className="h-5 w-5" /> :
-              kpi.code === 'COM-PM-01' ? <TrendingUp className="h-5 w-5" /> :
-              kpi.code === 'COM-UNIT-01' ? <CheckCircle className="h-5 w-5" /> :
-              <Target className="h-5 w-5" />
-            }
-            accent={kpi.code === 'COM-REV-01'}
-          />
-        ))}
-      </BentoGrid>
-
-      {/* Division KPI Summary */}
-      <SectionLabel number={2} title="Division Performance (Level 3)" subtitle="KPI achievement by division" />
-      <BentoGrid columns={3}>
-        {divisionSummaries?.map((div) => (
-          <ChartCard
-            key={div.division_id}
-            title={div.division_name}
-            subtitle={`${div.kpi_count} KPIs • ${formatPercent(div.avg_progress)} avg`}
-            span={{ colStart: 1, colEnd: 2 }}
-          >
-            <div className="h-full flex flex-col justify-center items-center gap-2">
-              <div className="text-center">
-                <p className="font-heading text-4xl font-bold text-foreground">{formatPercent(div.avg_progress)}</p>
-                <p className="text-sm text-muted-foreground">Average Progress</p>
-              </div>
-              <div className="flex flex-wrap gap-2 justify-center text-xs">
-                <span className="flex items-center gap-1 text-success">
-                  <CheckCircle className="h-3 w-3" /> {div.achieved_count} Achieved
-                </span>
-                <span className="flex items-center gap-1 text-info">
-                  <TrendingUp className="h-3 w-3" /> {div.on_track_count} On Track
-                </span>
-                <span className="flex items-center gap-1 text-warning">
-                  <AlertTriangle className="h-3 w-3" /> {div.at_risk_count} At Risk
-                </span>
-                <span className="flex items-center gap-1 text-destructive">
-                  <AlertTriangle className="h-3 w-3" /> {div.off_track_count} Off Track
-                </span>
-              </div>
-              <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-                {divisionIcons[div.division_code as keyof typeof divisionIcons] || <Target className="h-4 w-4" />}
-                {div.division_code}
-              </div>
-            </div>
-          </ChartCard>
-        ))}
-      </BentoGrid>
-
-      {/* Team KPI Summary */}
-      <SectionLabel number={3} title="Team Personal KPIs (Level 4)" subtitle="Individual performance overview" />
-      <TableCard
-        title="Personal KPI Status"
-        subtitle={`${teamKPIs?.length || 0} active team members`}
-      >
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="text-left p-3 font-medium text-muted-foreground">Team Member</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Division</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">KPIs</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Avg Progress</th>
-              <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {teamKPIs?.map((member) => (
-              <tr key={member.user_id} className="border-b border-border/50 hover:bg-muted/50">
-                <td className="p-3">
-                  <div className="font-medium">{member.name}</div>
-                  <div className="text-sm text-muted-foreground">{member.position}</div>
-                </td>
-                <td className="p-3 text-sm text-muted-foreground">{member.division_name}</td>
-                <td className="p-3 text-sm">{member.kpi_count} KPIs</td>
-                <td className="p-3 font-medium tabular-nums">{formatPercent(member.avg_progress)}</td>
-                <td className="p-3">
-                  <div className="flex flex-wrap gap-2">
-                    <span className="badge-status badge-achieved">{member.achieved_count} ✓</span>
-                    <span className="badge-status badge-on_track">{member.on_track_count} ↗</span>
-                    <span className="badge-status badge-at_risk">{member.at_risk_count} ⚠</span>
-                    <span className="badge-status badge-off_track">{member.off_track_count} ✗</span>
+      {/* Division cards */}
+      <section>
+        <header className="mb-4">
+          <h2 className="display-md">Performa Divisi</h2>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1">Rata-rata progress KPI per divisi.</p>
+        </header>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {divisionSummaries?.map((div: any) => {
+            const progress = Number(div.avg_progress) || 0
+            const accent = progress >= 80 ? 'success' : progress >= 60 ? 'info' : progress >= 40 ? 'warning' : 'danger'
+            return (
+              <Link
+                key={div.division_id}
+                href={`/divisi/${div.division_id}`}
+                className="card hover:border-[var(--color-brand-500)]/40 transition-colors group"
+              >
+                <div className="card-body space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-mono">{div.division_code}</p>
+                      <p className="font-heading text-base font-semibold mt-1 group-hover:text-[var(--color-brand-500)] transition-colors">{div.division_name}</p>
+                    </div>
+                    <div className="text-[var(--color-brand-500)] opacity-60">{DIVISION_ICON[div.division_code] ?? <Target className="h-5 w-5" />}</div>
                   </div>
-                </td>
-              </tr>
+
+                  <div className="flex items-baseline gap-2">
+                    <p className={`text-3xl font-heading font-bold tabular-nums ${accent === 'success' ? 'text-emerald-500' : accent === 'info' ? 'text-sky-500' : accent === 'warning' ? 'text-amber-500' : 'text-rose-500'}`}>{progress.toFixed(0)}%</p>
+                    <p className="text-xs text-[var(--color-text-tertiary)]">{div.kpi_count} KPI</p>
+                  </div>
+
+                  <div className="relative h-1 w-full overflow-hidden rounded-full bg-[var(--color-surface-2)]">
+                    <div className="absolute inset-y-0 left-0 bg-[var(--color-brand-500)]" style={{ width: `${Math.min(100, progress)}%` }} />
+                  </div>
+
+                  <div className="flex flex-wrap gap-1 text-[10px]">
+                    <span className="pill" data-variant="success">{div.achieved_count} tercapai</span>
+                    <span className="pill" data-variant="info">{div.on_track_count} on track</span>
+                    {(div.at_risk_count ?? 0) > 0 && <span className="pill" data-variant="warning">{div.at_risk_count} at risk</span>}
+                    {(div.off_track_count ?? 0) > 0 && <span className="pill" data-variant="danger">{div.off_track_count} off</span>}
+                  </div>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* Team KPIs */}
+      <section>
+        <header className="mb-4">
+          <h2 className="display-md">Performa Tim</h2>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1">{teamKPIs?.length ?? 0} anggota dengan KPI personal aktif. Klik baris untuk lihat detail.</p>
+        </header>
+        {teamKPIs && teamKPIs.length > 0 ? (
+          <PersonalKpiTable members={teamKPIs as any} />
+        ) : (
+          <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-8 text-center">
+            <Target className="h-8 w-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
+            <p className="text-sm text-[var(--color-text-secondary)]">Belum ada data KPI personal tim.</p>
+          </div>
+        )}
+      </section>
+
+      {/* Task summary per divisi */}
+      <section>
+        <header className="mb-4">
+          <h2 className="display-md">Status Task per Divisi</h2>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1">Jumlah task berdasarkan status di tiap divisi.</p>
+        </header>
+        {taskSummary && taskSummary.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {taskSummary.map((t: any) => (
+              <div key={t.division_id} className="card">
+                <div className="card-body">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="font-heading text-base font-semibold">{t.division_name}</p>
+                    <span className="pill" data-variant={t.completion_rate >= 80 ? 'success' : t.completion_rate >= 60 ? 'info' : 'warning'}>
+                      {Number(t.completion_rate).toFixed(0)}% selesai
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-center">
+                    <div>
+                      <p className="text-2xl font-heading font-bold tabular-nums text-emerald-500">{t.completed_count}</p>
+                      <p className="text-xs text-[var(--color-text-tertiary)]">Selesai</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-heading font-bold tabular-nums text-sky-500">{t.in_progress_count}</p>
+                      <p className="text-xs text-[var(--color-text-tertiary)]">Berjalan</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-heading font-bold tabular-nums text-amber-500">{t.pending_count}</p>
+                      <p className="text-xs text-[var(--color-text-tertiary)]">Tertunda</p>
+                    </div>
+                    <div>
+                      <p className={`text-2xl font-heading font-bold tabular-nums ${t.overdue_count > 0 ? 'text-rose-500' : 'text-[var(--color-text-tertiary)]'}`}>{t.overdue_count}</p>
+                      <p className="text-xs text-[var(--color-text-tertiary)]">Lewat tempo</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
-      </TableCard>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-8 text-center">
+            <ClipboardList className="h-8 w-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
+            <p className="text-sm text-[var(--color-text-secondary)]">Belum ada data task.</p>
+          </div>
+        )}
+      </section>
 
-      {/* Task Completion by Division */}
-      <SectionLabel number={4} title="Today's Task Completion" subtitle="Real-time task progress across divisions" />
-      <BentoGrid columns={2}>
-        {taskSummary?.map((div) => (
-          <ChartCard
-            key={div.division_id}
-            title={div.division_name}
-            subtitle={`${div.completion_rate}% completion rate`}
-          >
-            <div className="h-full flex flex-col justify-center">
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div>
-                  <p className="font-heading text-3xl font-bold text-foreground">{div.completed_count}</p>
-                  <p className="text-sm text-success">Completed</p>
-                </div>
-                <div>
-                  <p className="font-heading text-3xl font-bold text-foreground">{div.pending_count}</p>
-                  <p className="text-sm text-muted-foreground">Pending</p>
-                </div>
-                <div>
-                  <p className="font-heading text-3xl font-bold text-foreground">{div.in_progress_count}</p>
-                  <p className="text-sm text-info">In Progress</p>
-                </div>
-                <div>
-                  <p className="font-heading text-3xl font-bold text-foreground">{div.overdue_count}</p>
-                  <p className="text-sm text-destructive">Overdue</p>
-                </div>
-              </div>
-              <div className="mt-4 text-center text-sm text-muted-foreground">
-                {div.carry_over_count} carry-over tasks
-              </div>
-            </div>
-          </ChartCard>
-        ))}
-      </BentoGrid>
-
-      {/* Quick Navigation */}
-      <SectionLabel number={5} title="Quick Access" subtitle="Division-specific dashboards" />
-      <BentoGrid columns={3}>
-        {[
-          { name: 'Marketing & Sales', href: '/kepala-kantor/divisi/marketing', icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10 border-blue-500/20' },
-          { name: 'Proyek & Konstruksi', href: '/kepala-kantor/divisi/proyek', icon: Building2, color: 'text-amber-500', bg: 'bg-amber-500/10 border-amber-500/20' },
-          { name: 'Operasional & Admin', href: '/kepala-kantor/divisi/operasional', icon: ClipboardList, color: 'text-green-500', bg: 'bg-green-500/10 border-green-500/20' },
-          { name: 'Legal / Compliance', href: '/kepala-kantor/divisi/legal', icon: Shield, color: 'text-purple-500', bg: 'bg-purple-500/10 border-purple-500/20' },
-          { name: 'Media & Konten', href: '/kepala-kantor/divisi/media', icon: FileText, color: 'text-pink-500', bg: 'bg-pink-500/10 border-pink-500/20' },
-        ].map((item) => (
-          <ChartCard
-            key={item.href}
-            title={item.name}
-            className={item.bg}
-          >
-            <div className="h-full flex flex-col items-center justify-center text-center">
-              <item.icon className={`h-12 w-12 ${item.color} mb-4`} />
-              <p className="text-sm text-muted-foreground mb-4">Klik untuk detail divisi</p>
-              <a href={item.href} className="text-primary hover:underline font-medium">Buka Dashboard →</a>
-            </div>
-          </ChartCard>
-        ))}
-      </BentoGrid>
+      {/* Quick links to divisions */}
+      {divisions && divisions.length > 0 && (
+        <section>
+          <header className="mb-4">
+            <h2 className="display-md">Lompat ke Divisi</h2>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-1">Halaman detail tiap divisi.</p>
+          </header>
+          <div className="flex flex-wrap gap-2">
+            {divisions.map((d: any) => (
+              <Link key={d.id} href={`/divisi/${d.id}`} className="pill" data-variant="brand">
+                {d.name}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   )
 }
