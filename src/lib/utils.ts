@@ -8,7 +8,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(amount: number, currency = 'IDR'): string {
+export function formatCurrency(amount: number | null | undefined, currency = 'IDR'): string {
+  if (amount == null || Number.isNaN(amount)) return '—'
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency,
@@ -17,11 +18,13 @@ export function formatCurrency(amount: number, currency = 'IDR'): string {
   }).format(amount)
 }
 
-export function formatNumber(num: number): string {
+export function formatNumber(num: number | null | undefined): string {
+  if (num == null || Number.isNaN(num)) return '—'
   return new Intl.NumberFormat('id-ID').format(num)
 }
 
-export function formatPercent(value: number, decimals = 1): string {
+export function formatPercent(value: number | null | undefined, decimals = 1): string {
+  if (value == null || Number.isNaN(value)) return '0%'
   return `${value.toFixed(decimals)}%`
 }
 
