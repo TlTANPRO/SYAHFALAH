@@ -16,46 +16,55 @@ import { useAuthStore } from '@/stores/authStore'
 
 export type KpiRow = {
   id: string
+  code: string | null
+  name: string | null
   level: 'company' | 'division' | 'team' | 'personal'
-  period: string
-  kpi_id: string
+  unit: string | null
   target: number | null
   actual: number | null
   progress: number | null
   status: 'on_track' | 'at_risk' | 'off_track' | 'achieved' | null
+  period_start: string | null
+  period_end: string | null
 }
 
 export type DivisionKpiSummary = {
   division_id: string
   division_name: string
+  division_code: string | null
   kpi_count: number
   avg_progress: number | null
-  achieved: number
-  on_track: number
-  at_risk: number
-  off_track: number
+  achieved_count: number
+  on_track_count: number
+  at_risk_count: number
+  off_track_count: number
 }
 
 export type PersonalKpiRow = {
   user_id: string
-  full_name: string
+  /** Note: view column is `name`, not `full_name` (different from `users` table). */
+  name: string
+  position: string | null
+  division_id: string | null
   division_name: string | null
   kpi_count: number
   avg_progress: number | null
-  achieved: number
-  on_track: number
-  at_risk: number
-  off_track: number
+  achieved_count?: number
+  on_track_count?: number
+  at_risk_count?: number
+  off_track_count?: number
 }
 
 export type DivisionTaskSummary = {
   division_id: string
   division_name: string
   total_tasks: number
-  completed: number
-  in_progress: number
-  pending: number
-  overdue: number
+  completed_count: number
+  in_progress_count: number
+  pending_count: number
+  overdue_count: number
+  carry_over_count: number
+  completion_rate: number
 }
 
 function currentYearStart(): string {

@@ -8,14 +8,16 @@ import { formatPercent } from '@/lib/utils'
 
 export type PersonalKpiRow = {
   user_id: string
-  full_name: string
+  /** View column is `name`, not `full_name` (the underlying users table column). */
+  name: string
+  position?: string | null
   division_name: string | null
   kpi_count: number
   avg_progress: number | null
-  achieved?: number
-  on_track?: number
-  at_risk?: number
-  off_track?: number
+  achieved_count?: number
+  on_track_count?: number
+  at_risk_count?: number
+  off_track_count?: number
 }
 
 interface PersonalKpiTableProps {
@@ -45,15 +47,20 @@ export function PersonalKpiTable({
         <tbody>
           {members.map((m) => (
             <tr key={m.user_id} className="border-b border-border/50">
-              <td className="p-3 font-medium">{m.full_name}</td>
+              <td className="p-3">
+                <div className="font-medium">{m.name}</div>
+                {m.position && (
+                  <div className="text-sm text-muted-foreground">{m.position}</div>
+                )}
+              </td>
               <td className="p-3 text-muted-foreground">{m.division_name ?? '—'}</td>
               <td className="p-3 tabular-nums">{m.kpi_count} KPIs</td>
               <td className="p-3 font-medium tabular-nums">{formatPercent(m.avg_progress)}</td>
               <td className="p-3 text-xs">
-                <span className="text-success">{m.achieved ?? 0} ✓</span>{' '}
-                <span className="text-info">{m.on_track ?? 0} ↗</span>{' '}
-                <span className="text-warning">{m.at_risk ?? 0} ⚠</span>{' '}
-                <span className="text-destructive">{m.off_track ?? 0} ✗</span>
+                <span className="text-success">{m.achieved_count ?? 0} ✓</span>{' '}
+                <span className="text-info">{m.on_track_count ?? 0} ↗</span>{' '}
+                <span className="text-warning">{m.at_risk_count ?? 0} ⚠</span>{' '}
+                <span className="text-destructive">{m.off_track_count ?? 0} ✗</span>
               </td>
             </tr>
           ))}

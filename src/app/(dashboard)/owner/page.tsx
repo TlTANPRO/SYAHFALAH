@@ -44,10 +44,10 @@ export default function OwnerDashboard() {
       {/* Company KPI Scorecards */}
       <SectionLabel number={1} title="Company KPIs (Level 1)" subtitle="Strategic targets for PT Syahfalah Global" />
       <BentoGrid columns={4}>
-        {companyKpis.data?.map((kpi: KpiRow & { code?: string; name?: string; unit?: string }) => (
+        {companyKpis.data?.map((kpi) => (
           <KPICard
             key={kpi.id}
-            label={kpi.name ?? kpi.kpi_id}
+            label={kpi.name ?? kpi.code ?? 'KPI'}
             value={formatKpiValue(kpi.actual, kpi.unit)}
             target={formatKpiValue(kpi.target, kpi.unit)}
             progress={kpi.progress ?? 0}
@@ -80,27 +80,32 @@ export default function OwnerDashboard() {
           <ChartCard
             key={div.division_id}
             title={div.division_name}
-            subtitle="Completion progress"
+            subtitle={`${div.completion_rate}% completion rate`}
           >
             <div className="h-full flex flex-col justify-center">
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <p className="font-heading text-3xl font-bold text-foreground">{div.completed ?? 0}</p>
+                  <p className="font-heading text-3xl font-bold text-foreground">{div.completed_count}</p>
                   <p className="text-sm text-success">Completed</p>
                 </div>
                 <div>
-                  <p className="font-heading text-3xl font-bold text-foreground">{div.pending ?? 0}</p>
+                  <p className="font-heading text-3xl font-bold text-foreground">{div.pending_count}</p>
                   <p className="text-sm text-muted-foreground">Pending</p>
                 </div>
                 <div>
-                  <p className="font-heading text-3xl font-bold text-foreground">{div.in_progress ?? 0}</p>
+                  <p className="font-heading text-3xl font-bold text-foreground">{div.in_progress_count}</p>
                   <p className="text-sm text-info">In Progress</p>
                 </div>
                 <div>
-                  <p className="font-heading text-3xl font-bold text-foreground">{div.overdue ?? 0}</p>
+                  <p className="font-heading text-3xl font-bold text-foreground">{div.overdue_count}</p>
                   <p className="text-sm text-destructive">Overdue</p>
                 </div>
               </div>
+              {div.carry_over_count > 0 && (
+                <div className="mt-4 text-center text-sm text-muted-foreground">
+                  {div.carry_over_count} carry-over tasks
+                </div>
+              )}
             </div>
           </ChartCard>
         ))}
