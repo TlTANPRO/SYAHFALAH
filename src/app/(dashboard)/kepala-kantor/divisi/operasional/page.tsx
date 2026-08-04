@@ -119,7 +119,7 @@ export default function OperasionalDivisionDashboard() {
                 <td className="p-3 font-medium">{member.name}</td>
                 <td className="p-3 text-sm text-muted-foreground">{member.position}</td>
                 <td className="p-3 text-sm">{member.kpi_count} KPIs</td>
-                <td className="p-3 font-medium tabular-nums">{member.avg_progress}%</td>
+                <td className="p-3 font-medium tabular-nums">{formatPercent(member.avg_progress)}</td>
                 <td className="p-3">
                   <div className="flex flex-wrap gap-2">
                     <span className="badge-status badge-achieved">{member.achieved_count} ✓</span>

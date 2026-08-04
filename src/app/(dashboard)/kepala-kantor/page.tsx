@@ -112,12 +112,12 @@ export default function KepalaKantorDashboard() {
           <ChartCard
             key={div.division_id}
             title={div.division_name}
-            subtitle={`${div.kpi_count} KPIs • ${div.avg_progress}% avg`}
+            subtitle={`${div.kpi_count} KPIs • ${formatPercent(div.avg_progress)} avg`}
             span={{ colStart: 1, colEnd: 2 }}
           >
             <div className="h-full flex flex-col justify-center items-center gap-2">
               <div className="text-center">
-                <p className="font-heading text-4xl font-bold text-foreground">{div.avg_progress}%</p>
+                <p className="font-heading text-4xl font-bold text-foreground">{formatPercent(div.avg_progress)}</p>
                 <p className="text-sm text-muted-foreground">Average Progress</p>
               </div>
               <div className="flex flex-wrap gap-2 justify-center text-xs">
@@ -168,7 +168,7 @@ export default function KepalaKantorDashboard() {
                 </td>
                 <td className="p-3 text-sm text-muted-foreground">{member.division_name}</td>
                 <td className="p-3 text-sm">{member.kpi_count} KPIs</td>
-                <td className="p-3 font-medium tabular-nums">{member.avg_progress}%</td>
+                <td className="p-3 font-medium tabular-nums">{formatPercent(member.avg_progress)}</td>
                 <td className="p-3">
                   <div className="flex flex-wrap gap-2">
                     <span className="badge-status badge-achieved">{member.achieved_count} ✓</span>
