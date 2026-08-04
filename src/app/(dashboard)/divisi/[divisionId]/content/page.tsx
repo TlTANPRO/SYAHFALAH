@@ -1,14 +1,21 @@
-// divisi/[divisionId]/content/page.tsx
-// Placeholder stub — real implementation not yet built.
-// Kept to avoid 404 on sidebar navigation.
-
-import { Placeholder } from '@/components/layout/Placeholder'
+// src\app\(dashboard)\divisi\[divisionId]\content\page.tsx
+import { FeatureRoadmap } from '@/components/layout/FeatureRoadmap'
 
 export default function Page() {
   return (
-    <Placeholder
+    <FeatureRoadmap
       title="Content Calendar"
-      description="Kalender konten divisi. Coming soon."
+      description="Kalender konten per divisi."
+      features={[
+        'Jadwal posting & deadline konten',
+      'Per-status (draft, review, scheduled, published)',
+      'Assign PIC + due date',
+      'Statistik reach & engagement per konten',
+      ]}
+      dataSource="content_calendar (planned)"
+      related={[
+        { label: 'My Tasks', href: '/personal/tasks' },
+      ]}
     />
   )
 }

@@ -1,170 +1,133 @@
 // components/layout/Topbar.tsx
-// Topbar with search, notifications, user menu
+// Top navigation with global search, command palette trigger, notifications,
+// theme toggle, and user menu.
 
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
+import {
+  Search,
+  Bell,
+  LogOut,
+  User,
+  Moon,
+  Sun,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+} from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Avatar } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { 
-  Search, 
-  Bell, 
-  Settings, 
-  LogOut, 
-  User, 
-  HelpCircle,
-  LayoutDashboard,
-  Target,
-  CheckSquare,
-  FileText,
-  Users,
-  Calendar,
-  BarChart3,
-  X,
-  Plus,
-  Moon,
-} from 'lucide-react'
 import { NotificationBell } from '@/components/notification/NotificationBell'
+import { UserMenu } from '@/components/auth/UserMenu'
 
-const userNavigation = [
-  { name: 'Profile', href: '/settings', icon: User },
-  { name: 'Help', href: '/help', icon: HelpCircle },
-  { name: 'Settings', href: '/settings', icon: Settings },
-]
+function useTheme() {
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window === 'undefined') return 'dark'
+    return (localStorage.getItem('syahfalah-theme') as 'dark' | 'light') || 'dark'
+  })
+
+  const apply = (next: 'dark' | 'light') => {
+    const root = document.documentElement
+    if (next === 'dark') {
+      root.classList.add('dark')
+    } else {
+      root.classList.remove('dark')
+    }
+    localStorage.setItem('syahfalah-theme', next)
+    setTheme(next)
+  }
+
+  const toggle = () => {
+    apply(theme === 'dark' ? 'light' : 'dark')
+  }
+
+  return { theme, toggle }
+}
 
 export function Topbar() {
   const { user } = useAuthStore()
-  const { 
-    sidebarCollapsed, 
-    toggleSidebar,
-    addToast,
-  } = useUIStore()
+  const { sidebarCollapsed, toggleSidebar, openCommandPalette } = useUIStore()
+  const { theme, toggle: toggleTheme } = useTheme()
   const pathname = usePathname()
   const [searchQuery, setSearchQuery] = useState('')
+
+  if (!user) return null
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      addToast({
-        type: 'info',
-        title: 'Search',
-        message: `Searching for "${searchQuery}"...`,
-      })
+      openCommandPalette(searchQuery)
       setSearchQuery('')
     }
   }
 
-  if (!user) return null
-
-  const userName = user.name || 'User'
-  const userInitials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-
   return (
-    <header className="sticky top-0 z-30 h-16 bg-card border-b border-border">
-      <div className="flex h-full items-center gap-4 px-4">
+    <header
+      className="sticky top-0 z-30 h-16 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]/80 backdrop-blur-md"
+    >
+      <div className="flex h-full items-center gap-3 px-4">
         {/* Sidebar Toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
+        <button
           onClick={toggleSidebar}
-          className={cn('h-10 w-10', sidebarCollapsed && 'ml-2')}
+          className="p-2 rounded-md text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] transition-colors"
           aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          <LayoutDashboard className="h-5 w-5" />
-        </Button>
+          {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </button>
+
+        {/* Breadcrumb-ish path */}
+        <div className="hidden md:flex items-center gap-1.5 text-sm">
+          <Sparkles className="h-3.5 w-3.5 text-[var(--color-brand-500)]" />
+          <span className="text-[var(--color-text-tertiary)] font-mono uppercase tracking-wider text-[11px]">
+            {pathname === '/' ? 'Dashboard' : pathname.split('/').filter(Boolean).join(' / ')}
+          </span>
+        </div>
 
         {/* Global Search */}
-        <div className="flex-1 max-w-xl">
-          <form onSubmit={handleSearch} className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <Input
+        <form onSubmit={handleSearch} className="flex-1 max-w-xl ml-auto md:ml-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-tertiary)] pointer-events-none" />
+            <input
               id="global-search"
               name="global-search"
-              placeholder="Search tasks, KPIs, people..."
+              type="text"
+              placeholder="Search tasks, KPIs, leads, people…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-                  e.preventDefault()
-                  return
-                }
-              }}
-              className="pl-10 pr-20 h-10 bg-muted/50 border-border/50 focus:bg-background focus:border-primary"
+              onFocus={() => openCommandPalette()}
+              className="w-full h-9 pl-10 pr-20 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-brand-500)] focus:shadow-[0_0_0_3px_var(--color-brand-500)]/20 transition-shadow"
               aria-label="Global search"
             />
             <button
               type="button"
-              onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', code: 'KeyK', ctrlKey: true, bubbles: true, cancelable: true }))}
-              className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 rounded border border-border/50 bg-muted/70 px-1.5 h-6 text-[10px] font-mono text-muted-foreground hover:bg-muted transition-colors"
-              aria-label="Open command palette (Ctrl+K)"
+              onClick={() => openCommandPalette()}
+              className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 rounded border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] px-1.5 h-6 text-[10px] font-mono text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-3)] transition-colors"
+              aria-label="Open command palette"
             >
-              <span className="text-xs">⌘</span>K
+              <span>⌘</span>K
             </button>
-          </form>
-        </div>
+          </div>
+        </form>
 
         {/* Right Side Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {/* Notification Bell */}
           <NotificationBell />
 
-          {/* Theme Toggle (placeholder - dark mode only) */}
-          <Button variant="ghost" size="icon" className="h-10 w-10" disabled>
-            <Moon className="h-5 w-5" />
-          </Button>
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-md text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] transition-colors"
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
 
           {/* User Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-10 w-10 rounded-full p-0 gap-2" aria-label="User menu">
-                <Avatar 
-                  src={user.avatarUrl || `/api/avatar?name=${encodeURIComponent(userName)}`}
-                  alt={userName}
-                  fallback={userInitials}
-                  size="md"
-                />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium text-foreground">{userName}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{user.role.replace('_', ' ')}</p>
-                  <p className="text-xs text-muted-foreground">{user.position}</p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {userNavigation.map((item) => (
-                <DropdownMenuItem key={item.name} asChild>
-                  <Link href={item.href} className="flex items-center gap-2 w-full">
-                    <item.icon className="h-4 w-4" />
-                    {item.name}
-                  </Link>
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                className="text-destructive focus:text-destructive"
-                onClick={() => {
-                  addToast({
-                    type: 'info',
-                    title: 'Logging out...',
-                  })
-                }}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <UserMenu user={user} />
         </div>
       </div>
     </header>

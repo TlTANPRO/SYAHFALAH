@@ -17,8 +17,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, isLoading, isAuthenticated } = useAuthStore()
-  const { sidebarCollapsed, isMobile } = useUIStore()
-  const [commandOpen, setCommandOpen] = useState(false)
+  const { sidebarCollapsed, isMobile, commandPaletteOpen, setCommandPaletteOpen, openCommandPalette } = useUIStore()
 
   // Rehydrate persisted auth store on mount so middleware-protected pages
   // see isAuthenticated=true on the very first render after a hard nav.
@@ -99,7 +98,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       )}
 
       {/* Global command palette (⌘K / Ctrl+K) */}
-      <CommandDialog open={commandOpen} onOpenChange={setCommandOpen} />
+      <CommandDialog open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
     </div>
   )
 }

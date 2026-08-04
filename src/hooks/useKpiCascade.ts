@@ -106,6 +106,7 @@ export function useKpiCascade(level: 'company' | 'division' = 'company', divisio
       const { data, error } = await supabase
         .from('division_kpi_summary')
         .select('*')
+        .neq('division_code', 'TEST_SEED')
       if (error) throw error
       return (data ?? []) as DivisionKpiSummary[]
     },
@@ -118,6 +119,7 @@ export function useKpiCascade(level: 'company' | 'division' = 'company', divisio
       const { data, error } = await supabase
         .from('team_personal_kpis')
         .select('*')
+        .neq('division_name', 'Test Seed')
       if (error) throw error
       return (data ?? []) as PersonalKpiRow[]
     },
@@ -130,6 +132,7 @@ export function useKpiCascade(level: 'company' | 'division' = 'company', divisio
       const { data, error } = await supabase
         .from('division_task_summary')
         .select('*')
+        .neq('division_name', 'Test Seed')
       if (error) throw error
       return (data ?? []) as DivisionTaskSummary[]
     },

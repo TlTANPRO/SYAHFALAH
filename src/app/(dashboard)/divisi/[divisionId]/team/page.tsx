@@ -1,14 +1,68 @@
 // divisi/[divisionId]/team/page.tsx
-// Placeholder stub — real implementation not yet built.
-// Kept to avoid 404 on sidebar navigation.
+// "KPI individual anggota tim" — same data as the kpi page, framed
+// as team member performance rather than divisional rollup.
 
-import { Placeholder } from '@/components/layout/Placeholder'
+import { createClient } from '@supabase/supabase-js'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
 
-export default function Page() {
+interface Member {
+  user_id: string
+  name: string
+  position: string
+  division_id: string
+  division_name: string
+  kpi_count: number
+  avg_progress: number | null
+  achieved_count: number
+  on_track_count: number
+  at_risk_count: number
+  off_track_count: number
+}
+
+async function load(divisionId: string) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return { members: [], division: null }
+  const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+  const [{ data: members }, { data: division }] = await Promise.all([
+    supabase
+      .from('team_personal_kpis')
+      .select('user_id, name, position, division_id, division_name, kpi_count, avg_progress, achieved_count, on_track_count, at_risk_count, off_track_count')
+      .eq('division_id', divisionId)
+      .order('avg_progress', { ascending: false }),
+    supabase.from('divisions').select('id, name, code').eq('id', divisionId).single(),
+  ])
+  return { members: (members ?? []) as Member[], division: division ?? null }
+}
+
+export default async function Page({ params }: { params: Promise<{ divisionId: string }> }) {
+  const { divisionId } = await params
+  const { members, division } = await load(divisionId)
+
+  if (!division) {
+    return (
+      <div className="space-y-4">
+        <h1 className="font-heading text-2xl font-bold">Divisi tidak ditemukan</h1>
+      </div>
+    )
+  }
+
   return (
-    <Placeholder
-      title="Team KPIs"
-      description="KPI individual anggota tim. Coming soon."
-    />
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-heading text-2xl font-bold">Team KPIs · {division.name}</h1>
+        <p className="text-muted-foreground">
+          <Badge variant="outline" className="mr-2">{division.code}</Badge>
+          {members.length} anggota terdaftar
+        </p>
+      </div>
+      <Card>
+        <CardContent>
+          <PersonalKpiTable members={members} />
+        </CardContent>
+      </Card>
+    </div>
   )
 }

@@ -1,5 +1,5 @@
 // app/layout.tsx
-// Root layout with providers and metadata
+// Root layout with providers, brand metadata, and font loading.
 
 import type { Metadata, Viewport } from 'next'
 import { Providers } from '@/providers/Providers'
@@ -7,26 +7,22 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: {
-    default: 'Syahfalah Dashboard',
-    template: '%s | Syahfalah Dashboard',
+    default: 'Syahfalah Operations',
+    template: '%s · Syahfalah Operations',
   },
-  description: 'Internal management dashboard for PT Syahfalah Global + PT Lembayung Wanantara Padha + Grup Majang Mejeng',
-  keywords: ['dashboard', 'management', 'KPI', 'tasks', 'Syahfalah'],
-  authors: [{ name: 'TITAN PRO', url: 'https://github.com/TlTANPRO' }],
-  creator: 'MADA',
+  description:
+    'Operational command center for PT Syahfalah Global + PT Lembayung Wanantara Padha + Grup Majang Mejeng — leads, projects, and team performance in real time.',
+  keywords: ['Syahfalah', 'property developer', 'KPI', 'leads', 'closing', 'operations', 'Indonesia'],
+  authors: [{ name: 'PT Syahfalah Global' }],
+  creator: 'Mada',
   publisher: 'PT Syahfalah Global',
   robots: 'noindex, nofollow',
   openGraph: {
     type: 'website',
     locale: 'id_ID',
-    siteName: 'Syahfalah Dashboard',
-    title: 'Syahfalah Dashboard',
-    description: 'Internal management dashboard',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Syahfalah Dashboard',
-    description: 'Internal management dashboard',
+    siteName: 'Syahfalah Operations',
+    title: 'Syahfalah Operations',
+    description: 'Operational command center for property development teams',
   },
   icons: {
     icon: '/icons/icon-192.svg',
@@ -38,7 +34,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0a0a0a' },
   ],
   width: 'device-width',
   initialScale: 1,
@@ -56,15 +53,13 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link 
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Plus+Jakarta+Sans:wght@100..800&family=JetBrains+Mono:wght@100..800&display=swap" 
-          rel="stylesheet" 
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+          rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-background text-foreground font-sans antialiased">
-        <Providers>
-          {children}
-        </Providers>
+      <body className="min-h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)] font-sans antialiased">
+        <Providers>{children}</Providers>
       </body>
     </html>
   )

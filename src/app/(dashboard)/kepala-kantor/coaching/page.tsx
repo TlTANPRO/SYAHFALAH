@@ -1,14 +1,22 @@
-// kepala-kantor/coaching/page.tsx
-// Placeholder stub — real implementation not yet built.
-// Kept to avoid 404 on sidebar navigation.
-
-import { Placeholder } from '@/components/layout/Placeholder'
+// src\app\(dashboard)\kepala-kantor\coaching\page.tsx
+import { FeatureRoadmap } from '@/components/layout/FeatureRoadmap'
 
 export default function Page() {
   return (
-    <Placeholder
+    <FeatureRoadmap
       title="Coaching Log"
-      description="Catatan coaching & mentoring. Coming soon."
+      description="Catatan coaching & mentoring."
+      features={[
+        'Log percakapan 1-on-1 (template by role)',
+      'Action items & follow-up otomatis ke task',
+      'Trend skor engagement staf',
+      'Riwayat coaching per anggota',
+      ]}
+      dataSource="coaching_sessions (planned)"
+      related={[
+        { label: 'Team KPIs', href: '/kepala-kantor/team' },
+      { label: 'My Tasks', href: '/personal/tasks' },
+      ]}
     />
   )
 }

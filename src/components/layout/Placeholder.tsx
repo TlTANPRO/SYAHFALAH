@@ -26,7 +26,7 @@ export function Placeholder({ title, description, backHref = '/' }: PlaceholderP
           </div>
           <h2 className="font-heading text-2xl font-bold mb-2">{title}</h2>
           <p className="text-muted-foreground max-w-md mx-auto mb-6">
-            {description ?? 'Modul ini sedang dalam pengembangan. Cek kembali nanti atau lihat modul lain yang sudah tersedia.'}
+            {description ?? 'Modul ini sedang dalam tahap pengembangan. Fitur akan tersedia dalam update berikutnya. Sementara Anda bisa tetap menggunakan modul lain yang sudah aktif.'}
           </p>
           <Link
             href={backHref}

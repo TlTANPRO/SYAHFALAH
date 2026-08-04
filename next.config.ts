@@ -20,10 +20,10 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js dev mode + Tailwind inline
-      "style-src 'self' 'unsafe-inline'",                  // Tailwind v4 inline
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",                  // Tailwind v4 inline
       "img-src 'self' data: blob: https:",
-      "font-src 'self' data:",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://fonts.gstatic.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

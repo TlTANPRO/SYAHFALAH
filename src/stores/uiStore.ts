@@ -13,7 +13,9 @@ interface UIState {
   
   // Command Palette
   commandPaletteOpen: boolean
+  commandPaletteQuery: string
   setCommandPaletteOpen: (open: boolean) => void
+  openCommandPalette: (query?: string) => void
   
   // Detail Panel (Right sidebar)
   detailPanelOpen: boolean
@@ -80,7 +82,9 @@ export const useUIStore = create<UIState>((set, get) => ({
   
   // Command Palette
   commandPaletteOpen: false,
-  setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
+  commandPaletteQuery: "",
+  setCommandPaletteOpen: (open: boolean) => set({ commandPaletteOpen: open }),
+  openCommandPalette: (query?: string) => set({ commandPaletteOpen: true, commandPaletteQuery: query ?? "" }),
   
   // Detail Panel
   detailPanelOpen: false,

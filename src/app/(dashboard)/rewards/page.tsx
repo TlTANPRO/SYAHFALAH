@@ -1,14 +1,21 @@
-// rewards/page.tsx
-// Placeholder stub — real implementation not yet built.
-// Kept to avoid 404 on sidebar navigation.
-
-import { Placeholder } from '@/components/layout/Placeholder'
+// src\app\(dashboard)\rewards\page.tsx
+import { FeatureRoadmap } from '@/components/layout/FeatureRoadmap'
 
 export default function Page() {
   return (
-    <Placeholder
+    <FeatureRoadmap
       title="Rewards & Punishment"
-      description="Bonus, insentif, dan SP. Coming soon."
+      description="Bonus, insentif, dan SP."
+      features={[
+        'Leaderboard achievement bulanan',
+      'Histori reward per-anggota',
+      'Manajemen SP & tracking improvement',
+      'Payroll integration',
+      ]}
+      dataSource="rewards (table currently empty)"
+      related={[
+        { label: 'Team KPIs', href: '/kepala-kantor/team' },
+      ]}
     />
   )
 }
