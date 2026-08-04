@@ -3,13 +3,14 @@
 // a blank page whenever a useQuery is fetching.
 
 import { Card, CardContent } from '@/components/ui/card'
+import { Loader2 } from 'lucide-react'
 
 export default function DashboardLoading() {
   return (
     <div className="space-y-6" aria-busy="true" aria-label="Memuat dashboard">
-      <div className="flex items-baseline gap-3">
-        <div className="h-3 w-8 bg-muted rounded animate-pulse" />
-        <div className="h-6 w-64 bg-muted rounded animate-pulse" />
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+        <span className="text-sm">Memuat data dashboard…</span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (

@@ -3,11 +3,12 @@
 
 'use client'
 
-import { ReactNode, useEffect } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
+import { CommandDialog } from '@/components/ui/command-palette'
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -16,6 +17,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, isLoading, isAuthenticated } = useAuthStore()
   const { sidebarCollapsed, isMobile } = useUIStore()
+  const [commandOpen, setCommandOpen] = useState(false)
 
   // Rehydrate persisted auth store on mount so middleware-protected pages
   // see isAuthenticated=true on the very first render after a hard nav.
@@ -93,6 +95,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           aria-hidden="true"
         />
       )}
+
+      {/* Global command palette (⌘K / Ctrl+K) */}
+      <CommandDialog open={commandOpen} onOpenChange={setCommandOpen} />
     </div>
   )
 }
