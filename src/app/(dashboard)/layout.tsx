@@ -9,6 +9,7 @@ import { Topbar } from '@/components/layout/Topbar'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import { CommandDialog } from '@/components/ui/command-palette'
+import { SessionExpiryBanner } from '@/components/auth/SessionExpiryBanner'
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -86,6 +87,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           {children}
         </div>
       </main>
+      <SessionExpiryBanner />
 
       {/* Mobile sidebar overlay */}
       {isMobile && useUIStore.getState().sidebarOpen && (

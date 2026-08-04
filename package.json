@@ -1,14 +1,17 @@
 {
   "name": "syahfalah-dashboard",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-      "dev": "next dev",
-      "build": "next build",
-      "start": "next start",
-      "lint": "eslint"
-    },
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
@@ -23,7 +26,6 @@
     "@tiptap/extension-mention": "^3.29.2",
     "@tiptap/react": "^3.29.2",
     "@tiptap/starter-kit": "^3.29.2",
-    "bcrypt": "^5.1.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -43,7 +45,7 @@
     "react-resizable-panels": "^4.12.2",
     "recharts": "^3.10.1",
     "rrule": "^2.8.1",
-    "sharp": "^0.35.3",
+    "sharp": "^0.35.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "unrs-resolver": "^1.12.2",
@@ -58,7 +60,6 @@
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
-    "@types/bcrypt": "^5.0.2",
     "@types/node": "^20.19.43",
     "@types/pbkdf2": "^3.1.2",
     "@types/react": "^18.3.18",
