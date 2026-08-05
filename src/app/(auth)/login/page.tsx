@@ -172,7 +172,7 @@ function LoginForm() {
 
             <div className="mt-6 p-4 rounded-lg bg-[var(--color-surface-2)]/50 border border-[var(--color-border-default)]">
               <p className="text-xs text-[var(--color-text-secondary)] text-center mb-3">Akun Demo (PIN lihat di footer — bukan untuk produksi)</p>
-              <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto scrollbar-thin">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto scrollbar-thin">
                 {demoUsers.map((user, i) => (
                   <button
                     key={i}

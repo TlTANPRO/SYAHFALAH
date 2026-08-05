@@ -93,7 +93,7 @@ export default function Page() {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <div className="card">
           <div className="card-body p-3">
             <p className="text-xs text-[var(--color-text-tertiary)]">Total sesi</p>

@@ -200,7 +200,7 @@ export default function KepalaKantorDashboard() {
                       {Number(t.completion_rate).toFixed(0)}% selesai
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-center">
                     <div>
                       <p className="text-2xl font-heading font-bold tabular-nums text-emerald-500">{t.completed_count}</p>
                       <p className="text-xs text-[var(--color-text-tertiary)]">Selesai</p>

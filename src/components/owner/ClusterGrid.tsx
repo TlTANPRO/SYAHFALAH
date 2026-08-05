@@ -77,7 +77,7 @@ export function ClusterGrid({ clusters }: { clusters: Cluster[] }) {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
                 <div>
                   <p className="text-xs text-[var(--color-text-tertiary)]">Total</p>
                   <p className="font-mono text-sm font-semibold tabular-nums">{c.total_units}</p>
