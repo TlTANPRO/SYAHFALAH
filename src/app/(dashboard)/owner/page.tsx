@@ -60,7 +60,9 @@ async function loadData() {
   const trendMap = new Map<string, { sum: number; count: number }>()
   for (const r of kpiTrend as any[]) {
     if (r.progress == null) continue
-    const period = (r.period_start as string).slice(0, 7) // YYYY-MM
+    const ps = r.period_start
+    if (typeof ps !== 'string') continue
+    const period = ps.slice(0, 7) // YYYY-MM
     const key = `${r.division_id}::${period}`
     const cur = trendMap.get(key) ?? { sum: 0, count: 0 }
     cur.sum += r.progress
@@ -125,15 +127,19 @@ export default async function Page() {
     .slice(0, 5)
     .map(([id]) => id)
   const divName = new Map((divisions as any[]).map(d => [d.id, d.name]))
-  const kpiTrendSeries = topDivs.map(id => ({
-    code: `D${id.slice(0, 4)}`,
-    name: divName.get(id) ?? id.slice(0, 6),
-  }))
+  const kpiTrendSeries = topDivs.map(id => {
+    const safe = id ?? ''
+    return {
+      code: `D${safe.slice(0, 4)}`,
+      name: divName.get(id) ?? safe.slice(0, 6),
+    }
+  })
   const kpiTrendData = periods.map(period => {
     const row: any = { label: period }
     for (const divId of topDivs) {
       const v = trendByDiv.get(divId)?.get(period)
-      row[`D${divId.slice(0, 4)}`] = v ? +(v.sum / v.count).toFixed(1) : null
+      const safe = divId ?? ''
+      row[`D${safe.slice(0, 4)}`] = v ? +(v.sum / v.count).toFixed(1) : null
     }
     return row
   })
