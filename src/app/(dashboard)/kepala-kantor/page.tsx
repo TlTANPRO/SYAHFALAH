@@ -13,6 +13,7 @@ import { TopPageHero } from '@/components/layout/TopPageHero'
 import { StatCard } from '@/components/layout/StatCard'
 import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { EmptyState } from '@/components/ui/empty-state'
 
 const DIVISION_ICON: Record<string, React.ReactNode> = {
   MARKETING: <Target className="h-5 w-5" />,
@@ -176,10 +177,11 @@ export default function KepalaKantorDashboard() {
         {teamKPIs && teamKPIs.length > 0 ? (
           <PersonalKpiTable members={teamKPIs as any} />
         ) : (
-          <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-8 text-center">
-            <Target className="h-8 w-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
-            <p className="text-sm text-[var(--color-text-secondary)]">Belum ada data KPI personal tim.</p>
-          </div>
+          <EmptyState
+        icon={ Target }
+        title="Belum ada data KPI personal tim."
+        description=""
+      />
         )}
       </section>
 

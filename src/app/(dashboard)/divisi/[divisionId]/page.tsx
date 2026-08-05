@@ -14,6 +14,7 @@ import { TopPageHero } from '@/components/layout/TopPageHero'
 import { StatCard } from '@/components/layout/StatCard'
 import { KpiTile } from '@/components/layout/KpiTile'
 import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export default function DivisionDashboard() {
   const params = useParams()
@@ -190,10 +191,11 @@ export default function DivisionDashboard() {
             ))}
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-8 text-center">
-            <Target className="h-8 w-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
-            <p className="text-sm text-[var(--color-text-secondary)]">Belum ada target KPI untuk divisi ini di tahun {new Date().getFullYear()}.</p>
-          </div>
+          <EmptyState
+        icon={ Target }
+        title="Belum ada target KPI untuk divisi ini di tahun {new Date().getFullYear()}."
+        description=""
+      />
         )}
       </section>
 

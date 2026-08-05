@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { ChevronRight, Building2 } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/server'
+import { EmptyState } from '@/components/ui/empty-state'
 
 type Division = { id: string; name: string; description: string | null }
 
@@ -27,10 +28,10 @@ export default async function DivisiHubPage() {
       </div>
 
       {!divisions || divisions.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-8 text-center">
-          <Building2 className="h-8 w-8 mx-auto text-[var(--color-text-secondary)] mb-2" />
-          <p className="text-[var(--color-text-secondary)]">Belum ada divisi yang terdaftar.</p>
-        </div>
+        <EmptyState
+        title="Belum ada divisi"
+        description="Tambahkan divisi di menu Admin > Divisi untuk mulai mengelompokkan tim dan KPI."
+      />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {divisions.map((d: Division) => (

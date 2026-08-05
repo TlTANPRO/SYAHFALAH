@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { verifyAccessToken } from '@/lib/auth/jwt'
 import { Bell, CheckCircle2, AlertTriangle, Info, Award } from 'lucide-react'
+import { EmptyState } from '@/components/ui/empty-state'
 import { formatRelativeTime } from '@/lib/utils'
 
 interface Notif {
@@ -66,11 +67,11 @@ export default async function Page() {
 
       <div className="space-y-2">
         {notifs.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-12 text-center">
-            <Bell className="h-12 w-12 text-[var(--color-text-tertiary)] mx-auto mb-3" />
-            <h3 className="font-heading text-lg font-semibold mb-1">Belum ada notifikasi</h3>
-            <p className="text-sm text-[var(--color-text-secondary)]">Update penting akan muncul di sini.</p>
-          </div>
+          <EmptyState
+            icon={Bell}
+            title="Belum ada notifikasi"
+            description="Update penting akan muncul di sini."
+          />
         ) : (
           notifs.map(n => {
             const Icon = typeIcon[n.type] || Info

@@ -4,6 +4,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { Phone, Calendar, MapPin, User } from 'lucide-react'
+import { EmptyState } from '@/components/ui/empty-state'
 
 interface Lead {
   id: string
@@ -79,11 +80,12 @@ export default async function Page() {
       </div>
 
       {leads.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-8 text-center">
-          <p className="text-sm text-[var(--color-text-secondary)]">
-            Leads akan masuk setelah migration 011 dijalankan. Tabel <code className="font-mono text-xs">leads</code> belum ada.
-          </p>
-        </div>
+        <EmptyState
+          title="Belum ada leads"
+          description={
+            <>Leads akan tersedia setelah <code className="font-mono text-xs px-1 py-0.5 rounded bg-[var(--color-surface-2)]">migration 011</code> di-apply di Supabase SQL Editor. File SQL siap di <code className="font-mono text-xs px-1 py-0.5 rounded bg-[var(--color-surface-2)]">supabase/ready-to-apply/apply-011-migration.sql</code>.</>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
           {stages.map(stage => {

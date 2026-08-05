@@ -4,6 +4,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { Target } from 'lucide-react'
+import { EmptyState } from '@/components/ui/empty-state'
 
 interface KpiRow {
   id: string
@@ -118,10 +119,11 @@ export default async function Page() {
       </div>
 
       {uniq.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-12 text-center">
-          <Target className="h-12 w-12 text-[var(--color-text-tertiary)] mx-auto mb-3" />
-          <p className="text-sm text-[var(--color-text-secondary)]">Belum ada KPI strategis di periode aktif.</p>
-        </div>
+        <EmptyState
+        icon={ Target }
+        title="Belum ada KPI strategis di periode aktif."
+        description=""
+      />
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto"><table className="data-table">

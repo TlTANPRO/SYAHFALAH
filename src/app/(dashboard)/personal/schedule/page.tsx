@@ -5,6 +5,7 @@ import { CalendarDays, Clock } from 'lucide-react'
 import { cookies } from 'next/headers'
 import { jwtVerify } from 'jose'
 import { createClient } from '@supabase/supabase-js'
+import { EmptyState } from '@/components/ui/empty-state'
 
 const FALLBACK_SECRET = 'dev-only-fallback-key-for-local-development-min-32-chars'
 
@@ -153,10 +154,10 @@ export default async function Page() {
         </p>
       </div>
       {tasks.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-6 text-center">
-          <CalendarDays className="h-8 w-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
-          <p className="text-sm text-[var(--color-text-secondary)]">Belum ada task jatuh tempo minggu ini.</p>
-        </div>
+        <EmptyState
+        title="Tidak ada jadwal"
+        description="Tugas baru akan muncul di kalender berdasarkan plan tim Anda."
+      />
       ) : (
         <div className="space-y-3">
           {thisWeek.map((date) => {
