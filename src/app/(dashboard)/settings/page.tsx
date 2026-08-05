@@ -55,20 +55,20 @@ export default function Page() {
         <div className="card-body">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-[var(--color-text-tertiary)]">Nama</label>
-              <input className="input mt-1" defaultValue={user.name} />
+              <label htmlFor="settings-name" className="text-xs text-[var(--color-text-tertiary)]">Nama</label>
+              <input id="settings-name" name="name" className="input mt-1" defaultValue={user.name} />
             </div>
             <div>
-              <label className="text-xs text-[var(--color-text-tertiary)]">Posisi</label>
-              <input className="input mt-1" defaultValue={user.position} disabled />
+              <label htmlFor="settings-position" className="text-xs text-[var(--color-text-tertiary)]">Posisi</label>
+              <input id="settings-position" name="position" className="input mt-1" defaultValue={user.position} disabled />
             </div>
             <div>
-              <label className="text-xs text-[var(--color-text-tertiary)]">Email</label>
-              <input className="input mt-1" type="email" defaultValue={`${user.name.toLowerCase().replace(' ', '.')}@syahfalah.com`} />
+              <label htmlFor="settings-email" className="text-xs text-[var(--color-text-tertiary)]">Email</label>
+              <input id="settings-email" name="email" className="input mt-1" type="email" defaultValue={`${user.name.toLowerCase().replace(' ', '.')}@syahfalah.com`} />
             </div>
             <div>
-              <label className="text-xs text-[var(--color-text-tertiary)]">No HP</label>
-              <input className="input mt-1" defaultValue="0812xxxxxxxx" />
+              <label htmlFor="settings-phone" className="text-xs text-[var(--color-text-tertiary)]">No HP</label>
+              <input id="settings-phone" name="phone" className="input mt-1" defaultValue="0812xxxxxxxx" />
             </div>
           </div>
           <div className="mt-4 flex justify-end">
