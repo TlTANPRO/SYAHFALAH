@@ -1,12 +1,25 @@
 -- 012_kpi_2026_seed.sql
--- Seeds KPI targets + actuals for 2026 periods, plus monthly plans
--- continuation. Apply AFTER 011_clusters.sql (depends on clusters,
--- divisions, users tables existing).
+-- ============================================================================
+-- *** DEPRECATED — DO NOT APPLY ***
+-- ============================================================================
+-- Probe Supabase 2026-08-05 confirms these tables EXIST with live data:
+--   kpi_definitions: 29 rows (3 company + 12 division + 8 personal + 6 pic)
+--   kpi_targets:     1344 rows (period 2025-01 across definitions)
+--   kpi_actuals:     2864 rows
+--   monthly_plans:   0 rows (table exists but no UI consumer)
 --
--- Apply: Supabase Dashboard → SQL Editor → paste → Run.
--- Idempotent: uses ON CONFLICT DO NOTHING on (kpi_definition_id, period).
+-- Migration 012 was written under assumption that these tables did NOT yet
+-- exist. They do. Applying 012 would be a no-op (IF NOT EXISTS guards) but
+-- would also try to INSERT seed definitions that DUPLICATE existing rows
+-- (ON CONFLICT clauses aren't valid for the conflicting columns).
+--
+-- Replacement action (manual SQL): use the helper SQL at the bottom of this
+-- file to inspect data; to extend 2026 use the dashboard UI (Owner > KPI
+-- > "Tambah Target") or run targeted INSERTs into the existing tables.
+-- ============================================================================
+--
+-- Original intent (reference only):
 
--- ===== kpi_definitions (master list of KPIs) =====
 CREATE TABLE IF NOT EXISTS public.kpi_definitions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   code text NOT NULL UNIQUE,
@@ -195,3 +208,21 @@ COMMENT ON TABLE public.kpi_definitions IS 'Master list of all KPIs (company/div
 COMMENT ON TABLE public.kpi_targets IS 'Period-bound target values per KPI definition';
 COMMENT ON TABLE public.kpi_actuals IS 'Recorded actual values against targets';
 COMMENT ON TABLE public.monthly_plans IS 'Personal monthly plans (indicators + status)';
+
+-- ============================================================================
+-- HELPER: Inspect 2026 KPI coverage (read-only, safe to run anytime)
+-- ============================================================================
+-- SELECT kd.level, kd.code, kd.name,
+--        COUNT(kt.id) FILTER (WHERE kt.period LIKE '2025-%') AS periods_2025,
+--        COUNT(kt.id) FILTER (WHERE kt.period LIKE '2026-%') AS periods_2026
+-- FROM kpi_definitions kd
+-- LEFT JOIN kpi_targets kt ON kt.kpi_definition_id = kd.id
+-- GROUP BY kd.id, kd.level, kd.code, kd.name
+-- ORDER BY kd.level, kd.code;
+
+-- HELPER: Sample INSERT for one 2026-H2 monthly target
+-- (uncomment + edit kpi_definition_id to use)
+-- INSERT INTO kpi_targets (kpi_definition_id, period, target_value, status)
+-- VALUES ('<UUID-of-KPI>', '2026-08', 500000000, 'active')
+-- ON CONFLICT (kpi_definition_id, period) DO NOTHING
+-- RETURNING *;
