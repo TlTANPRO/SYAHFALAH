@@ -124,7 +124,7 @@ export default async function Page() {
         </div>
       ) : (
         <div className="card overflow-hidden">
-          <table className="data-table">
+          <div className="overflow-x-auto"><table className="data-table">
             <thead>
               <tr>
                 <th>KPI</th>
@@ -170,7 +170,7 @@ export default async function Page() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
     </div>

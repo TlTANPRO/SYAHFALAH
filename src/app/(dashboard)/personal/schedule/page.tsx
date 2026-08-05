@@ -101,7 +101,7 @@ export default async function Page() {
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">3 acara rutin yang harus konsisten tiap hari kerja.</p>
       </div>
       <div className="card overflow-hidden">
-        <table className="data-table">
+        <div className="overflow-x-auto"><table className="data-table">
           <thead>
             <tr>
               <th className="w-24">Jam</th>
@@ -118,7 +118,7 @@ export default async function Page() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </div>
 
       <div>
@@ -126,7 +126,7 @@ export default async function Page() {
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">Acara tetap yang tampil di kalender tiap minggu.</p>
       </div>
       <div className="card overflow-hidden">
-        <table className="data-table">
+        <div className="overflow-x-auto"><table className="data-table">
           <thead>
             <tr>
               <th className="w-24">Hari</th>
@@ -143,7 +143,7 @@ export default async function Page() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </div>
 
       <div>

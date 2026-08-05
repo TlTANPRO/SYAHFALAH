@@ -16,7 +16,7 @@ export interface PersonalKpiRow {
 export function PersonalKpiTable({ members }: { members: PersonalKpiRow[] }) {
   return (
     <div className="card overflow-hidden">
-      <table className="data-table">
+      <div className="overflow-x-auto"><table className="data-table">
         <thead>
           <tr>
             <th>Nama</th>
@@ -47,7 +47,7 @@ export function PersonalKpiTable({ members }: { members: PersonalKpiRow[] }) {
             )
           })}
         </tbody>
-      </table>
+      </table></div>
     </div>
   )
 }

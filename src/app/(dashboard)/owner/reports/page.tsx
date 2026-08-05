@@ -103,7 +103,7 @@ export default async function Page() {
         <div className="card-header">
           <h2 className="font-heading text-base font-semibold">Task per divisi</h2>
         </div>
-        <table className="data-table">
+        <div className="overflow-x-auto"><table className="data-table">
           <thead>
             <tr>
               <th>Divisi</th>
@@ -134,14 +134,14 @@ export default async function Page() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </div>
 
       <div className="card overflow-hidden">
         <div className="card-header">
           <h2 className="font-heading text-base font-semibold">KPI per divisi</h2>
         </div>
-        <table className="data-table">
+        <div className="overflow-x-auto"><table className="data-table">
           <thead>
             <tr>
               <th>Divisi</th>
@@ -168,7 +168,7 @@ export default async function Page() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
   )

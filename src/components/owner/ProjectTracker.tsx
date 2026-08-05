@@ -77,7 +77,7 @@ export function ProjectTracker({ projects, totalBudget, totalSpent, budgetVarian
       </div>
 
       <div className="card overflow-hidden">
-        <table className="data-table">
+        <div className="overflow-x-auto"><table className="data-table">
           <thead>
             <tr>
               <th>Project</th>
@@ -129,7 +129,7 @@ export function ProjectTracker({ projects, totalBudget, totalSpent, budgetVarian
               )
             })}
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
   )

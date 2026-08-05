@@ -124,7 +124,7 @@ export default function Page() {
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">Rp 500k/closing · Rp 250k/QC unit · Rp 1,25jt/bulan tim media</p>
       </div>
       <div className="card overflow-hidden">
-        <table className="data-table">
+        <div className="overflow-x-auto"><table className="data-table">
           <thead>
             <tr>
               <th>Bulan</th>
@@ -151,7 +151,7 @@ export default function Page() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </div>
 
       {/* Log punishment */}
@@ -160,7 +160,7 @@ export default function Page() {
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">Urutan: coaching → SP1 → SP2 → SP3</p>
       </div>
       <div className="card overflow-hidden">
-        <table className="data-table">
+        <div className="overflow-x-auto"><table className="data-table">
           <thead>
             <tr>
               <th>Tanggal</th>
@@ -185,7 +185,7 @@ export default function Page() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
   )

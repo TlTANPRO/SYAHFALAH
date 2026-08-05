@@ -50,7 +50,7 @@ export function ConsumerCasesTable({ cases, clusters }: {
 
   return (
     <div className="card overflow-hidden">
-      <table className="data-table">
+      <div className="overflow-x-auto"><table className="data-table">
         <thead>
           <tr>
             <th>Konsumen</th>
@@ -105,7 +105,7 @@ export function ConsumerCasesTable({ cases, clusters }: {
             )
           })}
         </tbody>
-      </table>
+      </table></div>
     </div>
   )
 }
