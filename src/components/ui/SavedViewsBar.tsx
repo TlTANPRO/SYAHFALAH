@@ -65,9 +65,12 @@ export function SavedViewsBar({ views, current, hydrated, onSave, onApply, onRem
       {saving ? (
         <div className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] pl-3 pr-1 py-0.5">
           <input
+            id="saved-view-name"
+            name="savedViewName"
             type="text"
             autoFocus
             placeholder="Nama view"
+            aria-label="Nama view tersimpan"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             onKeyDown={(e) => {
