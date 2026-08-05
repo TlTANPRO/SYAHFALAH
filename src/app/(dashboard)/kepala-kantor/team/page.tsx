@@ -34,13 +34,26 @@ async function load() {
       .order('avg_progress', { ascending: false }),
     supabase
       .from('divisions')
-      .select('id, name, description, member_count:users!users_division_id_fkey(count)', { count: 'exact' })
+      .select('id, name, description, created_at', { count: 'exact' })
       .order('name')
       .range(0, 11),
   ])
+  const ids = (divisions ?? []).map((d: any) => d.id)
+  const countMap = new Map<string, number>()
+  if (ids.length > 0) {
+    const { data: users } = await supabase
+      .from('users')
+      .select('division_id')
+      .in('division_id', ids)
+      .eq('is_active', true)
+    for (const u of users ?? []) {
+      if (u.division_id) countMap.set(u.division_id, (countMap.get(u.division_id) || 0) + 1)
+    }
+  }
+  const enriched = (divisions ?? []).map((d: any) => ({ ...d, member_count: countMap.get(d.id) ?? 0 }))
   return {
     members: (data ?? []) as Member[],
-    divisions: (divisions ?? []) as any[],
+    divisions: enriched,
     total: count ?? 0,
   }
 }
