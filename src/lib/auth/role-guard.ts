@@ -11,10 +11,12 @@ import { verifyAccessToken } from '@/lib/auth/jwt'
 export type Role = 'owner' | 'kepala_kantor' | 'pic_divisi' | 'staff'
 
 export interface SessionPayload {
-  id: string
+  userId: string
+  email?: string
+  name?: string
   role: Role
-  divisionId?: string | null
-  fullName?: string
+  divisionId?: string
+  position?: string
 }
 
 // Role hierarchy: each tier inherits the rights of every tier below it.
