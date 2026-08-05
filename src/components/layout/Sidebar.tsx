@@ -46,6 +46,7 @@ const commandNav: NavItem[] = [
 const ownerNav: NavItem[] = [
   { name: 'Executive Overview', href: '/owner', icon: BarChart3, roles: ['owner'] },
   { name: 'Company KPIs', href: '/owner/kpi', icon: Target, roles: ['owner'] },
+  { name: 'Target Cascade', href: '/owner/targets', icon: GitBranch, roles: ['owner'] },
   { name: 'Approvals', href: '/owner/approvals', icon: ClipboardCheck, roles: ['owner'] },
   { name: 'Reports', href: '/owner/reports', icon: FileText, roles: ['owner'] },
 ]
