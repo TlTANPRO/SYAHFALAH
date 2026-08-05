@@ -28,36 +28,63 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["business", "productivity"],
+  "categories": [
+    "business",
+    "productivity"
+  ],
   "screenshots": [],
   "shortcuts": [
     {
-      "name": "Beranda",
-      "short_name": "Beranda",
-      "description": "Lihat ringkasan dashboard",
-      "url": "/",
-      "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
+      "name": "Owner Dashboard",
+      "short_name": "Owner",
+      "description": "Owner strategic overview",
+      "url": "/owner",
+      "icons": [
+        {
+          "src": "/icons/shortcut-owner.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "KPI Explorer",
       "short_name": "KPI",
-      "description": "Telusuri KPI per level / divisi",
+      "description": "All KPI definitions + progress",
       "url": "/kpi",
-      "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icons/shortcut-kpi.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
-      "name": "Executive Overview",
-      "short_name": "Owner",
-      "description": "Ringkasan kinerja eksekutif",
-      "url": "/owner",
-      "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
+      "name": "Personal Workspace",
+      "short_name": "Personal",
+      "description": "My tasks + SOW + KPI + schedule",
+      "url": "/personal",
+      "icons": [
+        {
+          "src": "/icons/shortcut-personal.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
-      "name": "Tugas Saya",
-      "short_name": "Tugas",
-      "description": "Daftar tugas personal",
-      "url": "/personal/tasks",
-      "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
+      "name": "Owner Approvals",
+      "short_name": "Approvals",
+      "description": "Pending approvals + notifications",
+      "url": "/owner/approvals",
+      "icons": [
+        {
+          "src": "/icons/shortcut-approvals.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }
