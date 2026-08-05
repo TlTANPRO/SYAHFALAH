@@ -3,9 +3,10 @@
   "short_name": "Syahfalah",
   "description": "Internal management dashboard for PT Syahfalah Global + PT Lembayung Wanantara Padha + Grup Majang Mejeng",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
   "orientation": "portrait-primary",
   "icons": [
     {
@@ -31,24 +32,31 @@
   "screenshots": [],
   "shortcuts": [
     {
-      "name": "Dashboard",
-      "short_name": "Dashboard",
-      "description": "View main dashboard",
-      "url": "/dashboard",
+      "name": "Beranda",
+      "short_name": "Beranda",
+      "description": "Lihat ringkasan dashboard",
+      "url": "/",
       "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
     },
     {
-      "name": "KPI",
+      "name": "KPI Explorer",
       "short_name": "KPI",
-      "description": "View KPI targets and actuals",
-      "url": "/dashboard/kpi",
+      "description": "Telusuri KPI per level / divisi",
+      "url": "/kpi",
       "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
     },
     {
-      "name": "Tasks",
-      "short_name": "Tasks",
-      "description": "Manage tasks",
-      "url": "/dashboard/tasks",
+      "name": "Executive Overview",
+      "short_name": "Owner",
+      "description": "Ringkasan kinerja eksekutif",
+      "url": "/owner",
+      "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Tugas Saya",
+      "short_name": "Tugas",
+      "description": "Daftar tugas personal",
+      "url": "/personal/tasks",
       "icons": [{ "src": "/icons/icon-192.svg", "sizes": "192x192" }]
     }
   ]
