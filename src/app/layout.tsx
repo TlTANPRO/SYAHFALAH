@@ -58,6 +58,12 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
+      <noscript>
+        <div style={{ padding: '2rem', textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>
+          <h1>JavaScript Required</h1>
+          <p>Syahfalah Operations Dashboard requires JavaScript. Please enable JavaScript in your browser and reload this page.</p>
+        </div>
+      </noscript>
       <body className="min-h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)] font-sans antialiased">
         <a
           href="#main-content"
