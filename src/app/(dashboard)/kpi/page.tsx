@@ -7,6 +7,8 @@ import { Target, ChevronRight, Filter } from 'lucide-react'
 import Link from 'next/link'
 import { ExportKpiButton } from '@/components/kpi/ExportKpiButton'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { KpiExplorerClient } from './KpiExplorerClient'
+import { KpiTable } from './KpiTable'
 
 interface KpiRow {
   id: string
@@ -184,52 +186,17 @@ export default async function Page({
         <ExportKpiButton rows={filtered} divisions={divisions} />
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">
-          <Filter className="h-3 w-3" /> Filter
-        </span>
-        <Link
-          href="/kpi"
-          className={`pill ${!filterDivision && !filterLevel ? 'pill-active' : ''}`}
-          data-variant={!filterDivision && !filterLevel ? 'brand' : 'neutral'}
-        >
-          Semua ({kpis.length})
-        </Link>
-        <span className="text-[var(--color-text-tertiary)] text-xs">Level:</span>
-        {(['company', 'division', 'personal'] as const).map(lv => {
-          const count = kpis.filter(k => k.level === lv).length
-          const active = filterLevel === lv
-          return (
-            <Link
-              key={lv}
-              href={`/kpi?level=${lv}${filterDivision ? `&division=${filterDivision}` : ''}`}
-              className="pill"
-              data-variant={active ? 'brand' : 'neutral'}
-            >
-              {LEVEL_LABEL[lv]} ({count})
-            </Link>
-          )
-        })}
-        {divisions.length > 0 && (
-          <>
-            <span className="text-[var(--color-text-tertiary)] text-xs">Divisi:</span>
-            {divisions.map(d => {
-              const active = filterDivision === d.id
-              return (
-                <Link
-                  key={d.id}
-                  href={`/kpi?division=${d.id}${filterLevel ? `&level=${filterLevel}` : ''}`}
-                  className="pill"
-                  data-variant={active ? 'brand' : 'neutral'}
-                >
-                  {d.name}
-                </Link>
-              )
-            })}
-          </>
-        )}
-      </div>
+            <KpiExplorerClient
+        divisions={divisions}
+        filterDivision={filterDivision}
+        filterLevel={filterLevel}
+        totalCount={kpis.length}
+        levelCounts={{
+          company: kpis.filter(k => k.level === 'company').length,
+          division: kpis.filter(k => k.level === 'division').length,
+          personal: kpis.filter(k => k.level === 'personal').length,
+        }}
+      />
 
       {filtered.length === 0 ? (
         <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-12 text-center">
@@ -247,53 +214,7 @@ export default async function Page({
               <h2 className="display-md">{LEVEL_LABEL[level] || level}</h2>
               <span className="pill" data-variant="neutral">{byLevel[level].length}</span>
             </header>
-            <div className="card overflow-hidden">
-              <div className="overflow-x-auto"><table className="data-table">
-                <thead>
-                  <tr>
-                    <th>KPI</th>
-                    <th>Divisi</th>
-                    <th className="text-right">Progress rata-rata</th>
-                    <th className="text-right">Target</th>
-                    <th className="text-right">Actual (terbaru)</th>
-                    <th>Status</th>
-                    <th>Periode</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {byLevel[level].map(k => (
-                    <tr key={k.code}>
-                      <td>
-                        <p className="font-medium">{k.name}</p>
-                        <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] mt-0.5">{k.code}</p>
-                      </td>
-                      <td className="text-sm text-[var(--color-text-secondary)]">
-                        {k.division_id ? divName.get(k.division_id) ?? '—' : '—'}
-                      </td>
-                      <td className="text-right tabular-nums font-mono font-semibold">
-                        {k.avgProgress != null ? `${k.avgProgress.toFixed(0)}%` : '—'}
-                      </td>
-                      <td className="text-right tabular-nums font-mono text-sm">
-                        {formatValue(k.latestTarget, k.unit)}
-                      </td>
-                      <td className="text-right tabular-nums font-mono text-sm">
-                        {formatValue(k.latestActual, k.unit)}
-                      </td>
-                      <td>
-                        {k.latestStatus && (
-                          <span className="pill" data-variant={STATUS_VARIANT[k.latestStatus] ?? 'neutral'}>
-                            {STATUS_LABEL[k.latestStatus] ?? k.latestStatus}
-                          </span>
-                        )}
-                      </td>
-                      <td className="text-xs text-[var(--color-text-tertiary)] font-mono">
-                        {k.periods}x
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table></div>
-            </div>
+            <KpiTable rows={byLevel[level]} divisions={divisions} />
           </section>
         ))
       )}
