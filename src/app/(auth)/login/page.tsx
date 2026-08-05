@@ -117,13 +117,18 @@ function LoginForm() {
           </CardHeader>
           <CardContent>
             {error && (
-              <div className="mb-4 p-3 rounded-lg bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/20 text-[var(--color-danger)] text-sm flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <div
+                role="alert"
+                aria-live="assertive"
+                id="pin-error"
+                className="mb-4 p-3 rounded-lg bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/20 text-[var(--color-danger)] text-sm flex items-center gap-2"
+              >
+                <AlertCircle className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
                 <span>{error}</span>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div className="relative">
                 <Label htmlFor="pin" className="sr-only">PIN</Label>
                 <Input
@@ -147,6 +152,8 @@ function LoginForm() {
                   autoComplete="off"
                   autoFocus
                   disabled={isLoading}
+                  aria-invalid={error != null}
+                  aria-describedby={error ? 'pin-error' : undefined}
                 />
                 <button
                   type="button"
