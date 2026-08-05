@@ -1,14 +1,38 @@
 // middleware.ts
-// Custom JWT-based authentication middleware
+// Custom JWT-based authentication middleware. Also strips aggressive
+// CDN caching for dynamic (user-data) routes so Vercel's edge doesn't
+// serve stale HTML when we ship a new commit (Age=9h observed 5-Aug).
 
 import { NextResponse, type NextRequest } from 'next/server'
 import { verifyAccessToken } from '@/lib/auth/jwt'
 
+// Routes that contain user-specific data and must never be cached at
+// the edge. Public/asset routes are excluded from this list so Vercel
+// can still cache static chunks aggressively.
+const NO_STORE_PATHS = [
+  '/owner',
+  '/kepala-kantor',
+  '/divisi',
+  '/personal',
+  '/admin',
+  '/sow',
+  '/kpi',
+  '/task',
+  '/raci',
+  '/rewards',
+  '/calendar',
+  '/settings',
+  '/login',
+  '/api',
+]
+
 export async function middleware(request: NextRequest) {
+  const noStore = NO_STORE_PATHS.some(p => request.nextUrl.pathname.startsWith(p))
+
   // Verify custom JWT token from cookies
   const accessToken = request.cookies.get('access_token')?.value
   let user = null
-  
+
   if (accessToken) {
     user = await verifyAccessToken(accessToken)
   }
@@ -29,13 +53,13 @@ export async function middleware(request: NextRequest) {
     '/settings',
   ]
 
-  const isProtectedPath = protectedPaths.some(path => 
+  const isProtectedPath = protectedPaths.some(path =>
     request.nextUrl.pathname.startsWith(path)
   )
 
   // Public paths that don't need auth
   const publicPaths = ['/login', '/api/auth']
-  const isPublicPath = publicPaths.some(path => 
+  const isPublicPath = publicPaths.some(path =>
     request.nextUrl.pathname.startsWith(path)
   )
 
@@ -44,7 +68,7 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('redirect', request.nextUrl.pathname)
-    return NextResponse.redirect(url)
+    return applyNoStore(NextResponse.redirect(url))
   }
 
   // Redirect to dashboard if accessing login while authenticated
@@ -70,10 +94,18 @@ export async function middleware(request: NextRequest) {
       }
       const url = request.nextUrl.clone()
       url.pathname = dest
-      return NextResponse.redirect(url)
+      return applyNoStore(NextResponse.redirect(url))
     }
 
-  return NextResponse.next()
+  const res = NextResponse.next()
+  if (noStore) applyNoStore(res)
+  return res
+}
+
+function applyNoStore(res: NextResponse) {
+  res.headers.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0')
+  res.headers.set('Pragma', 'no-cache')
+  return res
 }
 
 export const config = {
