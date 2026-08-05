@@ -21,6 +21,7 @@ import {
   GitBranch,
   Award,
   Settings,
+  Activity,
   Target,
   TrendingUp,
   Users,
@@ -47,6 +48,7 @@ const ownerNav: NavItem[] = [
   { name: 'Executive Overview', href: '/owner', icon: BarChart3, roles: ['owner'] },
   { name: 'Company KPIs', href: '/owner/kpi', icon: Target, roles: ['owner'] },
   { name: 'Target Cascade', href: '/owner/targets', icon: GitBranch, roles: ['owner'] },
+  { name: 'Audit Log', href: '/owner/audit', icon: Activity, roles: ['owner'] },
   { name: 'Approvals', href: '/owner/approvals', icon: ClipboardCheck, roles: ['owner'] },
   { name: 'Reports', href: '/owner/reports', icon: FileText, roles: ['owner'] },
 ]
