@@ -55,7 +55,7 @@ export default async function Page() {
   if (!userId) {
     return (
       <div className="space-y-4">
-        <h1 className="font-heading text-2xl font-bold">My KPIs</h1>
+        <h1 className="font-heading text-2xl font-bold">KPI Saya</h1>
         <p className="text-[var(--color-text-secondary)]">Sesi tidak valid. Silakan login ulang.</p>
       </div>
     )
@@ -70,7 +70,7 @@ export default async function Page() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-bold">My KPIs</h1>
+        <h1 className="font-heading text-2xl font-bold">KPI Saya</h1>
         <p className="text-[var(--color-text-secondary)]">
           {user?.position || 'User'} · {kpis.length} KPI personal · {achieved} tercapai
         </p>

@@ -8,26 +8,18 @@ import { ChevronRight, ListTodo, Target, BookOpen, Calendar, Bell } from 'lucide
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
 const links = [
-  { href: '/personal/tasks',          icon: ListTodo, title: 'My Tasks',        desc: 'Tugas harian & carry-over' },
-  { href: '/personal/kpi',            icon: Target,   title: 'My KPIs',         desc: 'KPI individu & progress' },
-  { href: '/personal/sow',            icon: BookOpen, title: 'My SOW',          desc: 'Scope of Work pribadi' },
-  { href: '/personal/schedule',       icon: Calendar, title: 'My Schedule',     desc: 'Jadwal rutin & mingguan' },
-  { href: '/personal/notifications',  icon: Bell,     title: 'Notifications',   desc: 'Briefing & alert' },
+  { href: '/personal/tasks',          icon: ListTodo, title: 'Tugas Saya',     desc: 'Tugas harian & carry-over' },
+  { href: '/personal/kpi',            icon: Target,   title: 'KPI Saya',       desc: 'KPI individu & progress' },
+  { href: '/personal/sow',            icon: BookOpen, title: 'SOW Saya',       desc: 'Scope of Work pribadi' },
+  { href: '/personal/schedule',       icon: Calendar, title: 'Jadwal Saya',    desc: 'Jadwal rutin & mingguan' },
+  { href: '/personal/notifications',  icon: Bell,     title: 'Notifikasi',     desc: 'Briefing & alert' },
 ]
 
 export default function PersonalHubPage() {
-  // Convenience: visitors who land here without picking a sub-section
-  // are most likely after their daily task list.
-  // Keep the redirect client-friendly by sending to /personal/tasks
-  // instead of rendering this page when navigated to directly.
-  // (Server redirect from a route group is fine in App Router.)
-  if (typeof window === 'undefined') {
-    // SSR pass: render the hub (so the route is reachable from
-    // bookmarks and links). The client redirect below kicks in only
-    // after hydration if you really want — for now, the hub is the
-    // canonical landing.
-  }
-
+  // Personal hub — entry point for any user. Renders quick links to
+  // sub-routes (Tugas Saya, KPI Saya, dll). Visitors who navigate here
+  // directly see the hub rather than being auto-redirected, so
+  // bookmarks and shared links land on a useful page.
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div>

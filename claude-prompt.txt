@@ -1,0 +1,40 @@
+You are auditing a Next.js 15 + Supabase dashboard for the Syahfalah dashboard (PT Syahfalah Global + PT Lembayung Wanantara Padha + Grup Majang Mejeng). The user wants optimization opportunities to make it consistent and professional (Indonesian context — copy should be in Indonesian).
+
+CONTEXT — what already exists and what already fixed (DO NOT re-report these):
+- L1-L5 audit remediation done on 2026-08-05 (commit 1030830)
+- Sidebar.tsx duplicate import (tsc 6 errors) → FIXED in commit 7fa95ba
+- Old Tailwind classes (text-muted-foreground, bg-muted, badge-*, etc) → brand tokens FIXED in commit 7fa95ba
+- 4 form-field a11y violations on /settings → FIXED in commit b95268e
+- TEST SEED filter spread across 10 files (5 Aug)
+- /divisi/[id] rewrite using division name not UUID
+- /kpi & /owner/kpi: group by KPI code (drops 100-row duplicate)
+- New components: TopPageHero, StatCard, KpiTile, Breadcrumbs, KpiTrendChart, PersonalKpiTable, ExportKpiButton, EmptyState
+- Mobile responsive sidebar done
+
+DO NOT report:
+- PII leak (security, deferred)
+- Old Tailwind classes (already fixed)
+- tsc strict errors (already 0)
+- anything in src/lib/auth/ (security)
+- Supabase migration files
+- .env or .env.local
+
+YOUR TASK — read-only audit, suggest PROFESSIONAL/POLISH OPTIMIZATIONS:
+1. UI Consistency — same pattern across similar surfaces (cards, tables, hero banners, breadcrumbs)
+2. Copy tone — generic English SaaS labels vs Indonesian natural
+3. Mobile responsiveness gaps beyond sidebar
+4. Loading states / error states on routes that don't have them
+5. Visual hierarchy issues (section density, spacing, font sizes)
+6. Empty-state handling consistency
+7. Any dead pages (broken stubs) or TODO comments
+8. Performance: bundle bloat, missing memoization, large dependencies
+9. Dark/light theme parity (does light mode render the same?)
+10. Accessibility beyond form labels (focus management, keyboard nav, aria-* attributes)
+
+DELIVERABLE:
+- Top 8-15 specific findings, each with file:line + 1-sentence rationale + suggested fix
+- Prioritize by impact: which 3 would MOST improve "standart perusahaan ternama" feel
+- Group by tier P1/P2/P3 (highest first)
+- DO NOT propose security fixes
+- DO NOT propose architecture rewrites
+- Output as text, no JSON

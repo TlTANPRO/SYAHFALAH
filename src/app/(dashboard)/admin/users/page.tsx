@@ -64,7 +64,7 @@ export default async function Page() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-bold">User Management</h1>
+        <h1 className="font-heading text-2xl font-bold">Manajemen User</h1>
         <p className="text-[var(--color-text-secondary)]">{users.length} user terdaftar · {divisions.length} divisi</p>
       </div>
 

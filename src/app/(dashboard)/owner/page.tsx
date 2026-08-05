@@ -38,14 +38,24 @@ async function loadData() {
   }
 
   // ambil KPI trend: avg progress per divisi per bulan
-  const kpiTrend = await safe<any[]>(sb
+  const trendQuery = sb
     .from('kpis')
     .select('division_id, period_start, progress')
     .in('level', ['division', 'company'])
     .gte('period_start', '2025-08-01')
     .lte('period_start', '2026-07-31')
-    .limit(3000))
-  // group by division_id + period_start
+    .limit(3000)
+
+  const [kpiTrend, clusters, leads, projects, consumerCases, teamKPIs, divs] = await Promise.all([
+    safe<any[]>(trendQuery, []),
+    safe<any[]>(sb.from('clusters').select('*').eq('is_active', true).order('name')),
+    safe<any[]>(sb.from('leads').select('id, stage, source, estimated_value_rupiah, created_at, cluster_id, customer_name, assigned_to_id, contacted_at, surveyed_at')),
+    safe<any[]>(sb.from('projects').select('id, code, name, cluster_id, total_units, units_completed, start_date, target_completion_date, budget_rupiah, spent_rupiah, status, project_manager_id')),
+    safe<any[]>(sb.from('consumer_cases').select('id, code, consumer_name, unit_code, cluster_id, stage, sp3k_deadline, bast_date, amount_rupiah, is_overdue, assigned_to_id')),
+    safe<any[]>(sb.from('team_personal_kpis').select('user_id, name, position, division_id, division_name, kpi_count, avg_progress, achieved_count, on_track_count, at_risk_count, off_track_count').order('avg_progress', { ascending: false }).limit(12)),
+    safe<any[]>(sb.from('divisions').select('id, name').eq('is_active', true).order('sort_order')),
+  ])
+  // group kpiTrend by division_id + period_start
   const trendMap = new Map<string, { sum: number; count: number }>()
   for (const r of kpiTrend as any[]) {
     if (r.progress == null) continue
@@ -56,16 +66,6 @@ async function loadData() {
     cur.count += 1
     trendMap.set(key, cur)
   }
-
-  const [clusters, leads, projects, consumerCases, teamKPIs, divs] = await Promise.all([
-    safe<any[]>(sb.from('clusters').select('*').eq('is_active', true).order('name')),
-    safe<any[]>(sb.from('leads').select('id, stage, source, estimated_value_rupiah, created_at, cluster_id, customer_name, assigned_to_id, contacted_at, surveyed_at')),
-    safe<any[]>(sb.from('projects').select('id, code, name, cluster_id, total_units, units_completed, start_date, target_completion_date, budget_rupiah, spent_rupiah, status, project_manager_id')),
-    safe<any[]>(sb.from('consumer_cases').select('id, code, consumer_name, unit_code, cluster_id, stage, sp3k_deadline, bast_date, amount_rupiah, is_overdue, assigned_to_id')),
-    safe<any[]>(sb.from('team_personal_kpis').select('user_id, name, position, division_id, division_name, kpi_count, avg_progress, achieved_count, on_track_count, at_risk_count, off_track_count').order('avg_progress', { ascending: false }).limit(12)),
-    safe<any[]>(sb.from('divisions').select('id, name').eq('is_active', true).order('sort_order')),
-    safe<any[]>(sb.from('kpis').select('division_id, period_start, progress').in('level', ['division', 'company']).gte('period_start', '2025-08-01').lte('period_start', '2026-07-31').limit(3000)),
-  ])
 
   return { clusters, leads, projects, consumerCases, teamKPIs, divisions: divs, kpiTrend, dbReady: true }
 }
