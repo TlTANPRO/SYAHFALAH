@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { formatRelativeTime } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -27,20 +26,13 @@ interface Notification {
 
 export function NotificationBell() {
   const { user } = useAuthStore()
-  const supabase = createClient()
-
   const { data: notifications, isLoading } = useQuery({
     queryKey: ['notifications', user?.id],
     queryFn: async () => {
       if (!user?.id) return []
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(20)
-      if (error) throw error
-      return data as Notification[]
+      const res = await fetch('/api/notifications?limit=20', { credentials: 'include' })
+      if (!res.ok) return []
+      return (await res.json()) as Notification[]
     },
     refetchInterval: 30000,
     enabled: !!user?.id,

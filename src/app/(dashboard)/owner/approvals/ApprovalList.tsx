@@ -8,7 +8,6 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, Check, CheckSquare, Clock, Loader2, X } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 
 export interface Notif {
   id: string
@@ -28,20 +27,21 @@ const PRIORITY_VARIANT: Record<string, string> = {
 }
 
 export function ApprovalList({ notifs }: { notifs: Notif[] }) {
-  const supabase = createClient()
   const queryClient = useQueryClient()
 
   const decide = useMutation({
     mutationFn: async ({ id, action }: { id: string; action: 'approve' | 'reject' }) => {
-      const { error } = await supabase
-        .from('notifications')
-        .update({
+      const res = await fetch('/api/notifications', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
           is_read: true,
           approval_status: action === 'approve' ? 'approved' : 'rejected',
-          approval_at: new Date().toISOString(),
-        })
-        .eq('id', id)
-      if (error) throw error
+        }),
+      })
+      if (!res.ok) throw new Error('Failed to update notification')
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['approvals'] })

@@ -40,19 +40,13 @@ export type Notification = {
 }
 
 export function useNotifications(userId: string | undefined) {
-  const { supabase } = useSupabase()
   return useQuery({
     queryKey: ['notifications', userId],
     queryFn: async () => {
       if (!userId) return [] as Notification[]
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(20)
-      if (error) throw error
-      return (data ?? []) as Notification[]
+      const res = await fetch('/api/notifications?limit=20', { credentials: 'include' })
+      if (!res.ok) return [] as Notification[]
+      return (await res.json()) as Notification[]
     },
     enabled: !!userId,
     refetchInterval: 30_000, // poll every 30s as a Realtime fallback
