@@ -94,7 +94,9 @@ export default async function Page() {
   const trendByDiv = new Map<string, Map<string, { sum: number; count: number }>>()
   for (const r of kpiTrend as any[]) {
     if (r.progress == null) continue
-    const period = (r.period_start as string).slice(0, 7)
+    const ps = r.period_start
+    if (typeof ps !== 'string') continue
+    const period = ps.slice(0, 7)
     if (!trendByDiv.has(r.division_id)) trendByDiv.set(r.division_id, new Map())
     const m = trendByDiv.get(r.division_id)!
     const cur = m.get(period) ?? { sum: 0, count: 0 }
@@ -106,7 +108,9 @@ export default async function Page() {
   const periodSet = new Set<string>()
   for (const r of kpiTrend as any[]) {
     if (r.progress == null) continue
-    periodSet.add((r.period_start as string).slice(0, 7))
+    const ps = r.period_start
+    if (typeof ps !== 'string') continue
+    periodSet.add(ps.slice(0, 7))
   }
   const periods = Array.from(periodSet).sort()
   // pick top 5 divisions by data density
