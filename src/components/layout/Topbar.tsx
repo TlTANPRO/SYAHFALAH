@@ -5,18 +5,15 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Search,
-  Bell,
   LogOut,
-  User,
-  Moon,
-  Sun,
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  Moon,
+  Sun,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
@@ -44,7 +41,17 @@ function useTheme() {
     apply(theme === 'dark' ? 'light' : 'dark')
   }
 
-  return { theme, toggle }
+  return { theme, toggle: () => apply(theme === 'dark' ? 'light' : 'dark') }
+}
+
+function formatPath(pathname: string): string {
+  if (pathname === '/') return 'Beranda'
+  return pathname
+    .split('/')
+    .filter(Boolean)
+    .map(seg => seg.replace(/-/g, ' '))
+    .join(' / ')
+    .replace(/\b\w/g, c => c.toUpperCase())
 }
 
 export function Topbar() {
@@ -65,9 +72,7 @@ export function Topbar() {
   }
 
   return (
-    <header
-      className="sticky top-0 z-30 h-16 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]/80 backdrop-blur-md"
-    >
+    <header className="sticky top-0 z-30 h-16 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]/80 backdrop-blur-md">
       <div className="flex h-full items-center gap-3 px-4">
         {/* Sidebar Toggle */}
         <button
@@ -79,10 +84,10 @@ export function Topbar() {
         </button>
 
         {/* Path */}
-        <div className="hidden md:flex items-center gap-1.5 text-sm">
+        <div className="hidden md:flex items-center gap-1.5 text-sm" aria-label="Current path">
           <Sparkles className="h-3.5 w-3.5 text-[var(--color-brand-500)]" />
           <span className="text-[var(--color-text-tertiary)] font-medium">
-            {pathname === '/' ? 'Beranda' : pathname.split('/').filter(Boolean).join(' / ').toUpperCase()}
+            {formatPath(pathname)}
           </span>
         </div>
 
@@ -106,6 +111,7 @@ export function Topbar() {
               onClick={() => openCommandPalette()}
               className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 rounded border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] px-1.5 h-6 text-[10px] font-mono text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-3)] transition-colors"
               aria-label="Open command palette"
+              aria-keyshortcuts="Meta+K Control+K"
             >
               <span>⌘</span>K
             </button>
