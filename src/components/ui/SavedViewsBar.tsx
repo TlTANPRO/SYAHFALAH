@@ -79,7 +79,7 @@ export function SavedViewsBar({ views, current, hydrated, onSave, onApply, onRem
           <button
             type="button"
             onClick={handleSave}
-            className="px-2 py-0.5 rounded-full bg-[var(--color-brand-500)] text-white text-xs font-medium hover:opacity-90"
+            className="px-2 py-0.5 rounded-full bg-[var(--color-brand-500)] text-[var(--color-text-inverse)] text-xs font-medium hover:opacity-90"
           >
             Save
           </button>

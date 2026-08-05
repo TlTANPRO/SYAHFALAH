@@ -160,7 +160,7 @@ export default function Page() {
       {todaysRituals.length > 0 && (
         <div className="rounded-lg border border-[var(--color-brand-500)]/30 bg-[var(--color-brand-500)]/5 p-4">
           <div className="flex items-center gap-2 mb-3">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[var(--color-brand-500)] text-white">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[var(--color-brand-500)] text-[var(--color-text-inverse)]">
               Hari ini · {todayName}
             </span>
             <p className="text-sm font-medium">

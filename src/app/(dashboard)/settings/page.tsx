@@ -136,7 +136,7 @@ export default function Page() {
                 }`}
               >
                 <span
-                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-[var(--color-surface-1)] transition-transform ${
                     n.state ? 'translate-x-5' : 'translate-x-0.5'
                   }`}
                 />

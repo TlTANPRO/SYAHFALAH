@@ -100,7 +100,7 @@ export function KpiTable({ rows, divisions }: Props) {
         <button
           type="button"
           onClick={handleExportSelected}
-          className="inline-flex items-center gap-1 rounded-md bg-[var(--color-brand-500)] px-2.5 py-1 text-xs font-medium text-white hover:opacity-90 transition-opacity"
+          className="inline-flex items-center gap-1 rounded-md bg-[var(--color-brand-500)] px-2.5 py-1 text-xs font-medium text-[var(--color-text-inverse)] hover:opacity-90 transition-opacity"
         >
           <Download className="h-3 w-3" /> Export CSV
         </button>
