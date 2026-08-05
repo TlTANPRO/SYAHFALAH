@@ -108,53 +108,61 @@ export default async function Page() {
                 </tr>
               </thead>
               <tbody>
-                {users.map(u => {
-                  const r = roleLabels[u.role] || { label: u.role, variant: 'default' as const }
-                  return (
-                    <tr key={u.id} className="border-b border-[var(--color-border-default)]/50 hover:bg-[var(--color-surface-2)]/50 transition-colors">
-                      <td className="p-3">
-                        <Link
-                          href={`/admin/users/${u.id}`}
-                          className="block group"
-                          aria-label={`Buka detail ${u.full_name}`}
-                        >
-                          <div className="font-medium text-[var(--color-brand-500)] group-hover:underline inline-flex items-center gap-1">
-                            {u.full_name}
-                            <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                {users.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-sm text-[var(--color-text-tertiary)]">
+                      Belum ada user terdaftar.
+                    </td>
+                  </tr>
+                ) : (
+                  users.map(u => {
+                    const r = roleLabels[u.role] || { label: u.role, variant: 'default' as const }
+                    return (
+                      <tr key={u.id} className="border-b border-[var(--color-border-default)]/50 hover:bg-[var(--color-surface-2)]/50 transition-colors">
+                        <td className="p-3">
+                          <Link
+                            href={`/admin/users/${u.id}`}
+                            className="block group"
+                            aria-label={`Buka detail ${u.full_name}`}
+                          >
+                            <div className="font-medium text-[var(--color-brand-500)] group-hover:underline inline-flex items-center gap-1">
+                              {u.full_name}
+                              <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                            <div className="text-xs text-[var(--color-text-secondary)]">{u.position || '—'}</div>
+                          </Link>
+                        </td>
+                        <td className="p-3">
+                          <Badge variant={r.variant}>{r.label}</Badge>
+                        </td>
+                        <td className="p-3 text-[var(--color-text-secondary)]">
+                          {u.division_id ? divName.get(u.division_id) || '—' : '—'}
+                        </td>
+                        <td className="p-3">
+                          <div className="flex flex-col gap-0.5 text-xs text-[var(--color-text-secondary)]">
+                            {u.email && (
+                              <span className="flex items-center gap-1">
+                                <Mail className="h-3 w-3" />
+                                {u.email}
+                              </span>
+                            )}
+                            {u.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {u.phone}
+                              </span>
+                            )}
                           </div>
-                          <div className="text-xs text-[var(--color-text-secondary)]">{u.position || '—'}</div>
-                        </Link>
-                      </td>
-                      <td className="p-3">
-                        <Badge variant={r.variant}>{r.label}</Badge>
-                      </td>
-                      <td className="p-3 text-[var(--color-text-secondary)]">
-                        {u.division_id ? divName.get(u.division_id) || '—' : '—'}
-                      </td>
-                      <td className="p-3">
-                        <div className="flex flex-col gap-0.5 text-xs text-[var(--color-text-secondary)]">
-                          {u.email && (
-                            <span className="flex items-center gap-1">
-                              <Mail className="h-3 w-3" />
-                              {u.email}
-                            </span>
-                          )}
-                          {u.phone && (
-                            <span className="flex items-center gap-1">
-                              <Phone className="h-3 w-3" />
-                              {u.phone}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <Badge variant={u.is_active ? 'success' : 'outline'}>
-                          {u.is_active ? 'Aktif' : 'Non-aktif'}
-                        </Badge>
-                      </td>
-                    </tr>
-                  )
-                })}
+                        </td>
+                        <td className="p-3">
+                          <Badge variant={u.is_active ? 'success' : 'outline'}>
+                            {u.is_active ? 'Aktif' : 'Non-aktif'}
+                          </Badge>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
               </tbody>
             </table>
           </div>
