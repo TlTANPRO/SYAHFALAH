@@ -3,7 +3,8 @@
 // period aktif, diagregat per definisi.
 
 import { createClient } from '@supabase/supabase-js'
-import { Target } from 'lucide-react'
+import { Target, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
 import { EmptyState } from '@/components/ui/empty-state'
 import { formatValue } from '@/lib/format'
 
@@ -135,8 +136,17 @@ export default async function Page() {
               {uniq.map(k => (
                 <tr key={k.id}>
                   <td>
-                    <p className="font-medium">{k.name}</p>
-                    <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] mt-0.5">{k.code}</p>
+                    <Link
+                      href={k.code ? `/kpi/${encodeURIComponent(k.code)}` : `/kpi/${k.id}`}
+                      className="group inline-flex items-center gap-1 text-[var(--color-brand-500)] hover:underline"
+                      aria-label={`Buka detail ${k.code ?? k.name ?? 'KPI'}`}
+                    >
+                      <div>
+                        <p className="font-medium">{k.name}</p>
+                        <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] mt-0.5 group-hover:text-[var(--color-brand-500)]">{k.code}</p>
+                      </div>
+                      <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                    </Link>
                   </td>
                   <td className="text-sm">
                     <span className="pill" data-variant={k.level === 'company' ? 'brand' : 'neutral'}>

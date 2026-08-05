@@ -5,7 +5,8 @@
 // Data hardcode berdasarkan program kerja karena tabel SOW belum
 // punya relasi RACI eksplisit.
 
-import { CheckCircle2, Circle, Eye, MessageSquare, AlertTriangle } from 'lucide-react'
+import Link from 'next/link'
+import { CheckCircle2, Circle, Eye, MessageSquare, AlertTriangle, ChevronRight } from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface RACIRow {
@@ -75,6 +76,12 @@ export default function Page() {
         </p>
       </div>
 
+      <div className="card">
+        <div className="card-body p-3 text-sm bg-[var(--color-warning)]/10 border-l-4 border-[var(--color-warning)] rounded">
+          ⚠️ Data template — untuk data RACI nyata, hubungkan ke <code className="font-mono">sow_tasks</code> table atau buat <code className="font-mono">sow_raci</code> table baru.
+        </div>
+      </div>
+
       {noResponsible.length > 0 && (
         <div className="rounded-md border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 p-3 flex items-start gap-2">
           <AlertTriangle className="h-4 w-4 text-[var(--color-warning)] mt-0.5" />
@@ -107,7 +114,13 @@ export default function Page() {
               {RACI.map((row, i) => (
                 <tr key={i}>
                   <td className="max-w-md">
-                    <p className="text-sm font-medium">{row.task}</p>
+                    <Link
+                      href="/sow"
+                      className="group inline-flex items-center gap-1 text-[var(--color-brand-500)] hover:underline"
+                    >
+                      <span className="text-sm font-medium">{row.task}</span>
+                      <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </Link>
                     <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">{row.notes}</p>
                   </td>
                   {ROLES.map(role => {

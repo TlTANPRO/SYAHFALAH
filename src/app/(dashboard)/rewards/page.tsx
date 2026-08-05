@@ -3,7 +3,8 @@
 // Reward dihitung dari closing aktual, dikalikan rate dari program.
 // Punishment: warning → SP1 → SP2 → SP3 jika warning berturut-turut.
 
-import { TrendingUp, AlertTriangle, Award, Sparkles } from 'lucide-react'
+import Link from 'next/link'
+import { TrendingUp, AlertTriangle, Award, Sparkles, ChevronRight } from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface RewardEntry {
@@ -82,6 +83,12 @@ export default function Page() {
         </p>
       </div>
 
+      <div className="card">
+        <div className="card-body p-3 text-sm bg-[var(--color-warning)]/10 border-l-4 border-[var(--color-warning)] rounded">
+          ⚠️ Data template — untuk reward riil, hitung otomatis dari tabel <code className="font-mono">closings</code> dan <code className="font-mono">kpi_actuals</code>, simpan ke <code className="font-mono">reward_entries</code> table.
+        </div>
+      </div>
+
       {/* 4 ringkasan */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="kpi-tile">
@@ -140,7 +147,15 @@ export default function Page() {
             {REWARD_LOG.map((r, i) => (
               <tr key={i}>
                 <td className="font-mono text-xs">{r.bulan}</td>
-                <td className="font-medium">{r.nama}</td>
+                <td className="font-medium">
+                  <Link
+                    href={`/rewards/${(r as any).id ?? i}`}
+                    className="group inline-flex items-center gap-1 text-[var(--color-brand-500)] hover:underline"
+                  >
+                    {r.nama}
+                    <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
+                </td>
                 <td className="text-sm text-[var(--color-text-secondary)]">{r.divisi}</td>
                 <td>
                   <span className="pill" data-variant="success">{JENIS_LABEL[r.jenis]}</span>

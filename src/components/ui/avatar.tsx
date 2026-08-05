@@ -1,58 +1,61 @@
 // components/ui/avatar.tsx
-// Avatar component
+// User avatar with initials fallback when src is null/missing.
 
 import * as React from 'react'
-import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
-interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
+interface AvatarProps {
   src?: string | null
-  alt?: string
-  fallback?: string
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  name: string
+  className?: string
+  /** Optional override for the initials derivation */
+  size?: 'sm' | 'md' | 'lg'
 }
 
-const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
-  ({ className, src, alt, fallback, size = 'md', ...props }, ref) => {
-    const sizes = {
-      sm: 'h-8 w-8 text-xs',
-      md: 'h-10 w-10 text-sm',
-      lg: 'h-12 w-12 text-base',
-      xl: 'h-16 w-16 text-lg',
-    }
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
 
-    const safeAlt = alt || ''
-    const fallbackInitials = fallback || safeAlt?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'
+const SIZE_MAP = {
+  sm: 'h-8 w-8 text-xs',
+  md: 'h-10 w-10 text-sm',
+  lg: 'h-20 w-20 text-xl',
+} as const
 
+export function Avatar({ src, name, className, size = 'md' }: AvatarProps) {
+  const initials = getInitials(name)
+
+  if (src) {
     return (
-      <div
-        ref={ref}
+      <img
+        src={src}
+        alt={name}
         className={cn(
-          'relative flex shrink-0 overflow-hidden rounded-full bg-[var(--color-surface-2)]',
-          sizes[size],
+          'rounded-full object-cover flex-shrink-0',
+          SIZE_MAP[size],
           className
         )}
-        {...props}
-      >
-        {src ? (
-          <Image
-            src={src}
-            alt={safeAlt}
-            width={64}
-            height={64}
-            unoptimized
-            className="aspect-square h-full w-full object-cover"
-          />
-        ) : (
-          <span className="flex h-full w-full items-center justify-center font-medium text-[var(--color-text-secondary)]">
-            {fallbackInitials}
-          </span>
-        )}
-      </div>
+        loading="lazy"
+      />
     )
   }
-)
 
-Avatar.displayName = 'Avatar'
-
-export { Avatar }
+  return (
+    <div
+      role="img"
+      aria-label={name}
+      className={cn(
+        'rounded-full flex items-center justify-center font-semibold flex-shrink-0',
+        'bg-[var(--color-brand-500)]/15 text-[var(--color-brand-500)]',
+        'select-none',
+        SIZE_MAP[size],
+        className
+      )}
+    >
+      {initials}
+    </div>
+  )
+}

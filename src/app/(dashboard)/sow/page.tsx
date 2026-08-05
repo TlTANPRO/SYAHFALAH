@@ -5,7 +5,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { FileText, Clock } from 'lucide-react'
+import { FileText, Clock, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 async function loadSow() {
@@ -49,13 +50,20 @@ export default async function Page() {
           <Card key={s.id}>
             <CardHeader>
               <CardTitle className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <FileText className="h-4 w-4 text-[var(--color-text-secondary)] flex-shrink-0" />
-                    <span className="font-mono text-xs text-[var(--color-text-secondary)]">{s.code}</span>
+                <Link
+                  href={`/sow/${s.id}`}
+                  className="group min-w-0 inline-flex items-center gap-1 text-[var(--color-brand-500)] hover:underline"
+                  aria-label={`Buka detail ${s.code}`}
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <FileText className="h-4 w-4 text-[var(--color-text-secondary)] group-hover:text-[var(--color-brand-500)] flex-shrink-0" />
+                      <span className="font-mono text-xs text-[var(--color-text-secondary)] group-hover:text-[var(--color-brand-500)]">{s.code}</span>
+                    </div>
+                    <h3 className="text-base font-medium">{s.title}</h3>
                   </div>
-                  <h3 className="text-base font-medium">{s.title}</h3>
-                </div>
+                  <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                </Link>
                 <Badge variant={priorityVariant[s.priority] || 'default'}>{s.priority}</Badge>
               </CardTitle>
             </CardHeader>

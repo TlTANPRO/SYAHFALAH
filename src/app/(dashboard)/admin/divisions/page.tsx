@@ -6,7 +6,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Building2, FileText, Users } from 'lucide-react'
+import { Building2, FileText, Users, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
@@ -70,10 +70,15 @@ export default async function Page() {
             <Card key={d.id}>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-[var(--color-text-secondary)]" />
+                  <Link
+                    href={`/divisi/${d.id}`}
+                    className="group inline-flex items-center gap-1 text-[var(--color-brand-500)] hover:underline"
+                    aria-label={`Buka detail ${d.name}`}
+                  >
+                    <Building2 className="h-4 w-4 text-[var(--color-text-secondary)] group-hover:text-[var(--color-brand-500)]" />
                     {d.name}
-                  </span>
+                    <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
                   <Badge variant={d.is_active ? 'success' : 'outline'}>
                     {d.is_active ? 'Aktif' : 'Non-aktif'}
                   </Badge>

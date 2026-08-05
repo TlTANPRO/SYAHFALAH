@@ -2,7 +2,8 @@
 // Log coaching 1-on-1 antara Kepala Kantor (Mada) dan tim.
 // Template terstruktur: pembuka, blockers, follow-up, next step.
 
-import { MessageCircle, AlertCircle, CheckCircle2, Clock } from 'lucide-react'
+import Link from 'next/link'
+import { MessageCircle, AlertCircle, CheckCircle2, Clock, ChevronRight } from 'lucide-react'
 
 interface CoachingEntry {
   tanggal: string
@@ -86,6 +87,12 @@ export default function Page() {
 
   return (
     <div className="space-y-6">
+      <div className="card">
+        <div className="card-body p-3 text-sm bg-[var(--color-warning)]/10 border-l-4 border-[var(--color-warning)] rounded">
+          ⚠️ Data template — coaching sessions belum di-load dari database. Implement table <code>coaching_sessions</code> atau wire ke <code>tasks</code> untuk hasil nyata.
+        </div>
+      </div>
+
       <div>
         <h1 className="display-lg">Coaching Log</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
@@ -115,25 +122,35 @@ export default function Page() {
       </div>
 
       <div className="space-y-3">
-        {LOG.map((entry, i) => (
-          <div key={i} className="card">
-            <div className="card-body">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-heading text-base font-semibold">{entry.nama}</p>
-                    <span className="text-xs text-[var(--color-text-tertiary)]">— {entry.posisi}</span>
+        {LOG.map((entry, i) => {
+          const slug = (entry as { id?: string }).id ?? `row-${i}`
+          return (
+            <Link
+              key={i}
+              href={`/kepala-kantor/coaching/${slug}`}
+              className="group block"
+            >
+              <div className="card group-hover:border-[var(--color-brand-500)] transition-colors">
+                <div className="card-body">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-heading text-base font-semibold text-[var(--color-brand-500)] group-hover:underline inline-flex items-center gap-1">
+                          {entry.nama}
+                          <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </p>
+                        <span className="text-xs text-[var(--color-text-tertiary)]">— {entry.posisi}</span>
+                      </div>
+                      <p className="text-xs text-[var(--color-text-tertiary)] font-mono">{entry.tanggal}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="pill" data-variant={JENIS_VARIANT[entry.jenis]}>{entry.jenis}</span>
+                      <span className="pill" data-variant={entry.status === 'selesai' ? 'success' : 'warning'}>
+                        {entry.status === 'selesai' ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                        {entry.status}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-xs text-[var(--color-text-tertiary)] font-mono">{entry.tanggal}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="pill" data-variant={JENIS_VARIANT[entry.jenis]}>{entry.jenis}</span>
-                  <span className="pill" data-variant={entry.status === 'selesai' ? 'success' : 'warning'}>
-                    {entry.status === 'selesai' ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-                    {entry.status}
-                  </span>
-                </div>
-              </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 <div>
@@ -173,9 +190,11 @@ export default function Page() {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        ))}
+              </div>
+              </div>
+            </Link>
+          )
+        })}
       </div>
     </div>
   )

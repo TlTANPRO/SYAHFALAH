@@ -7,7 +7,8 @@ import { cookies } from 'next/headers'
 import { verifyAccessToken } from '@/lib/auth/jwt'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Target, TrendingUp, CheckCircle } from 'lucide-react'
+import { Target, TrendingUp, CheckCircle, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
 
 interface KpiRow {
   id: string
@@ -126,8 +127,17 @@ export default async function Page() {
                 {kpis.map(k => (
                   <tr key={k.id} className="border-b border-[var(--color-border-default)]/50 hover:bg-[var(--color-surface-2)]/30 transition-colors">
                     <td className="p-3">
-                      <div className="font-medium">{k.name || '—'}</div>
-                      <div className="font-mono text-xs text-[var(--color-text-secondary)]">{k.code || '—'}</div>
+                      <Link
+                        href={k.code ? `/kpi/${encodeURIComponent(k.code)}` : `/kpi/${k.id}`}
+                        className="group inline-flex items-center gap-1 text-[var(--color-brand-500)] hover:underline"
+                        aria-label={`Buka detail ${k.code ?? k.name ?? 'KPI'}`}
+                      >
+                        <div>
+                          <div className="font-medium">{k.name || '—'}</div>
+                          <div className="font-mono text-xs text-[var(--color-text-secondary)] group-hover:text-[var(--color-brand-500)]">{k.code || '—'}</div>
+                        </div>
+                        <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                      </Link>
                     </td>
                     <td className="p-3 text-right tabular-nums font-medium">
                       {k.progress != null ? `${Math.round(k.progress)}%` : '—'}

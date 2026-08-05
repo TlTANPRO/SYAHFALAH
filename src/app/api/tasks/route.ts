@@ -21,6 +21,10 @@ export async function GET(req: NextRequest) {
     const status = url.searchParams.get('status')
     const limit = Math.min(Number(url.searchParams.get('limit')) || 50, 200)
     const onlyMine = url.searchParams.get('mine') !== 'false'
+    // Pagination (server-side)
+    const page = Math.max(1, Number(url.searchParams.get('page')) || 1)
+    const pageSize = Math.min(Number(url.searchParams.get('pageSize')) || 50, 200)
+    const offset = (page - 1) * pageSize
 
     const serviceClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,10 +33,10 @@ export async function GET(req: NextRequest) {
 
     let query = serviceClient
       .from('tasks')
-      .select('id, code, title, description, status, priority, scheduled_date, due_date, completed_at, assignee_id, division_id, sow_task_id, reference_id, reference_type, created_at, updated_at')
+      .select('id, code, title, description, status, priority, scheduled_date, due_date, completed_at, assignee_id, division_id, sow_task_id, reference_id, reference_type, created_at, updated_at', { count: 'exact' })
       .order('priority', { ascending: false })
       .order('created_at', { ascending: true })
-      .limit(limit)
+      .range(offset, offset + pageSize - 1)
 
     if (onlyMine) {
       query = query.eq('assignee_id', payload.userId)
@@ -44,9 +48,14 @@ export async function GET(req: NextRequest) {
       query = query.eq('status', status)
     }
 
-    const { data, error } = await query
+    const { data, error, count } = await query
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json(data ?? [])
+    return NextResponse.json({
+      data: data ?? [],
+      total: count ?? 0,
+      page,
+      pageSize,
+    })
   } catch (err: any) {
     return NextResponse.json({ error: err?.message ?? 'internal' }, { status: 500 })
   }

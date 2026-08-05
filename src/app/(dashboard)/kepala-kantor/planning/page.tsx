@@ -2,7 +2,8 @@
 // Halaman planning kepala kantor. Tampilan 1 kuartal ke depan
 // dan checklist hal yang harus di-prioritaskan.
 
-import { Target, CheckCircle2, AlertTriangle } from 'lucide-react'
+import Link from 'next/link'
+import { Target, CheckCircle2, AlertTriangle, ChevronRight } from 'lucide-react'
 
 interface QuarterGoal {
   divisi: string
@@ -100,6 +101,12 @@ export default function Page() {
 
   return (
     <div className="space-y-6">
+      <div className="card">
+        <div className="card-body p-3 text-sm bg-[var(--color-warning)]/10 border-l-4 border-[var(--color-warning)] rounded">
+          ⚠️ Data template — monthly planning belum di-load dari database. Wire ke <code>monthly_plans</code> table untuk data aktual.
+        </div>
+      </div>
+
       <div>
         <h1 className="display-lg">Planning Q3 2026</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
@@ -125,26 +132,36 @@ export default function Page() {
       <div className="space-y-3">
         {Q3_2026.map((q, i) => {
           const Icon = STATUS_ICON[q.status]
+          const slug = (q as { id?: string }).id ?? `row-${i}`
           return (
-            <div key={i} className="card">
-              <div className="card-body">
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-heading text-base font-semibold">{q.target}</p>
-                      <span className="pill" data-variant={STATUS_VARIANT[q.status]}>
-                        <Icon className="h-3 w-3" />
-                        {q.status}
-                      </span>
+            <Link
+              key={i}
+              href={`/kepala-kantor/planning/${slug}`}
+              className="group block"
+            >
+              <div className="card group-hover:border-[var(--color-brand-500)] transition-colors">
+                <div className="card-body">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-heading text-base font-semibold text-[var(--color-brand-500)] group-hover:underline inline-flex items-center gap-1">
+                          {q.target}
+                          <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </p>
+                        <span className="pill" data-variant={STATUS_VARIANT[q.status]}>
+                          <Icon className="h-3 w-3" />
+                          {q.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[var(--color-text-tertiary)]">
+                        {q.divisi} · PIC {q.pic} · Deadline {q.deadline}
+                      </p>
                     </div>
-                    <p className="text-xs text-[var(--color-text-tertiary)]">
-                      {q.divisi} · PIC {q.pic} · Deadline {q.deadline}
-                    </p>
                   </div>
+                  <p className="text-sm text-[var(--color-text-secondary)]">{q.kenapa}</p>
                 </div>
-                <p className="text-sm text-[var(--color-text-secondary)]">{q.kenapa}</p>
               </div>
-            </div>
+            </Link>
           )
         })}
       </div>

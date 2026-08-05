@@ -2,7 +2,8 @@
 // Laporan eksekutif. Print-friendly. Pakai design tokens baru.
 
 import { createClient } from '@supabase/supabase-js'
-import { TrendingUp, Users, CheckCircle2, AlertCircle } from 'lucide-react'
+import Link from 'next/link'
+import { TrendingUp, Users, CheckCircle2, AlertCircle, ChevronRight } from 'lucide-react'
 
 interface DivisionTaskSummary {
   division_id: string
@@ -119,7 +120,15 @@ export default async function Page() {
               <tr><td colSpan={6} className="text-center text-[var(--color-text-tertiary)] py-8">Belum ada data task.</td></tr>
             ) : task.map(t => (
               <tr key={t.division_id}>
-                <td className="font-medium">{t.division_name}</td>
+                <td className="font-medium">
+                  <Link
+                    href={`/divisi/${t.division_id}`}
+                    className="group inline-flex items-center gap-1 text-[var(--color-brand-500)] hover:underline"
+                  >
+                    {t.division_name}
+                    <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
+                </td>
                 <td className="text-right tabular-nums">{t.total_tasks}</td>
                 <td className="text-right tabular-nums text-[var(--color-success)]">{t.completed_count}</td>
                 <td className="text-right tabular-nums">{t.completion_rate != null ? `${Math.round(t.completion_rate)}%` : '—'}</td>
@@ -158,7 +167,15 @@ export default async function Page() {
               <tr><td colSpan={7} className="text-center text-[var(--color-text-tertiary)] py-8">Belum ada data KPI.</td></tr>
             ) : kpi.map(k => (
               <tr key={k.division_id}>
-                <td className="font-medium">{k.division_name}</td>
+                <td className="font-medium">
+                  <Link
+                    href={`/divisi/${k.division_id}`}
+                    className="group inline-flex items-center gap-1 text-[var(--color-brand-500)] hover:underline"
+                  >
+                    {k.division_name}
+                    <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
+                </td>
                 <td className="text-right tabular-nums">{k.kpi_count}</td>
                 <td className="text-right tabular-nums">{k.avg_progress != null ? `${Math.round(k.avg_progress)}%` : '—'}</td>
                 <td className="text-right tabular-nums text-[var(--color-success)]">{k.achieved_count}</td>
