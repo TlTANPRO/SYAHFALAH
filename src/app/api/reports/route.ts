@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
     let query = serviceClient
       .from('divisions')
       .select('id, name, description, created_at', { count: 'exact' })
+      .neq('name', 'Test Seed')
       .order('name', { ascending: true })
       .range(offset, offset + pageSize - 1)
 

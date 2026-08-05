@@ -35,6 +35,7 @@ async function load() {
     supabase
       .from('divisions')
       .select('id, name, description, created_at', { count: 'exact' })
+      .neq('name', 'Test Seed')
       .order('name')
       .range(0, 11),
   ])

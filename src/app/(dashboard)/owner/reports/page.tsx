@@ -36,7 +36,7 @@ async function load() {
   const [{ data: task }, { data: kpi }, { data: divisions, count }] = await Promise.all([
     supabase.from('division_task_summary').select('*').neq('division_name', 'Test Seed'),
     supabase.from('division_kpi_summary').select('*').neq('division_name', 'Test Seed').neq('division_code', 'TEST_SEED'),
-    supabase.from('divisions').select('id, name, description, created_at', { count: 'exact' }).order('name').range(0, 11),
+    supabase.from('divisions').select('id, name, description, created_at', { count: 'exact' }).neq('name', 'Test Seed').order('name').range(0, 11),
   ])
   return {
     task: (task ?? []) as DivisionTaskSummary[],
