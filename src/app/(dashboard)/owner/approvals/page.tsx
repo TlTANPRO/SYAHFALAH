@@ -3,7 +3,7 @@
 // urgent/high. Sudah punya data morning briefings dari sebelumnya.
 
 import { createClient } from '@supabase/supabase-js'
-import { CheckSquare, Clock, AlertTriangle, FileSignature } from 'lucide-react'
+import { CheckSquare, Clock, AlertTriangle, FileSignature, Check, X } from 'lucide-react'
 
 interface Notif {
   id: string
@@ -100,7 +100,27 @@ export default async function Page() {
                     {new Date(n.created_at).toLocaleString('id-ID')}
                   </p>
                 </div>
-                <FileSignature className="h-4 w-4 text-[var(--color-text-tertiary)] flex-shrink-0" />
+                <div className="flex flex-col gap-2 flex-shrink-0">
+                  <button
+                    type="button"
+                    aria-label={`Setujui ${n.title}`}
+                    className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-[var(--color-success)]/40 text-[var(--color-success)] hover:bg-[var(--color-success)]/10 transition-colors"
+                  >
+                    <Check className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Tolak ${n.title}`}
+                    className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-[var(--color-danger)]/40 text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                  {!n.is_read && (
+                    <span className="text-[10px] uppercase tracking-wide text-[var(--color-text-tertiary)] text-center">
+                      baru
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           ))

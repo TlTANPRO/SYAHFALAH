@@ -74,6 +74,9 @@ export default function Page() {
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
           Perhitungan insentif dan tracking surat peringatan tim.
         </p>
+        <p className="text-xs text-[var(--color-text-tertiary)] mt-2 italic">
+          Data di bawah adalah contoh untuk preview. Reward & punishment riil dihitung otomatis dari tabel closing dan SP aktif.
+        </p>
       </div>
 
       {/* 4 ringkasan */}
