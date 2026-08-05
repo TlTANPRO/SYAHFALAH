@@ -35,12 +35,12 @@
 --     parent_target_id is a brand new column with no values, scan would be
 --     empty anyway. We use NOT VALID defensively in case any sample data is
 --     inserted before VALIDATE runs.
+-- Self-FK: brand-new column with no existing rows. Postgres will validate
+-- the FK on empty set, which is fast and non-blocking. (NOT VALID would
+-- skip the check, but since the column is new + empty, the check is free
+-- anyway and we avoid splitting this into two statements.)
 ALTER TABLE public.kpi_targets
-  ADD COLUMN IF NOT EXISTS parent_target_id UUID REFERENCES public.kpi_targets(id) NOT VALID;
-
--- Validate the FK constraint (no-op on empty result, ensures new rows comply).
--- Safe: requires only SHARE ROW EXCLUSIVE on kpi_targets (allows reads+writes).
-ALTER TABLE public.kpi_targets VALIDATE CONSTRAINT kpi_targets_parent_target_id_fkey;
+  ADD COLUMN IF NOT EXISTS parent_target_id UUID REFERENCES public.kpi_targets(id);
 
 -- 1b. cascade_period: which level in the Y/Q/M/W/D cascade this row is.
 --     NULL means legacy/manual target (not part of any cascade).
@@ -110,10 +110,10 @@ END $$;
 
 -- Parent KPI definition (self-FK) — which higher-level KPI this derives from.
 -- company-level KPIs have NULL parent_kpi_id.
+-- Parent KPI definition (self-FK) — brand-new column, same reasoning as
+-- kpi_targets.parent_target_id above: empty column → FK validation is free.
 ALTER TABLE public.kpi_definitions
-  ADD COLUMN IF NOT EXISTS parent_kpi_id UUID REFERENCES public.kpi_definitions(id) NOT VALID;
-
-ALTER TABLE public.kpi_definitions VALIDATE CONSTRAINT kpi_definitions_parent_kpi_id_fkey;
+  ADD COLUMN IF NOT EXISTS parent_kpi_id UUID REFERENCES public.kpi_definitions(id);
 
 CREATE INDEX IF NOT EXISTS idx_kpi_definitions_parent
   ON public.kpi_definitions(parent_kpi_id)
@@ -137,8 +137,7 @@ BEGIN
       AND column_name = 'parent_task_id'
   ) THEN
     ALTER TABLE public.tasks
-      ADD COLUMN parent_task_id UUID REFERENCES public.tasks(id) NOT VALID;
-    ALTER TABLE public.tasks VALIDATE CONSTRAINT tasks_parent_task_id_fkey;
+      ADD COLUMN parent_task_id UUID REFERENCES public.tasks(id);
   END IF;
 END $$;
 
