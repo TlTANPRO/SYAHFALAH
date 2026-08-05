@@ -73,11 +73,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           inline `style` for the dynamic margin, so the layout works
           regardless of which breakpoint class names v4 picked up. */}
       <main
-        className="min-h-screen transition-all duration-300 ease-[var(--ease-out-expo)]"
-        style={{
-          marginLeft: isMobile ? 0 : sidebarCollapsed ? 64 : 288,
-        }}
-      >
+              id="main-content"
+              tabIndex={-1}
+              className="min-h-screen transition-all duration-300 ease-[var(--ease-out-expo)] focus:outline-none"
+              style={{
+                marginLeft: isMobile ? 0 : sidebarCollapsed ? 64 : 288,
+              }}
+            >
         {/* Topbar */}
         <Topbar />
 

@@ -59,6 +59,12 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-[var(--color-surface-0)] text-[var(--color-text-primary)] font-sans antialiased">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:rounded-md focus:bg-[var(--color-brand-500)] focus:text-white focus:shadow-lg focus:outline-none"
+        >
+          Skip to main content
+        </a>
         <Providers>{children}</Providers>
       </body>
     </html>

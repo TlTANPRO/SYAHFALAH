@@ -91,32 +91,43 @@ export function Topbar() {
           </span>
         </div>
 
-        {/* Global Search */}
-        <form onSubmit={handleSearch} className="flex-1 max-w-xl ml-auto md:ml-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-tertiary)] pointer-events-none" />
-            <input
-              id="global-search"
-              name="global-search"
-              type="text"
-              placeholder="Cari task, KPI, leads, nama…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => openCommandPalette()}
-              className="w-full h-9 pl-10 pr-20 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-brand-500)] focus:shadow-[0_0_0_3px_var(--color-brand-500)]/20 transition-shadow"
-              aria-label="Global search"
-            />
-            <button
-              type="button"
-              onClick={() => openCommandPalette()}
-              className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 rounded border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] px-1.5 h-6 text-[10px] font-mono text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-3)] transition-colors"
-              aria-label="Open command palette"
-              aria-keyshortcuts="Meta+K Control+K"
-            >
-              <span>⌘</span>K
-            </button>
-          </div>
-        </form>
+        {/* Global Search — desktop only */}
+                <form onSubmit={handleSearch} className="hidden sm:flex flex-1 max-w-xl ml-auto md:ml-6">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-tertiary)] pointer-events-none" />
+                    <input
+                      id="global-search"
+                      name="global-search"
+                      type="text"
+                      placeholder="Cari task, KPI, leads, nama…"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onFocus={() => openCommandPalette()}
+                      className="w-full h-9 pl-10 pr-20 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-brand-500)] focus:shadow-[0_0_0_3px_var(--color-brand-500)]/20 transition-shadow"
+                      aria-label="Global search"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => openCommandPalette()}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 hidden md:inline-flex items-center gap-0.5 rounded border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] px-1.5 h-6 text-[10px] font-mono text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-3)] transition-colors"
+                      aria-label="Open command palette"
+                      aria-keyshortcuts="Meta+K Control+K"
+                    >
+                      <span>⌘</span>K
+                    </button>
+                  </div>
+                </form>
+
+                {/* Search icon — mobile only */}
+                <button
+                  type="button"
+                  onClick={() => openCommandPalette()}
+                  className="sm:hidden p-2 rounded-md text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] transition-colors"
+                  aria-label="Buka pencarian"
+                  aria-keyshortcuts="Meta+K Control+K"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-1">
