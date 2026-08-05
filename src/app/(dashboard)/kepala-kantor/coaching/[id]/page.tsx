@@ -71,7 +71,16 @@ const JENIS_VARIANT: Record<CoachingEntry['jenis'], string> = {
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const entry = await loadEntry(id)
-  if (!entry) notFound()
+  if (!entry) {
+    // Fallback: render with placeholder so the page is never blank
+    return (
+      <div className="space-y-6">
+        <h1 className="display-lg">Coaching not found</h1>
+        <p className="text-sm text-[var(--color-text-secondary)]">ID: {id}</p>
+        <Link href="/kepala-kantor/coaching" className="text-[var(--color-brand-500)] hover:underline">← Kembali</Link>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
