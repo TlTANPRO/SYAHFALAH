@@ -99,6 +99,7 @@ export function Topbar() {
                       id="global-search"
                       name="global-search"
                       type="text"
+                      autoComplete="off"
                       placeholder="Cari task, KPI, leads, nama…"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}

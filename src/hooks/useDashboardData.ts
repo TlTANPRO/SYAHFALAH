@@ -65,16 +65,14 @@ export type Task = {
 }
 
 export function useTasks(filters?: { assigneeId?: string; divisionId?: string }) {
-  const { supabase } = useSupabase()
   return useQuery({
     queryKey: ['tasks', filters],
     queryFn: async () => {
-      let q = supabase.from('tasks').select('*').order('created_at', { ascending: false })
-      if (filters?.assigneeId) q = q.eq('assignee_id', filters.assigneeId)
-      if (filters?.divisionId) q = q.eq('division_id', filters.divisionId)
-      const { data, error } = await q
-      if (error) throw error
-      return (data ?? []) as Task[]
+      const params = new URLSearchParams()
+      if (filters?.assigneeId) params.set('mine', 'true')
+      const res = await fetch(`/api/tasks?${params.toString()}`, { credentials: 'include' })
+      if (!res.ok) return [] as Task[]
+      return (await res.json()) as Task[]
     },
   })
 }

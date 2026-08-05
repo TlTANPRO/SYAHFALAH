@@ -68,6 +68,7 @@ export function SavedViewsBar({ views, current, hydrated, onSave, onApply, onRem
             id="saved-view-name"
             name="savedViewName"
             type="text"
+            autoComplete="off"
             autoFocus
             placeholder="Nama view"
             aria-label="Nama view tersimpan"

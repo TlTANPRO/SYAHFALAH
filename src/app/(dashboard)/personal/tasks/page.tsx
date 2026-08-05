@@ -11,9 +11,8 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { createClient } from '@/lib/supabase/client'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-
+import { CheckSquare, Square, AlertCircle } from 'lucide-react'
 type TaskTab = 'all' | 'routine' | 'carry_over' | 'ad_hoc' | 'overdue'
 
 interface Task {
@@ -31,41 +30,31 @@ interface Task {
 }
 
 export default function PersonalTasksPage() {
-  const supabase = createClient()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<TaskTab>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Fetch tasks for today
-  const { data: tasks, isLoading } = useQuery({
+  const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks', 'today'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('scheduled_date', new Date().toISOString().split('T')[0])
-        .order('priority', { ascending: false })
-        .order('created_at', { ascending: true })
-      if (error) throw error
-      return data as Task[]
+      const today = new Date().toISOString().split('T')[0]
+      const res = await fetch(`/api/tasks?scheduled_date=${today}`, { credentials: 'include' })
+      if (!res.ok) return []
+      return (await res.json()) as Task[]
     },
   })
 
   // Toggle task status mutation
   const toggleTask = useMutation({
     mutationFn: async ({ taskId, status }: { taskId: string; status: Task['status'] }) => {
-      const { data, error } = await supabase
-        .from('tasks')
-        .update({ 
-          status, 
-          completed_at: status === 'completed' ? new Date().toISOString() : null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', taskId)
-        .select()
-        .single()
-      if (error) throw error
-      return data
+      const res = await fetch('/api/tasks', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: taskId, status }),
+      })
+      if (!res.ok) throw new Error('Failed to update task')
+      return res.json()
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })

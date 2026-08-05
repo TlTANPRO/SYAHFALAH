@@ -59,19 +59,19 @@ export default function Page() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
               <label htmlFor="settings-name" className="text-xs text-[var(--color-text-tertiary)]">Nama</label>
-              <input id="settings-name" name="name" className="input mt-1" defaultValue={user.name} />
+              <input id="settings-name" name="name" autoComplete="name" className="input mt-1" defaultValue={user.name} />
             </div>
             <div>
               <label htmlFor="settings-position" className="text-xs text-[var(--color-text-tertiary)]">Posisi</label>
-              <input id="settings-position" name="position" className="input mt-1" defaultValue={user.position} disabled />
+              <input id="settings-position" name="position" autoComplete="organization-title" className="input mt-1" defaultValue={user.position} disabled />
             </div>
             <div>
               <label htmlFor="settings-email" className="text-xs text-[var(--color-text-tertiary)]">Email</label>
-              <input id="settings-email" name="email" className="input mt-1" type="email" defaultValue={`${user.name.toLowerCase().replace(' ', '.')}@syahfalah.com`} />
+              <input id="settings-email" name="email" autoComplete="email" className="input mt-1" type="email" defaultValue={`${user.name.toLowerCase().replace(' ', '.')}@syahfalah.com`} />
             </div>
             <div>
               <label htmlFor="settings-phone" className="text-xs text-[var(--color-text-tertiary)]">No HP</label>
-              <input id="settings-phone" name="phone" className="input mt-1" defaultValue="0812xxxxxxxx" />
+              <input id="settings-phone" name="phone" autoComplete="tel" className="input mt-1" defaultValue="0812xxxxxxxx" />
             </div>
           </div>
           <div className="mt-4 flex justify-end">
