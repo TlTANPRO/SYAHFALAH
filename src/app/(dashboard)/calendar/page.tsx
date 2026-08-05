@@ -7,6 +7,7 @@
 // - Annual planning ogni Januari
 
 import { CalendarDays, Clock, MapPin, Users } from 'lucide-react'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface Ritual {
   nama: string
@@ -100,6 +101,22 @@ const KADARSA_COLOR: Record<string, string> = {
   'Tahunan': 'bg-[var(--color-danger)]/15 text-[var(--color-danger)] border-[var(--color-danger)]/30',
 }
 
+const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+
+function matchesToday(r: Ritual, todayIdx: number): boolean {
+  const lower = r.hari.toLowerCase()
+  if (r.kadarsa === 'Harian') {
+    // Harian berlaku Senin–Kamis, skip weekend
+    if (todayIdx === 0 || todayIdx === 6) return false
+    return lower.includes(DAY_NAMES[todayIdx].toLowerCase())
+  }
+  if (r.kadarsa === 'Mingguan') {
+    const ritualIdx = DAY_NAMES.findIndex(d => lower.includes(d.toLowerCase()))
+    return ritualIdx === todayIdx
+  }
+  return false
+}
+
 export default function Page() {
   const grouped = RITUAL.reduce<Record<string, Ritual[]>>((acc, r) => {
     (acc[r.kadarsa] = acc[r.kadarsa] || []).push(r)
@@ -107,18 +124,23 @@ export default function Page() {
   }, {})
   const order = ['Harian', 'Mingguan', 'Bulanan', 'Kuartalan', 'Tahunan']
 
-  // Highlight next meeting heuristically
   const today = new Date()
-  const dayOfWeek = today.getDay() // 0=Sun, 1=Mon
-  const nextMeeting = dayOfWeek === 0 || dayOfWeek === 6
+  const dayOfWeek = today.getDay()
+  const todayName = DAY_NAMES[dayOfWeek]
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+
+  const nextMeeting = isWeekend
     ? 'Senin 09.00 — Weekly Standup'
     : dayOfWeek === 5
     ? 'Senin 09.00 — Weekly Standup'
     : 'Besok 08.30 — Daily Standup'
 
+  const todaysRituals = RITUAL.filter(r => matchesToday(r, dayOfWeek))
+
   return (
     <div className="space-y-6">
-      <div>
+      <div className="space-y-1">
+        <Breadcrumbs crumbs={[{ label: 'Ritme kerja' }]} />
         <h1 className="display-lg">Ritme kerja</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
           Meeting yang sudah dijadwalkan dan harus diikuti semua tim.
@@ -135,6 +157,29 @@ export default function Page() {
         </div>
       </div>
 
+      {todaysRituals.length > 0 && (
+        <div className="rounded-lg border border-[var(--color-brand-500)]/30 bg-[var(--color-brand-500)]/5 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[var(--color-brand-500)] text-white">
+              Hari ini · {todayName}
+            </span>
+            <p className="text-sm font-medium">
+              {todaysRituals.length} agenda untuk hari ini
+            </p>
+          </div>
+          <ul className="space-y-1">
+            {todaysRituals.map((r, i) => (
+              <li key={i} className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+                <Clock className="h-3.5 w-3.5 text-[var(--color-brand-500)]" />
+                <span className="font-mono">{r.jam}</span>
+                <span>·</span>
+                <span>{r.nama}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {order.map(k => {
         const items = grouped[k] || []
         if (items.length === 0) return null
@@ -147,35 +192,44 @@ export default function Page() {
               <h2 className="display-sm">{k === 'Kuartalan' ? 'Quarterly' : k === 'Bulanan' ? 'Monthly' : k}</h2>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              {items.map((r, i) => (
-                <div key={i} className="card card-hover">
-                  <div className="card-body">
-                    <h3 className="font-heading text-base font-semibold mb-3">{r.nama}</h3>
-                    <div className="space-y-2 mb-3">
-                      <div className="flex items-start gap-2 text-sm">
-                        <CalendarDays className="h-3.5 w-3.5 text-[var(--color-text-tertiary)] mt-0.5 flex-shrink-0" />
-                        <span className="text-[var(--color-text-secondary)]">{r.hari}, {r.jam}</span>
+              {items.map((r, i) => {
+                const isToday = todaysRituals.some(t => t.nama === r.nama)
+                return (
+                  <div key={i} className={`card card-hover ${isToday ? 'ring-2 ring-[var(--color-brand-500)]/40' : ''}`}>
+                    <div className="card-body">
+                      {isToday && (
+                        <div className="flex items-center gap-1 text-xs text-[var(--color-brand-500)] font-medium mb-2">
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--color-brand-500)]" />
+                          Hari ini
+                        </div>
+                      )}
+                      <h3 className="font-heading text-base font-semibold mb-3">{r.nama}</h3>
+                      <div className="space-y-2 mb-3">
+                        <div className="flex items-start gap-2 text-sm">
+                          <CalendarDays className="h-3.5 w-3.5 text-[var(--color-text-tertiary)] mt-0.5 flex-shrink-0" />
+                          <span className="text-[var(--color-text-secondary)]">{r.hari}, {r.jam}</span>
+                        </div>
+                        <div className="flex items-start gap-2 text-sm">
+                          <Clock className="h-3.5 w-3.5 text-[var(--color-text-tertiary)] mt-0.5 flex-shrink-0" />
+                          <span className="text-[var(--color-text-secondary)]">{r.durasi}</span>
+                        </div>
+                        <div className="flex items-start gap-2 text-sm">
+                          <Users className="h-3.5 w-3.5 text-[var(--color-text-tertiary)] mt-0.5 flex-shrink-0" />
+                          <span className="text-[var(--color-text-secondary)]">{r.peserta}</span>
+                        </div>
+                        <div className="flex items-start gap-2 text-sm">
+                          <MapPin className="h-3.5 w-3.5 text-[var(--color-text-tertiary)] mt-0.5 flex-shrink-0" />
+                          <span className="text-[var(--color-text-secondary)]">{r.tempat}</span>
+                        </div>
                       </div>
-                      <div className="flex items-start gap-2 text-sm">
-                        <Clock className="h-3.5 w-3.5 text-[var(--color-text-tertiary)] mt-0.5 flex-shrink-0" />
-                        <span className="text-[var(--color-text-secondary)]">{r.durasi}</span>
+                      <div className="pt-3 border-t border-[var(--color-border-subtle)]">
+                        <p className="text-xs text-[var(--color-text-tertiary)] mb-1">Agenda</p>
+                        <p className="text-sm text-[var(--color-text-primary)]">{r.agenda}</p>
                       </div>
-                      <div className="flex items-start gap-2 text-sm">
-                        <Users className="h-3.5 w-3.5 text-[var(--color-text-tertiary)] mt-0.5 flex-shrink-0" />
-                        <span className="text-[var(--color-text-secondary)]">{r.peserta}</span>
-                      </div>
-                      <div className="flex items-start gap-2 text-sm">
-                        <MapPin className="h-3.5 w-3.5 text-[var(--color-text-tertiary)] mt-0.5 flex-shrink-0" />
-                        <span className="text-[var(--color-text-secondary)]">{r.tempat}</span>
-                      </div>
-                    </div>
-                    <div className="pt-3 border-t border-[var(--color-border-subtle)]">
-                      <p className="text-xs text-[var(--color-text-tertiary)] mb-1">Agenda</p>
-                      <p className="text-sm text-[var(--color-text-primary)]">{r.agenda}</p>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )
