@@ -1,4 +1,5 @@
 // src/app/(dashboard)/kepala-kantor/coaching/[id]/page.tsx
+// Deployed: 2026-08-06 forced rebuild
 // Coaching session detail page.
 
 import { createClient } from '@supabase/supabase-js'
