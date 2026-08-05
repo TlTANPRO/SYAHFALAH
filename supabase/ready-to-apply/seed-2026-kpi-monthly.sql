@@ -1,0 +1,99 @@
+-- seed-2026-kpi-monthly.sql
+-- READY-TO-PASTE untuk Supabase SQL Editor
+-- 3 strategi monthly distribution — UNCOMMENT salah satu sesuai preferensi.
+-- Audit 6-Aug: kpi_targets has 1344 rows all period=2025-01. 2026 = kosong.
+-- Definitions (29) di kpi_definitions table sudah live.
+
+-- Strategy A — Even monthly (annual/12): untuk percentage + count metric
+-- Cocok untuk: KPI-PROFIT (%), KPI-CONVERSION (%), KPI-LEADS (count), dll
+-- Distribusi merata monthly = annual / 12.
+-- Total setahun matches annual target.
+
+-- Strategy B — Same value (untouched): untuk 'target' direction (%)
+-- Cocok untuk: konstanta rentang seperti uptime, safety, profit margin
+-- Monthly = same value (target continuous, not additive)
+
+-- Strategy C — Manual per period: user edit specific number per month
+-- Cocok untuk: seasonal business (Q4 focus, low Q1), or special events
+
+-- =================================================================
+-- OPSI A: Even monthly distribution (annual / 12)
+-- =================================================================
+-- INSERT INTO kpi_targets (kpi_definition_id, period, target_value, status, approved_at)
+-- SELECT
+--   kd.id,
+--   periods.month,
+--   CASE kd.unit
+--     WHEN '%' THEN kd.target_value  -- same value (continuous)
+--     WHEN 'hours' THEN kd.target_value  -- same value
+--     WHEN 'count' THEN ROUND(kd.target_value / 12.0, 2)  -- even split
+--     WHEN 'Rp' THEN ROUND(kd.target_value / 12.0, 2)  -- even split
+--     ELSE kd.target_value
+--   END,
+--   'active',
+--   now()
+-- FROM kpi_definitions kd
+-- CROSS JOIN (
+--   SELECT '2026-01' AS month UNION ALL
+--   SELECT '2026-02' UNION ALL
+--   SELECT '2026-03' UNION ALL
+--   SELECT '2026-04' UNION ALL
+--   SELECT '2026-05' UNION ALL
+--   SELECT '2026-06' UNION ALL
+--   SELECT '2026-07' UNION ALL
+--   SELECT '2026-08' UNION ALL
+--   SELECT '2026-09' UNION ALL
+--   SELECT '2026-10' UNION ALL
+--   SELECT '2026-11' UNION ALL
+--   SELECT '2026-12'
+-- ) periods
+-- WHERE kd.is_active = true
+-- ON CONFLICT (kpi_definition_id, period) DO NOTHING
+-- RETURNING period, target_value;
+
+-- =================================================================
+-- OPSI B: Hanya bulan sekarang (2026-08) — pivot 2025 ke 2026 baseline
+-- =================================================================
+-- INSERT INTO kpi_targets (kpi_definition_id, period, target_value, status, approved_at)
+-- SELECT
+--   kd.id,
+--   '2026-08',
+--   kd.target_value,
+--   'active',
+--   now()
+-- FROM kpi_definitions kd
+-- WHERE kd.is_active = true
+--   AND NOT EXISTS (
+--     SELECT 1 FROM kpi_targets kt
+--     WHERE kt.kpi_definition_id = kd.id AND kt.period = '2026-08'
+--   );
+
+-- =================================================================
+-- OPSI C: Hapus semua 2025 + buat 2026 fresh (DESTRUCTIVE - back up dulu!)
+-- =================================================================
+-- DELETE FROM kpi_actuals WHERE kpi_target_id IN (
+--   SELECT id FROM kpi_targets WHERE period LIKE '2025-%'
+-- );
+-- DELETE FROM kpi_targets WHERE period LIKE '2025-%';
+-- INSERT INTO kpi_targets (...) -- (pilih A atau B di atas)
+
+-- =================================================================
+-- HELPERS (read-only, safe to run anytime):
+-- =================================================================
+
+-- Cek 2026 coverage saat ini:
+-- SELECT kd.level, kd.code,
+--   COUNT(kt.id) FILTER (WHERE kt.period LIKE '2025-%') AS target_2025,
+--   COUNT(kt.id) FILTER (WHERE kt.period LIKE '2026-%') AS target_2026
+-- FROM kpi_definitions kd
+-- LEFT JOIN kpi_targets kt ON kt.kpi_definition_id = kd.id
+-- GROUP BY kd.id, kd.level, kd.code
+-- ORDER BY kd.level, kd.code;
+
+-- Cek total value per period (sanity check after insert):
+-- SELECT period, COUNT(*) AS kpi_count,
+--        SUM(target_value) FILTER (WHERE unit = 'Rp') AS total_revenue_target
+-- FROM kpi_targets kt
+-- JOIN kpi_definitions kd ON kd.id = kt.kpi_definition_id
+-- GROUP BY period
+-- ORDER BY period;

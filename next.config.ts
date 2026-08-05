@@ -54,6 +54,33 @@ const nextConfig: NextConfig = {
         source: "/(.*)",
         headers: securityHeaders,
       },
+      // Static assets (immutable, hash in filename from /_next/static/)
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      // Public SVG + PNG icons + manifest + robots — long-cache but revalidate
+      {
+        source: "/icons/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400, must-revalidate" },
+        ],
+      },
+      {
+        source: "/:path(manifest\\.json|robots\\.txt|.*\\.svg|.*\\.png)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=3600, must-revalidate" },
+        ],
+      },
+      // Font files (Google Fonts)
+      {
+        source: "/fonts/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
     ];
   },
 };
