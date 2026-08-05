@@ -48,14 +48,14 @@ export async function readSession(): Promise<SessionPayload | null> {
 export async function requireRole(min: Role): Promise<SessionPayload> {
   const session = await readSession()
   if (!session) redirect('/login')
-  if (!hasRoleAtLeast(session.role, min)) redirect('/personal/tasks')
+  if (!hasRoleAtLeast(session.role, min)) redirect('/forbidden?reason=role')
   return session
 }
 
 export async function requireExactRole(allowed: Role[]): Promise<SessionPayload> {
   const session = await readSession()
   if (!session) redirect('/login')
-  if (!allowed.includes(session.role)) redirect('/personal/tasks')
+  if (!allowed.includes(session.role)) redirect('/forbidden?reason=role')
   return session
 }
 
@@ -68,9 +68,9 @@ export async function requireDivisionAccess(divisionId: string): Promise<Session
   if (session.role === 'owner' || session.role === 'kepala_kantor') return session
   // PICs only see their assigned division.
   if (session.role === 'pic_divisi') {
-    if (session.divisionId !== divisionId) redirect('/personal/tasks')
+    if (session.divisionId !== divisionId) redirect('/forbidden?reason=division')
     return session
   }
   // Staff has no business in /divisi/*.
-  redirect('/personal/tasks')
+  redirect('/forbidden?reason=role')
 }

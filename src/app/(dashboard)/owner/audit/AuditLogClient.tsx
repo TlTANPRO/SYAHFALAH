@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ChevronRight, Search, Filter, X, FileSearch } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Pagination } from '@/components/ui/Pagination'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 
 export interface AuditLogRow {
   id: string
@@ -117,10 +118,26 @@ export function AuditLogClient({ initialRows, initialTotal, knownActions, knownT
         <UserSelect value={userId} onChange={(v) => { setUserId(v); setPage(1) }} users={knownUserIds} />
       </div>
 
-      <div className="text-xs text-[var(--color-text-tertiary)]" aria-live="polite">
-        {q || action !== 'all' || table !== 'all' || userId !== 'all'
-          ? `${total} event cocok`
-          : `Total ${total} event`}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="text-xs text-[var(--color-text-tertiary)]" aria-live="polite">
+          {q || action !== 'all' || table !== 'all' || userId !== 'all'
+            ? `${total} event cocok`
+            : `Total ${total} event`}
+        </div>
+        <ExportCsvButton
+          rows={rows.map((r) => ({
+            waktu: r.created_at ?? '',
+            aksi: r.action ?? '',
+            tabel: r.table_name ?? '',
+            record_id: r.record_id ?? '',
+            user_id: r.user_id ?? '',
+            user_name: userName(r.user_id),
+            ip_address: r.ip_address ?? '',
+            user_agent: r.user_agent ?? '',
+          }))}
+          prefix="audit-log"
+          label="Export CSV"
+        />
       </div>
 
       <Card>
