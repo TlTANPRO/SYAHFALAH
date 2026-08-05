@@ -11,6 +11,8 @@ import { SelectableTable } from '@/components/ui/SelectableTable'
 import { BulkActionBar } from '@/components/ui/BulkActionBar'
 import { useSelection } from '@/lib/hooks/useSelection'
 import { useUIStore } from '@/stores/uiStore'
+import { formatValue } from '@/lib/format'
+import Link from 'next/link'
 
 interface KpiRow {
   code: string
@@ -35,14 +37,6 @@ const STATUS_VARIANT: Record<string, string> = {
 }
 const STATUS_LABEL: Record<string, string> = {
   achieved: 'Tercapai', on_track: 'On track', at_risk: 'At risk', off_track: 'Off track',
-}
-
-function formatValue(v: number | null, unit: string | null): string {
-  if (v == null) return '—'
-  if (unit === '%') return `${v.toFixed(1)}%`
-  if (unit === 'IDR') return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v)
-  if (unit === 'count') return `${v.toFixed(0)}`
-  return unit ? `${v.toFixed(1)} ${unit}` : v.toFixed(1)
 }
 
 function exportRows(rows: KpiRow[], divisions: { id: string; name: string }[]) {
@@ -129,7 +123,7 @@ export function KpiTable({ rows, divisions }: Props) {
         {(k) => (
           <>
             <td>
-              <p className="font-medium">{k.name || '—'}</p>
+              <Link href={`/kpi/${k.code}`} className="font-medium hover:text-[var(--color-brand-500)] transition-colors">{k.name || '—'}</Link>
               <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] mt-0.5">{k.code}</p>
             </td>
             <td className="text-sm text-[var(--color-text-secondary)]">

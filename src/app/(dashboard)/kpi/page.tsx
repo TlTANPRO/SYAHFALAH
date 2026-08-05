@@ -9,6 +9,7 @@ import { ExportKpiButton } from '@/components/kpi/ExportKpiButton'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { KpiExplorerClient } from './KpiExplorerClient'
 import { KpiTable } from './KpiTable'
+import { formatValue } from '@/lib/format'
 
 interface KpiRow {
   id: string
@@ -60,14 +61,6 @@ const LEVEL_LABEL: Record<string, string> = {
   company: 'Perusahaan',
   division: 'Divisi',
   personal: 'Personal',
-}
-
-function formatValue(v: number | null, unit: string | null): string {
-  if (v == null) return '—'
-  if (unit === '%') return `${v.toFixed(1)}%`
-  if (unit === 'IDR') return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v)
-  if (unit === 'count') return `${v.toFixed(1)} unit`
-  return unit ? `${v.toFixed(1)} ${unit}` : v.toFixed(1)
 }
 
 async function loadData() {

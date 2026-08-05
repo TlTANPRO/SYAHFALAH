@@ -5,6 +5,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { Target } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { formatValue } from '@/lib/format'
 
 interface KpiRow {
   id: string
@@ -31,14 +32,6 @@ const STATUS_LABEL: Record<string, string> = {
   on_track: 'On track',
   at_risk: 'At risk',
   off_track: 'Off track',
-}
-
-function formatValue(v: number | null, unit: string | null): string {
-  if (v == null) return '—'
-  if (unit === '%') return `${v.toFixed(1)}%`
-  if (unit === 'IDR') return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v)
-  if (unit === 'count') return `${v.toFixed(1)}`
-  return unit ? `${v.toFixed(1)} ${unit}` : v.toFixed(1)
 }
 
 async function loadData() {
