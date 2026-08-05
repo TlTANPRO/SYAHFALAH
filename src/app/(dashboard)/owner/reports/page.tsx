@@ -4,6 +4,7 @@
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { TrendingUp, Users, CheckCircle2, AlertCircle, ChevronRight } from 'lucide-react'
+import { ReportsClient } from './ReportsClient'
 
 interface DivisionTaskSummary {
   division_id: string
@@ -30,20 +31,23 @@ interface DivisionKpiSummary {
 async function load() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) return { task: [], kpi: [] }
+  if (!url || !key) return { task: [], kpi: [], divisions: [], total: 0 }
   const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
-  const [{ data: task }, { data: kpi }] = await Promise.all([
+  const [{ data: task }, { data: kpi }, { data: divisions, count }] = await Promise.all([
     supabase.from('division_task_summary').select('*').neq('division_name', 'Test Seed'),
     supabase.from('division_kpi_summary').select('*').neq('division_name', 'Test Seed').neq('division_code', 'TEST_SEED'),
+    supabase.from('divisions').select('id, name, description, created_at', { count: 'exact' }).order('name').range(0, 11),
   ])
   return {
     task: (task ?? []) as DivisionTaskSummary[],
     kpi: (kpi ?? []) as DivisionKpiSummary[],
+    divisions: (divisions ?? []) as any[],
+    total: count ?? 0,
   }
 }
 
 export default async function Page() {
-  const { task, kpi } = await load()
+  const { task, kpi, divisions, total } = await load()
 
   const totalTasks = task.reduce((s, t) => s + t.total_tasks, 0)
   const totalCompleted = task.reduce((s, t) => s + t.completed_count, 0)
@@ -186,6 +190,13 @@ export default async function Page() {
             ))}
           </tbody>
         </table></div>
+      </div>
+
+      <div className="space-y-3">
+        <h2 className="font-heading text-base font-semibold flex items-center gap-2">
+          <Users className="h-4 w-4 text-[var(--color-brand-500)]" /> Direktori Divisi
+        </h2>
+        <ReportsClient initialData={divisions} total={total} />
       </div>
     </div>
   )

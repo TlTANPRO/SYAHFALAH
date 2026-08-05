@@ -5,6 +5,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent } from '@/components/ui/card'
 import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
+import { TeamClient } from './TeamClient'
+import { Users } from 'lucide-react'
 
 interface Member {
   user_id: string
@@ -23,17 +25,28 @@ interface Member {
 async function load() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) return []
+  if (!url || !key) return { members: [], divisions: [], total: 0 }
   const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
-  const { data } = await supabase
-    .from('team_personal_kpis')
-    .select('user_id, name, position, division_id, division_name, kpi_count, avg_progress, achieved_count, on_track_count, at_risk_count, off_track_count')
-    .order('avg_progress', { ascending: false })
-  return (data ?? []) as Member[]
+  const [{ data }, { data: divisions, count }] = await Promise.all([
+    supabase
+      .from('team_personal_kpis')
+      .select('user_id, name, position, division_id, division_name, kpi_count, avg_progress, achieved_count, on_track_count, at_risk_count, off_track_count')
+      .order('avg_progress', { ascending: false }),
+    supabase
+      .from('divisions')
+      .select('id, name, description, member_count:users!users_division_id_fkey(count)', { count: 'exact' })
+      .order('name')
+      .range(0, 11),
+  ])
+  return {
+    members: (data ?? []) as Member[],
+    divisions: (divisions ?? []) as any[],
+    total: count ?? 0,
+  }
 }
 
 export default async function Page() {
-  const members = await load()
+  const { members, divisions, total } = await load()
   return (
     <div className="space-y-6">
       <div>
@@ -45,6 +58,13 @@ export default async function Page() {
           <PersonalKpiTable members={members} />
         </CardContent>
       </Card>
+
+      <div className="space-y-3">
+        <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
+          <Users className="h-4 w-4 text-[var(--color-brand-500)]" /> Direktori Divisi
+        </h2>
+        <TeamClient initialData={divisions} total={total} />
+      </div>
     </div>
   )
 }
