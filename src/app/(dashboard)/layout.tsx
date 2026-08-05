@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import { CommandDialog } from '@/components/ui/command-palette'
 import { SessionExpiryBanner } from '@/components/auth/SessionExpiryBanner'
+import { ToastContainer } from '@/components/ui/toast-container'
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -101,6 +102,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Global command palette (⌘K / Ctrl+K) */}
       <CommandDialog open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
+
+      {/* Toast notifications (aria-live region inside) */}
+      <ToastContainer />
     </div>
   )
 }
