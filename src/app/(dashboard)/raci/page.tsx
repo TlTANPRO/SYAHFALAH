@@ -6,6 +6,7 @@
 // punya relasi RACI eksplisit.
 
 import { CheckCircle2, Circle, Eye, MessageSquare, AlertTriangle } from 'lucide-react'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface RACIRow {
   task: string
@@ -66,6 +67,8 @@ export default function Page() {
   return (
     <div className="space-y-6">
       <div>
+      <Breadcrumbs crumbs={ [{ label: 'Matriks RACI' }] } />
+        
         <h1 className="display-lg">Matriks RACI</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
           Siapa ngapain. R = eksekusi, A = pemilik hasil, C = dimintai pendapat, I = hanya tahu.

@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { FileText, Clock } from 'lucide-react'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 async function loadSow() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -37,6 +38,8 @@ export default async function Page() {
   return (
     <div className="space-y-6">
       <div>
+      <Breadcrumbs crumbs={ [{ label: 'SOW Library' }] } />
+        
         <h1 className="font-heading text-2xl font-bold">SOW Library</h1>
         <p className="text-[var(--color-text-secondary)]">{sow.length} SOW tersedia untuk semua divisi</p>
       </div>

@@ -6,6 +6,7 @@
 import { useState } from 'react'
 import { Moon, Sun, Bell, Lock, User, Smartphone } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 export default function Page() {
   const { user } = useAuthStore()
@@ -38,6 +39,8 @@ export default function Page() {
   return (
     <div className="space-y-6">
       <div>
+      <Breadcrumbs crumbs={ [{ label: 'Settings' }] } />
+        
         <h1 className="display-lg">Settings</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
           Atur profil, notifikasi, dan preferensi tampilan.

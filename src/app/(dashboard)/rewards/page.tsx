@@ -4,6 +4,7 @@
 // Punishment: warning → SP1 → SP2 → SP3 jika warning berturut-turut.
 
 import { TrendingUp, AlertTriangle, Award, Sparkles } from 'lucide-react'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface RewardEntry {
   bulan: string
@@ -70,6 +71,8 @@ export default function Page() {
   return (
     <div className="space-y-6">
       <div>
+      <Breadcrumbs crumbs={ [{ label: 'Reward & Punishment' }] } />
+        
         <h1 className="display-lg">Reward & Punishment</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
           Perhitungan insentif dan tracking surat peringatan tim.

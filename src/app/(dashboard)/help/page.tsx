@@ -2,6 +2,7 @@
 // FAQ singkat untuk tim. Ditambah kontak untuk hal yang belum terjawab.
 
 import { HelpCircle, MessageCircle, ChevronDown } from 'lucide-react'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 const FAQ = [
   {
@@ -50,6 +51,8 @@ export default function Page() {
   return (
     <div className="space-y-6">
       <div>
+      <Breadcrumbs crumbs={ [{ label: 'Help & FAQ' }] } />
+        
         <h1 className="display-lg">Help & FAQ</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
           Pertanyaan yang sering ditanyain. Kalau belum ada di sini, hubungi Mada.

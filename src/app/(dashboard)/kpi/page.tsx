@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js'
 import { Target, ChevronRight, Filter } from 'lucide-react'
 import Link from 'next/link'
 import { ExportKpiButton } from '@/components/kpi/ExportKpiButton'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface KpiRow {
   id: string
@@ -173,6 +174,8 @@ export default async function Page({
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
+      <Breadcrumbs crumbs={ [{ label: 'KPI Explorer' }] } />
+        
           <h1 className="display-lg">KPI Explorer</h1>
           <p className="text-sm text-[var(--color-text-secondary)] mt-1">
             {filtered.length} definisi KPI, diagregat dari semua period aktif.

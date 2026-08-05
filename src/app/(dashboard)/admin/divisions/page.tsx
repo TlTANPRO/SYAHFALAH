@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Building2, FileText, Users } from 'lucide-react'
 import Link from 'next/link'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface Division {
   id: string
@@ -56,6 +57,8 @@ export default async function Page() {
   return (
     <div className="space-y-6">
       <div>
+      <Breadcrumbs crumbs={ [{ label: 'Admin', href: '/admin' }, { label: 'Divisi' }] } />
+        
         <h1 className="font-heading text-2xl font-bold">Divisi</h1>
         <p className="text-[var(--color-text-secondary)]">{divisions.length} divisi terdaftar</p>
       </div>

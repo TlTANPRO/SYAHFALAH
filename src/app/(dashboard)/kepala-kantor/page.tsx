@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/client'
 import { TopPageHero } from '@/components/layout/TopPageHero'
 import { StatCard } from '@/components/layout/StatCard'
 import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 const DIVISION_ICON: Record<string, React.ReactNode> = {
   MARKETING: <Target className="h-5 w-5" />,
@@ -87,6 +88,8 @@ export default function KepalaKantorDashboard() {
 
   return (
     <div className="space-y-8">
+      
+      <Breadcrumbs crumbs={[{ label: "Kepala Kantor" }]} />
       <TopPageHero
         title="Ringkasan Operasional"
         subtitle="Performa lintas divisi dan ritme kerja tim. Update otomatis saat data berubah."

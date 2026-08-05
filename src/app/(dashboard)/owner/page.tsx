@@ -20,6 +20,7 @@ import { PipelineFunnel } from '@/components/owner/PipelineFunnel'
 import { ClusterGrid } from '@/components/owner/ClusterGrid'
 import { ProjectTracker } from '@/components/owner/ProjectTracker'
 import { ConsumerCasesTable } from '@/components/owner/ConsumerCasesTable'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 async function loadData() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -163,6 +164,8 @@ export default async function Page() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
+      <Breadcrumbs crumbs={ [{ label: 'Executive Overview' }] } />
+        
           <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-mono mb-1">
             Ringkasan Owner
           </p>

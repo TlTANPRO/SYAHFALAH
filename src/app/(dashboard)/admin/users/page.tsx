@@ -8,6 +8,7 @@ import { createClient } from '@supabase/supabase-js'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, Shield, Mail, Phone } from 'lucide-react'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface AdminUser {
   id: string
@@ -64,6 +65,8 @@ export default async function Page() {
   return (
     <div className="space-y-6">
       <div>
+      <Breadcrumbs crumbs={ [{ label: 'Admin', href: '/admin' }, { label: 'Manajemen User' }] } />
+        
         <h1 className="font-heading text-2xl font-bold">Manajemen User</h1>
         <p className="text-[var(--color-text-secondary)]">{users.length} user terdaftar · {divisions.length} divisi</p>
       </div>
