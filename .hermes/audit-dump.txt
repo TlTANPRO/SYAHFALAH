@@ -1,0 +1,595 @@
+=== AUDIT TASK: Syahfalah Operations Dashboard ===
+
+User: Wants ALL data clickable (every row in list should open detail page).
+
+=== ROUTES INVENTORY (41 total) ===
+Dynamic detail pages: 6 (divisi/[divisionId], divisi/[divisionId]/{content,kpi,leads,team}, kpi/[code])
+Static list pages: 21 (most have table/grid but no click-through)
+
+=== CLICKABILITY GAP (audit) ===
+13 list pages have ZERO click-through to detail:
+  - admin/divisions
+  - admin/sow
+  - admin/users
+  - divisi/[divisionId]/leads
+  - kepala-kantor/coaching
+  - kepala-kantor/planning
+  - owner/kpi
+  - owner/reports
+  - personal/kpi
+  - personal/schedule
+  - personal/sow
+  - raci
+  - rewards
+  - sow
+
+=== FILE EXCERPTS (first 50 lines per file) ===
+
+--- reports/page.tsx ---
+// owner/reports/page.tsx
+// Laporan eksekutif. Print-friendly. Pakai design tokens baru.
+
+import { createClient } from '@supabase/supabase-js'
+import { TrendingUp, Users, CheckCircle2, AlertCircle } from 'lucide-react'
+
+interface DivisionTaskSummary {
+  division_id: string
+  division_name: string
+  total_tasks: number
+  completed_count: number
+  in_progress_count: number
+  pending_count: number
+  overdue_count: number
+  completion_rate: number | null
+}
+
+interface DivisionKpiSummary {
+  division_id: string
+  division_name: string
+  kpi_count: number
+  avg_progress: number | null
+  achieved_count: number
+  on_track_count: number
+  at_risk_count: number
+  off_track_count: number
+}
+
+async function load() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return { task: [], kpi: [] }
+  const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+  const [{ data: task }, { data: kpi }] = await Promise.all([
+    supabase.from('division_task_summary').select('*').neq('division_name', 'Test Seed'),
+    supabase.from('division_kpi_summary').select('*').neq('division_name', 'Test Seed').neq('division_code', 'TEST_SEED'),
+  ])
+  return {
+    task: (task ?? []) as DivisionTaskSummary[],
+    kpi: (kpi ?? []) as DivisionKpiSummary[],
+  }
+}
+
+export default async function Page() {
+  const { task, kpi } = await load()
+
+  const totalTasks = task.reduce((s, t) => s + t.total_tasks,
+
+--- users/page.tsx ---
+// admin/users/page.tsx
+// Owner-only user management. Reads from the users table via the
+// service-role client (admin route). Mutation is not exposed yet —
+// once we add an `/api/admin/users/[id]/role` endpoint, this page can
+// wire up the role selector.
+
+import { createClient } from '@supabase/supabase-js'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Users, Shield, Mail, Phone } from 'lucide-react'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+
+interface AdminUser {
+  id: string
+  full_name: string
+  email: string | null
+  phone: string | null
+  role: string
+  position: string | null
+  division_id: string | null
+  is_active: boolean
+}
+
+interface Division {
+  id: string
+  name: string
+}
+
+async function loadData() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return { users: [], divisions: [] }
+  const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+
+  const [{ data: users }, { data: divisions }] = await Promise.all([
+    supabase
+      .from('users')
+      .select('id, full_name, email, phone, role, position, division_id, is_active')
+      .order('role', { ascending: true })
+      .order('full_name', { ascending: true }),
+    supabase.from('divisions').select('id, name').order('name'),
+  ])
+  return {
+    users: (users ?? []) as AdminUser[],
+ 
+
+--- divisions/page.tsx ---
+// admin/divisions/page.tsx
+// Owner-only division management. Reads from the divisions table and
+// joins with KPI rollups so the admin can see headcount + KPI health
+// per division at a glance.
+
+import { createClient } from '@supabase/supabase-js'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Building2, FileText, Users } from 'lucide-react'
+import Link from 'next/link'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+
+interface Division {
+  id: string
+  code: string
+  name: string
+  description: string | null
+  is_active: boolean
+  sort_order: number
+}
+
+interface DivisionSummary {
+  division_id: string
+  total_tasks: number
+  pending_count: number
+  in_progress_count: number
+  completed_count: number
+  overdue_count: number
+}
+
+async function loadDivisions(): Promise<{ divisions: Division[]; summaries: Map<string, DivisionSummary> }> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return { divisions: [], summaries: new Map() }
+  const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+  const [{ data: divs }, { data: sums }] = await Promise.all([
+    supabase
+      .from('divisions')
+      .select('id, code, name, description, is_active, sort_order')
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true }),
+    supabase
+ 
+
+--- kpi/page.tsx ---
+// personal/kpi/page.tsx
+// Personal KPI dashboard for the currently authenticated user. Reads
+// the kpis view (level=personal, user_id=auth.uid()).
+
+import { createClient } from '@supabase/supabase-js'
+import { cookies } from 'next/headers'
+import { verifyAccessToken } from '@/lib/auth/jwt'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Target, TrendingUp, CheckCircle } from 'lucide-react'
+
+interface KpiRow {
+  id: string
+  code: string | null
+  name: string | null
+  unit: string | null
+  baseline_target_value: number | null
+  actual_value: number | null
+  progress: number | null
+  status: string | null
+  period_start: string | null
+  period_end: string | null
+}
+
+async function load(userId: string) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return { kpis: [], user: null }
+  const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+  const [{ data: kpis }, { data: user }] = await Promise.all([
+    supabase
+      .from('kpis')
+      .select('id, code, name, unit, baseline_target_value, actual_value, progress, status, period_start, period_end')
+      .eq('level', 'personal')
+      .eq('user_id', userId)
+      .order('progress', { ascending: false }),
+    supabase.from('users').select('full_name, position, division_id').eq('id', userId).single(),
+  ])
+  return { kpis:
+
+--- schedule/page.tsx ---
+// src/app/(dashboard)/personal/schedule/page.tsx
+// Jadwal harian + mingguan + task user minggu ini.
+
+import { CalendarDays, Clock } from 'lucide-react'
+import { cookies } from 'next/headers'
+import { jwtVerify } from 'jose'
+import { createClient } from '@supabase/supabase-js'
+import { EmptyState } from '@/components/ui/empty-state'
+
+const FALLBACK_SECRET = 'dev-only-fallback-key-for-local-development-min-32-chars'
+
+async function getCurrentUser() {
+  const c = await cookies()
+  const token = c.get('syahfalah-access')?.value
+  if (!token) return null
+  try {
+    const secret = process.env.JWT_SECRET || FALLBACK_SECRET
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret))
+    return { id: payload.sub as string, name: (payload as any).name, role: (payload as any).role, position: (payload as any).position }
+  } catch {
+    return null
+  }
+}
+
+const RITME_HARIAN = [
+  { jam: '08.30', acara: 'Daily standup', tempat: 'Ruang meeting' },
+  { jam: '12.00', acara: 'ISHOMA', tempat: '-' },
+  { jam: '17.00', acara: 'Submit laporan harian', tempat: 'WA group' },
+]
+
+const RITME_MINGGUAN = [
+  { hari: 'Senin', acara: 'Weekly standup 09.00 (40 menit)', tempat: 'Ruang besar' },
+  { hari: 'Selasa', acara: 'Site visit', tempat: 'Cluster' },
+  { hari: 'Rabu', acara: 'Content review dengan tim media', tempat: 'Ruang media' },
+  { hari: 'Kamis', acara: 'Follow up SP3K', tempat: 'Kantor' },
+  { hari: 'Jumat', acara: 'Friday reflection 16.00', tempat: 'Ruang besar' },
+]
+
+a
+
+--- sow/page.tsx ---
+// personal/sow/page.tsx
+// Personal SOW page. Lists the SOW tasks assigned to the user OR in
+// the user's division. Falls back to the whole SOW library if the user
+// has no specific assignment yet.
+
+import { createClient } from '@supabase/supabase-js'
+import { cookies } from 'next/headers'
+import { verifyAccessToken } from '@/lib/auth/jwt'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { FileText, Clock } from 'lucide-react'
+
+interface SowTask {
+  id: string
+  code: string
+  title: string
+  description: string | null
+  priority: string
+  status: string
+  estimated_hours: number | null
+  division_id: string | null
+}
+
+async function load(userId: string) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return { sow: [], divisions: [] }
+  const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+  const { data: userRow } = await supabase.from('users').select('division_id').eq('id', userId).single()
+  const divisionId = userRow?.division_id
+  const { data: sow } = await supabase
+    .from('sow_tasks')
+    .select('id, code, title, description, priority, status, estimated_hours, division_id')
+    .or(divisionId ? `division_id.eq.${divisionId},division_id.is.null` : 'division_id.is.null')
+    .order('priority', { ascending: false })
+    .order('code', { ascending: true })
+  con
+
+--- sow/page.tsx ---
+// sow/page.tsx
+// Read-only SOW library for all roles. Lists every SOW task so anyone
+// can browse what is in scope across the company.
+
+import { createClient } from '@supabase/supabase-js'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { FileText, Clock } from 'lucide-react'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+
+async function loadSow() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return { sow: [], divisions: [] }
+  const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+  const [{ data: sow }, { data: divs }] = await Promise.all([
+    supabase
+      .from('sow_tasks')
+      .select('id, code, title, description, priority, status, estimated_hours, division_id')
+      .order('priority', { ascending: false })
+      .order('code', { ascending: true }),
+    supabase.from('divisions').select('id, name'),
+  ])
+  return { sow: sow ?? [], divisions: divs ?? [] }
+}
+
+const priorityVariant: Record<string, 'default' | 'info' | 'warning' | 'destructive'> = {
+  low: 'default', medium: 'info', high: 'warning', critical: 'destructive',
+}
+const statusVariant: Record<string, 'default' | 'success' | 'info' | 'warning'> = {
+  draft: 'default', active: 'success', on_hold: 'warning', archived: 'default',
+}
+
+export default async function Page() {
+  const { sow, d
+
+--- raci/page.tsx ---
+// src/app/(dashboard)/raci/page.tsx
+// Matriks RACI untuk SOW PT Syahfalah Global.
+// R = Responsible (eksekusi), A = Accountable (pemilik hasil),
+// C = Consulted (dimintai pendapat), I = Informed (hanya tahu).
+// Data hardcode berdasarkan program kerja karena tabel SOW belum
+// punya relasi RACI eksplisit.
+
+import { CheckCircle2, Circle, Eye, MessageSquare, AlertTriangle } from 'lucide-react'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+
+interface RACIRow {
+  task: string
+  pic: string
+  owner: string
+  konsultan: string
+  hukum: string
+  media: string
+  finance: string
+  konstruksi: string
+  notes: string
+}
+
+const ROLES = [
+  { key: 'pic',       label: 'Marketing' },
+  { key: 'owner',     label: 'Owner' },
+  { key: 'konsultan', label: 'KK' },
+  { key: 'hukum',     label: 'Legal' },
+  { key: 'media',     label: 'Media' },
+  { key: 'finance',   label: 'Finance' },
+  { key: 'konstruksi',label: 'Konstruksi' },
+] as const
+
+const RACI: RACIRow[] = [
+  { task: 'Cari leads dari Meta & TikTok Ads',     pic: 'R', owner: 'A', konsultan: 'I', hukum: '—',   media: 'C', finance: 'I', konstruksi: '—', notes: 'Target 200 leads/bulan untuk Riza' },
+  { task: 'Hubungi calon buyer',                    pic: 'R', owner: 'A', konsultan: 'C', hukum: '—',   media: '—',  finance: '—', konstruksi: '—', notes: 'Response time max 2 jam' },
+  { task: 'Booking & jadwal survey',                pic: 'R', owner: 'A', konsultan: 'I', hukum: '—',   media: '—',  finance: '—', konstruksi: 'I
+
+--- rewards/page.tsx ---
+// src/app/(dashboard)/rewards/page.tsx
+// Kalkulator reward & tracking punishment berdasarkan program kerja.
+// Reward dihitung dari closing aktual, dikalikan rate dari program.
+// Punishment: warning → SP1 → SP2 → SP3 jika warning berturut-turut.
+
+import { TrendingUp, AlertTriangle, Award, Sparkles } from 'lucide-react'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+
+interface RewardEntry {
+  bulan: string
+  nama: string
+  divisi: string
+  jenis: 'closing' | 'qc' | 'tim_media' | 'survey'
+  jumlah: number
+  rate: number
+  total: number
+}
+
+const REWARD_LOG: RewardEntry[] = [
+  { bulan: 'Juli 2026', nama: 'Riza',     divisi: 'Marketing', jenis: 'closing', jumlah: 4, rate: 500000, total: 2_000_000 },
+  { bulan: 'Juli 2026', nama: 'Mada',     divisi: 'KK',        jenis: 'closing', jumlah: 1, rate: 500000, total: 500_000 },
+  { bulan: 'Juli 2026', nama: 'Amir',     divisi: 'Konstruksi',jenis: 'closing', jumlah: 1, rate: 500000, total: 500_000 },
+  { bulan: 'Juli 2026', nama: 'Rizal',    divisi: 'Konstruksi',jenis: 'qc',      jumlah: 4, rate: 250000, total: 1_000_000 },
+  { bulan: 'Juni 2026', nama: 'Riza',     divisi: 'Marketing', jenis: 'closing', jumlah: 6, rate: 500000, total: 3_000_000 },
+  { bulan: 'Juni 2026', nama: 'Rizal',    divisi: 'Konstruksi',jenis: 'qc',      jumlah: 6, rate: 250000, total: 1_500_000 },
+  { bulan: 'Juni 2026', nama: 'Tim Media',divisi: 'Media',     jenis: 'tim_media', jumlah: 1, rate: 1_250_000, total: 1_250_000 },
+]
+
+interface Punishm
+
+--- coaching/page.tsx ---
+// src/app/(dashboard)/kepala-kantor/coaching/page.tsx
+// Log coaching 1-on-1 antara Kepala Kantor (Mada) dan tim.
+// Template terstruktur: pembuka, blockers, follow-up, next step.
+
+import { MessageCircle, AlertCircle, CheckCircle2, Clock } from 'lucide-react'
+
+interface CoachingEntry {
+  tanggal: string
+  nama: string
+  posisi: string
+  pembuka: string
+  blockers: string
+  follow_up: string
+  next_step: string
+  status: 'belum follow up' | 'selesai'
+  jenis: 'rutin' | 'performa rendah' | 'pelanggaran'
+}
+
+const LOG: CoachingEntry[] = [
+  {
+    tanggal: '2026-08-01',
+    nama: 'Yudi',
+    posisi: 'Staff Marketing',
+    pembuka: 'Cek progress survey dan apa yang bikin stuck akhir-akhir ini.',
+    blockers: 'Susah follow up setelah SP3K, banyak buyer yang tiba-tiba batal.',
+    follow_up: 'Buat script follow up SP3K H+3, H+7, H+14.',
+    next_step: 'Lapor minggu depan',
+    status: 'belum follow up',
+    jenis: 'performa rendah',
+  },
+  {
+    tanggal: '2026-07-28',
+    nama: 'Amir',
+    posisi: 'Staff Marketing',
+    pembuka: 'Konfirmasi deadline laporan harian yang molor 3x.',
+    blockers: 'Lagi bagi fokus dengan visit site di Klampokarum.',
+    follow_up: 'Laporan harian harus masuk sebelum pukul 18.00, lewat 1x = coaching.',
+    next_step: 'Lapor besok',
+    status: 'selesai',
+    jenis: 'pelanggaran',
+  },
+  {
+    tanggal: '2026-07-22',
+    nama: 'Rifki',
+    posisi: 'Kreatif Media',
+    pembuka: 'Check output konten Rabuan dan IG Reels series.',
+    blockers: 'Antri approv
+
+--- planning/page.tsx ---
+// src/app/(dashboard)/kepala-kantor/planning/page.tsx
+// Halaman planning kepala kantor. Tampilan 1 kuartal ke depan
+// dan checklist hal yang harus di-prioritaskan.
+
+import { Target, CheckCircle2, AlertTriangle } from 'lucide-react'
+
+interface QuarterGoal {
+  divisi: string
+  pic: string
+  target: string
+  kenapa: string
+  status: 'belum mulai' | 'jalan' | 'selesai'
+  deadline: string
+}
+
+const Q3_2026: QuarterGoal[] = [
+  {
+    divisi: 'Marketing',
+    pic: 'Riza',
+    target: 'Closing 18 unit',
+    kenapa: 'Pipeline saat ini 6 calon di stage sp3k & closing, target 3 closing/bulan selama Q3.',
+    status: 'jalan',
+    deadline: '30 Sep 2026',
+  },
+  {
+    divisi: 'Marketing',
+    pic: 'Yudi',
+    target: 'Survey 30 unit',
+    kenapa: 'Konversi historis 1 closing per 5 survey, perlu 30 survey untuk support 6 closing.',
+    status: 'jalan',
+    deadline: '15 Sep 2026',
+  },
+  {
+    divisi: 'Konstruksi',
+    pic: 'Rizal',
+    target: 'Selesaikan 60 unit BSA Tahap 2',
+    kenapa: 'Target BAST ke buyer cluster BSA sudah jatuh tempo 30 Aug 2026.',
+    status: 'belum mulai',
+    deadline: '30 Aug 2026',
+  },
+  {
+    divisi: 'Konstruksi',
+    pic: 'Andi',
+    target: 'Klaim garansi 0 backlog',
+    kenapa: 'Ada 5 unit dengan klaim pending dari Mei 2026, perlu di-clear agar NPS Q3.',
+    status: 'belum mulai',
+    deadline: '31 Aug 2026',
+  },
+  {
+    divisi: 'Media',
+    pic: 'Reni',
+    target: 'Engagement IG naik 25%',
+    kenapa: 'Engagement saat ini 3.4%, target industri develop
+
+--- sow/page.tsx ---
+// admin/sow/page.tsx
+// Owner-only SOW editor view. Lists all SOW tasks with editing surface
+// (TODO: wire up real mutations via /api/admin/sow/[id] when needed).
+
+import { createClient } from '@supabase/supabase-js'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { FileText, Clock } from 'lucide-react'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+
+interface SowTask {
+  id: string
+  code: string
+  title: string
+  description: string | null
+  priority: string
+  status: string
+  estimated_hours: number | null
+  division_id: string | null
+}
+
+async function loadSow(): Promise<{ sow: SowTask[]; divisions: { id: string; name: string }[] }> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return { sow: [], divisions: [] }
+  const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+  const [{ data: sow }, { data: divs }] = await Promise.all([
+    supabase
+      .from('sow_tasks')
+      .select('id, code, title, description, priority, status, estimated_hours, division_id')
+      .order('priority', { ascending: false })
+      .order('code', { ascending: true }),
+    supabase.from('divisions').select('id, name'),
+  ])
+  return { sow: (sow ?? []) as SowTask[], divisions: (divs ?? []) as { id: string; name: string }[] }
+}
+
+const priorityVariant: Record<string, 'default
+
+--- calendar/page.tsx ---
+// src/app/(dashboard)/calendar/page.tsx
+// Ritme kerja Syahfalah per program kerja:
+// - Daily standup (kecuali Jumat, Mada)
+// - Weekly Senin 09.00 (40 menit)
+// - Monthly akhir bulan (2 jam)
+// - Quarterly planning & quarterly review
+// - Annual planning ogni Januari
+
+import { CalendarDays, Clock, MapPin, Users } from 'lucide-react'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+
+interface Ritual {
+  nama: string
+  kadarsa: string  // 'Harian', 'Mingguan', 'Bulanan', 'Kuartalan', 'Tahunan'
+  hari: string
+  jam: string
+  durasi: string
+  peserta: string
+  tempat: string
+  agenda: string
+}
+
+const RITUAL: Ritual[] = [
+  {
+    nama: 'Daily Standup',
+    kadarsa: 'Harian',
+    hari: 'Senin – Kamis',
+    jam: '08.30',
+    durasi: '15 menit',
+    peserta: 'Seluruh tim (wajib)',
+    tempat: 'Ruang meeting lantai 1',
+    agenda: '3 hal semalam, 3 hal hari ini, blocker, dan update WA group.',
+  },
+  {
+    nama: 'Weekly Standup',
+    kadarsa: 'Mingguan',
+    hari: 'Senin',
+    jam: '09.00',
+    durasi: '40 menit',
+    peserta: 'Seluruh tim + Owner',
+    tempat: 'Ruang meeting besar',
+    agenda: 'Review KPI minggu lalu, target minggu ini, dan demo progress tiap divisi.',
+  },
+  {
+    nama: 'Friday Reflection',
+    kadarsa: 'Mingguan',
+    hari: 'Jumat',
+    jam: '16.00',
+    durasi: '30 menit',
+    peserta: 'Seluruh tim (sukarela)',
+    tempat: 'Ruang meeting besar',
+    agenda: 'Refleksi mingguan, apresiasi, sharing insight dari training atau buku.',
+  },
+  {
+    nama

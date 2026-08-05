@@ -29,10 +29,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     }
     
     const sizes = {
-      sm: 'px-3 py-1.5 text-xs gap-1.5',
-      md: 'px-4 py-2 text-sm gap-2',
-      lg: 'px-6 py-3 text-base gap-2',
-      icon: 'p-2',
+      sm: 'h-9 px-3 text-xs gap-1.5', // 36px — small only for dense tables/forms
+      md: 'h-11 px-4 text-sm gap-2', // 44px ✓ a11y (WCAG 2.5.5 AAA)
+      lg: 'h-12 px-6 text-base gap-2', // 48px ✓ a11y
+      icon: 'h-11 w-11 p-0', // 44px × 44px ✓ a11y
     }
 
     return (

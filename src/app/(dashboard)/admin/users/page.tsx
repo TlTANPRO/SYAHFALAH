@@ -5,9 +5,10 @@
 // wire up the role selector.
 
 import { createClient } from '@supabase/supabase-js'
+import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, Shield, Mail, Phone } from 'lucide-react'
+import { Users, Shield, Mail, Phone, ChevronRight } from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface AdminUser {
@@ -110,10 +111,19 @@ export default async function Page() {
                 {users.map(u => {
                   const r = roleLabels[u.role] || { label: u.role, variant: 'default' as const }
                   return (
-                    <tr key={u.id} className="border-b border-[var(--color-border-default)]/50 hover:bg-[var(--color-surface-2)]/30 transition-colors">
+                    <tr key={u.id} className="border-b border-[var(--color-border-default)]/50 hover:bg-[var(--color-surface-2)]/50 transition-colors">
                       <td className="p-3">
-                        <div className="font-medium">{u.full_name}</div>
-                        <div className="text-xs text-[var(--color-text-secondary)]">{u.position || '—'}</div>
+                        <Link
+                          href={`/admin/users/${u.id}`}
+                          className="block group"
+                          aria-label={`Buka detail ${u.full_name}`}
+                        >
+                          <div className="font-medium text-[var(--color-brand-500)] group-hover:underline inline-flex items-center gap-1">
+                            {u.full_name}
+                            <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                          <div className="text-xs text-[var(--color-text-secondary)]">{u.position || '—'}</div>
+                        </Link>
                       </td>
                       <td className="p-3">
                         <Badge variant={r.variant}>{r.label}</Badge>

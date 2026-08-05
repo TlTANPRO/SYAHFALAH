@@ -64,7 +64,7 @@ export function ToastContainer() {
             <div
               key={t.id}
               role="alert"
-              className={`pointer-events-auto rounded-lg border ${bg} backdrop-blur-md px-4 py-3 shadow-lg animate-in slide-in-from-right-4 duration-200`}
+              className={`pointer-events-auto rounded-lg border ${bg} backdrop-blur-md px-4 py-3 shadow-lg motion-safe:animate-in motion-safe:slide-in-from-right-4 motion-safe:duration-200`}
             >
               <div className="flex items-start gap-3">
                 <Icon className={`h-4 w-4 ${fg} flex-shrink-0 mt-0.5`} aria-hidden="true" />
