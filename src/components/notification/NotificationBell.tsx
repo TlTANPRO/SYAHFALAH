@@ -50,11 +50,11 @@ export function NotificationBell() {
 
   const getIcon = (type: string) => {
     switch (type) {
-      case 'morning_brief': return <CheckCircle className="h-4 w-4 text-success" />
-      case 'deadline_approaching': return <Clock className="h-4 w-4 text-warning" />
-      case 'overdue': return <AlertTriangle className="h-4 w-4 text-destructive" />
-      case 'kpi_at_risk': return <AlertTriangle className="h-4 w-4 text-warning" />
-      default: return <Bell className="h-4 w-4 text-info" />
+      case 'morning_brief': return <CheckCircle className="h-4 w-4 text-[var(--color-success)]" />
+      case 'deadline_approaching': return <Clock className="h-4 w-4 text-[var(--color-warning)]" />
+      case 'overdue': return <AlertTriangle className="h-4 w-4 text-[var(--color-danger)]" />
+      case 'kpi_at_risk': return <AlertTriangle className="h-4 w-4 text-[var(--color-warning)]" />
+      default: return <Bell className="h-4 w-4 text-[var(--color-info)]" />
     }
   }
 
@@ -78,7 +78,7 @@ export function NotificationBell() {
         <Button variant="ghost" size="icon" className="h-10 w-10 relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-xs font-medium flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[var(--color-danger)] text-destructive-foreground text-xs font-medium flex items-center justify-center">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
@@ -94,15 +94,15 @@ export function NotificationBell() {
         <DropdownMenuSeparator />
         
         {isLoading ? (
-          <div className="py-4 text-center text-muted-foreground">Memuat...</div>
+          <div className="py-4 text-center text-[var(--color-text-secondary)]">Memuat...</div>
         ) : notifications?.length === 0 ? (
-          <div className="py-4 text-center text-muted-foreground">Tidak ada notifikasi</div>
+          <div className="py-4 text-center text-[var(--color-text-secondary)]">Tidak ada notifikasi</div>
         ) : (
           <div className="max-h-[300px] overflow-y-auto scrollbar-thin">
             {notifications?.map((notif) => (
               <DropdownMenuItem 
                 key={notif.id} 
-                className={`flex items-start gap-3 p-3 ${!notif.is_read ? 'bg-muted/50' : ''}`}
+                className={`flex items-start gap-3 p-3 ${!notif.is_read ? 'bg-[var(--color-surface-2)]/50' : ''}`}
                 onClick={() => {
                   // Mark as read - could add mutation here
                 }}
@@ -115,18 +115,18 @@ export function NotificationBell() {
                     <span className="font-medium text-sm">{notif.title}</span>
                     <Badge variant="outline" className="text-xs">{getTypeLabel(notif.type)}</Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{notif.message}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{formatRelativeTime(notif.created_at)}</p>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-1 line-clamp-2">{notif.message}</p>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-1">{formatRelativeTime(notif.created_at)}</p>
                 </div>
                 {!notif.is_read && (
-                  <span className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-1" />
+                  <span className="h-2 w-2 rounded-full bg-[var(--color-brand-500)] flex-shrink-0 mt-1" />
                 )}
               </DropdownMenuItem>
             ))}
           </div>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="text-center text-primary hover:bg-primary/10">
+        <DropdownMenuItem className="text-center text-primary hover:bg-[var(--color-brand-500)]/10">
           Lihat semua notifikasi
         </DropdownMenuItem>
       </DropdownMenuContent>

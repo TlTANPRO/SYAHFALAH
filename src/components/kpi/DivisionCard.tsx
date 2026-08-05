@@ -33,22 +33,22 @@ export function DivisionCard({ division, span, bare = false }: DivisionCardProps
   const body = (
     <div className="h-full flex flex-col justify-center items-center gap-3 py-2">
       <div className="text-center">
-        <p className="font-heading text-4xl font-bold text-foreground">
+        <p className="font-heading text-4xl font-bold text-[var(--color-text-primary)]">
           {formatPercent(division.avg_progress)}
         </p>
-        <p className="text-sm text-muted-foreground">Average Progress</p>
+        <p className="text-sm text-[var(--color-text-secondary)]">Average Progress</p>
       </div>
       <div className="flex flex-wrap gap-3 text-xs justify-center">
-        <span className="flex items-center gap-1 text-success">
+        <span className="flex items-center gap-1 text-[var(--color-success)]">
           <CheckCircle className="h-3 w-3" /> {division.achieved_count ?? 0} Achieved
         </span>
-        <span className="flex items-center gap-1 text-info">
+        <span className="flex items-center gap-1 text-[var(--color-info)]">
           <TrendingUp className="h-3 w-3" /> {division.on_track_count ?? 0} On Track
         </span>
-        <span className="flex items-center gap-1 text-warning">
+        <span className="flex items-center gap-1 text-[var(--color-warning)]">
           <AlertTriangle className="h-3 w-3" /> {division.at_risk_count ?? 0} At Risk
         </span>
-        <span className="flex items-center gap-1 text-destructive">
+        <span className="flex items-center gap-1 text-[var(--color-danger)]">
           <AlertTriangle className="h-3 w-3" /> {division.off_track_count ?? 0} Off Track
         </span>
       </div>

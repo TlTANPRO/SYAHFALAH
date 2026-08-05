@@ -78,7 +78,7 @@ export function KpiTrendChart({
           <CardTitle>{title}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-40 bg-muted rounded animate-pulse" />
+          <div className="h-40 bg-[var(--color-surface-2)] rounded animate-pulse" />
         </CardContent>
       </Card>
     )

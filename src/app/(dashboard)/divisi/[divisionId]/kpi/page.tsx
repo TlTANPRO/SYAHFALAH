@@ -86,7 +86,7 @@ export default async function Page({ params }: { params: Promise<{ divisionId: s
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <div className="flex items-center gap-2 text-[var(--color-text-secondary)] mb-1">
                 <Target className="h-3.5 w-3.5" />
                 <span className="text-xs uppercase tracking-wide">Avg Progress</span>
               </div>
@@ -97,7 +97,7 @@ export default async function Page({ params }: { params: Promise<{ divisionId: s
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <div className="flex items-center gap-2 text-[var(--color-text-secondary)] mb-1">
                 <CheckCircle className="h-3.5 w-3.5" />
                 <span className="text-xs uppercase tracking-wide">Achieved</span>
               </div>
@@ -106,7 +106,7 @@ export default async function Page({ params }: { params: Promise<{ divisionId: s
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <div className="flex items-center gap-2 text-[var(--color-text-secondary)] mb-1">
                 <TrendingUp className="h-3.5 w-3.5" />
                 <span className="text-xs uppercase tracking-wide">On Track</span>
               </div>
@@ -115,7 +115,7 @@ export default async function Page({ params }: { params: Promise<{ divisionId: s
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <div className="flex items-center gap-2 text-[var(--color-text-secondary)] mb-1">
                 <span className="text-xs uppercase tracking-wide">At Risk / Off Track</span>
               </div>
               <div className="mt-2 text-3xl font-heading font-bold tabular-nums text-rose-500">

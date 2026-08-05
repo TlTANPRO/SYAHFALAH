@@ -8,19 +8,19 @@ import { Card, CardContent } from '@/components/ui/card'
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-0)] p-4">
       <Card className="max-w-lg w-full shadow-xl">
         <CardContent className="pt-12 pb-10 px-8 text-center">
-          <div className="inline-flex items-center justify-center h-20 w-20 rounded-2xl bg-primary/10 mb-6">
+          <div className="inline-flex items-center justify-center h-20 w-20 rounded-2xl bg-[var(--color-brand-500)]/10 mb-6">
             <Compass className="h-12 w-12 text-primary" />
           </div>
           <h1 className="font-heading text-4xl font-bold tracking-tight mb-3">
             404
           </h1>
-          <h2 className="font-heading text-lg font-semibold text-foreground mb-2">
+          <h2 className="font-heading text-lg font-semibold text-[var(--color-text-primary)] mb-2">
             Halaman tidak ditemukan
           </h2>
-          <p className="text-muted-foreground text-sm mb-8 max-w-sm mx-auto">
+          <p className="text-[var(--color-text-secondary)] text-sm mb-8 max-w-sm mx-auto">
             Halaman yang kamu cari belum ada atau sudah dipindahkan. Cek URL,
             atau kembali ke dashboard.
           </p>
@@ -29,20 +29,20 @@ export default function NotFound() {
                 Slot/forwardRef conflicts during static prerendering. */}
             <a
               href="javascript:history.back()"
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-transparent px-4 py-2 text-sm font-medium hover:bg-muted/50 transition-colors"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--color-border-default)] bg-transparent px-4 py-2 text-sm font-medium hover:bg-[var(--color-surface-2)]/50 transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
               Kembali
             </a>
             <Link
               href="/"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium shadow-xs hover:bg-primary/90 transition-colors"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--color-brand-500)] text-primary-foreground px-4 py-2 text-sm font-medium shadow-xs hover:bg-[var(--color-brand-500)]/90 transition-colors"
             >
               <Home className="h-4 w-4" />
               Ke Dashboard
             </Link>
           </div>
-          <p className="text-xs text-muted-foreground mt-8">
+          <p className="text-xs text-[var(--color-text-secondary)] mt-8">
             Syahfalah Dashboard · PT Syahfalah Global
           </p>
         </CardContent>

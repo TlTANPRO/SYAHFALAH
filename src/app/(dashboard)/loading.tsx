@@ -9,10 +9,10 @@ import { Loader2 } from 'lucide-react'
 export default function DashboardLoading() {
   return (
     <div className="space-y-6" aria-busy="true" aria-label="Memuat dashboard">
-      <div className="flex items-center gap-2 text-muted-foreground">
+      <div className="flex items-center gap-2 text-[var(--color-text-secondary)]">
         <span className="relative flex h-3 w-3">
-          <span className="absolute inset-0 inline-flex h-full w-full animate-pulse-soft rounded-full bg-primary opacity-75" />
-          <span className="relative inline-flex h-3 w-3 rounded-full bg-primary" />
+          <span className="absolute inset-0 inline-flex h-full w-full animate-pulse-soft rounded-full bg-[var(--color-brand-500)] opacity-75" />
+          <span className="relative inline-flex h-3 w-3 rounded-full bg-[var(--color-brand-500)]" />
         </span>
         <span className="text-sm font-medium">Memuat data dashboard…</span>
       </div>

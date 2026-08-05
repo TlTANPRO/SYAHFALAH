@@ -57,7 +57,7 @@ export default async function Page() {
     <div className="space-y-6">
       <div>
         <h1 className="font-heading text-2xl font-bold">Divisions</h1>
-        <p className="text-muted-foreground">{divisions.length} divisi terdaftar</p>
+        <p className="text-[var(--color-text-secondary)]">{divisions.length} divisi terdaftar</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -68,7 +68,7 @@ export default async function Page() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <Building2 className="h-4 w-4 text-[var(--color-text-secondary)]" />
                     {d.name}
                   </span>
                   <Badge variant={d.is_active ? 'success' : 'outline'}>
@@ -78,29 +78,29 @@ export default async function Page() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {d.description && (
-                  <p className="text-sm text-muted-foreground">{d.description}</p>
+                  <p className="text-sm text-[var(--color-text-secondary)]">{d.description}</p>
                 )}
                 <div className="flex items-center gap-2 text-xs">
                   <Badge variant="outline">{d.code}</Badge>
                 </div>
                 {s && (
-                  <div className="border-t border-border pt-3 grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <div className="border-t border-[var(--color-border-default)] pt-3 grid grid-cols-2 gap-2 text-sm">
+                    <div className="flex items-center gap-1.5 text-[var(--color-text-secondary)]">
                       <FileText className="h-3.5 w-3.5" />
                       <span className="text-xs">Total tasks</span>
                     </div>
                     <div className="text-right font-medium tabular-nums">{s.total_tasks}</div>
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <div className="flex items-center gap-1.5 text-[var(--color-text-secondary)]">
                       <Users className="h-3.5 w-3.5" />
                       <span className="text-xs">In progress</span>
                     </div>
                     <div className="text-right font-medium tabular-nums">{s.in_progress_count}</div>
-                    <div className="text-xs text-muted-foreground">Selesai</div>
-                    <div className="text-right text-success font-medium tabular-nums">{s.completed_count}</div>
+                    <div className="text-xs text-[var(--color-text-secondary)]">Selesai</div>
+                    <div className="text-right text-[var(--color-success)] font-medium tabular-nums">{s.completed_count}</div>
                     {s.overdue_count > 0 && (
                       <>
-                        <div className="text-xs text-destructive">Overdue</div>
-                        <div className="text-right text-destructive font-medium tabular-nums">{s.overdue_count}</div>
+                        <div className="text-xs text-[var(--color-danger)]">Overdue</div>
+                        <div className="text-right text-[var(--color-danger)] font-medium tabular-nums">{s.overdue_count}</div>
                       </>
                     )}
                   </div>

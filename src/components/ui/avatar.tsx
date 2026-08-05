@@ -28,7 +28,7 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
       <div
         ref={ref}
         className={cn(
-          'relative flex shrink-0 overflow-hidden rounded-full bg-muted',
+          'relative flex shrink-0 overflow-hidden rounded-full bg-[var(--color-surface-2)]',
           sizes[size],
           className
         )}
@@ -44,7 +44,7 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
             className="aspect-square h-full w-full object-cover"
           />
         ) : (
-          <span className="flex h-full w-full items-center justify-center font-medium text-muted-foreground">
+          <span className="flex h-full w-full items-center justify-center font-medium text-[var(--color-text-secondary)]">
             {fallbackInitials}
           </span>
         )}

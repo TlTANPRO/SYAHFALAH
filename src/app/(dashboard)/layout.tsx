@@ -45,10 +45,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-0)]">
         <div className="text-center">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
-          <p className="text-muted-foreground">Memuat dashboard...</p>
+          <p className="text-[var(--color-text-secondary)]">Memuat dashboard...</p>
         </div>
       </div>
     )
@@ -60,7 +60,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[var(--color-surface-0)]">
       {/* Sidebar */}
       <Sidebar />
 
@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           inline `style` for the dynamic margin, so the layout works
           regardless of which breakpoint class names v4 picked up. */}
       <main
-        className="min-h-screen transition-all duration-300 ease-out-expo"
+        className="min-h-screen transition-all duration-300 ease-[var(--ease-out-expo)]"
         style={{
           marginLeft: isMobile ? 0 : sidebarCollapsed ? 64 : 288,
         }}

@@ -53,7 +53,7 @@ export default async function Page({ params }: { params: Promise<{ divisionId: s
     <div className="space-y-6">
       <div>
         <h1 className="font-heading text-2xl font-bold">Team KPIs · {division.name}</h1>
-        <p className="text-muted-foreground">
+        <p className="text-[var(--color-text-secondary)]">
           <Badge variant="outline" className="mr-2">{division.code}</Badge>
           {members.length} anggota terdaftar
         </p>

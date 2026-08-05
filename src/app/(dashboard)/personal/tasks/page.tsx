@@ -150,7 +150,7 @@ export default function PersonalTasksPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="font-heading text-2xl font-bold">Tugas Hari Ini</h1>
-          <p className="text-muted-foreground">{formatDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          <p className="text-[var(--color-text-secondary)]">{formatDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
         </div>
         <div className="flex gap-2">
           <div className="relative">
@@ -162,7 +162,7 @@ export default function PersonalTasksPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-64 pl-10"
             />
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-secondary)]" />
           </div>
           <Button variant="outline" size="sm">
             <Plus className="h-4 w-4 mr-2" />
@@ -180,8 +180,8 @@ export default function PersonalTasksPage() {
             className={`
               flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-150
               ${activeTab === tab.id 
-                ? 'bg-primary text-primary-foreground shadow-xs' 
-                : 'text-muted-foreground hover:bg-muted/50'
+                ? 'bg-[var(--color-brand-500)] text-primary-foreground shadow-xs' 
+                : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]/50'
               }
             `}
           >
@@ -190,7 +190,7 @@ export default function PersonalTasksPage() {
             {tab.count > 0 && (
               <span className={`${activeTab === tab.id 
                 ? 'bg-primary-foreground/20 text-primary-foreground' 
-                : 'bg-muted text-muted-foreground'} px-2 py-0.5 rounded-full text-xs`}>
+                : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'} px-2 py-0.5 rounded-full text-xs`}>
                 {tab.count}
               </span>
             )}
@@ -203,9 +203,9 @@ export default function PersonalTasksPage() {
         {filteredTasks?.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
-              <CheckCircle className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-              <h3 className="font-medium text-foreground mb-1">Tidak ada tugas</h3>
-              <p className="text-sm text-muted-foreground">
+              <CheckCircle className="h-12 w-12 text-[var(--color-text-secondary)]/50 mx-auto mb-4" />
+              <h3 className="font-medium text-[var(--color-text-primary)] mb-1">Tidak ada tugas</h3>
+              <p className="text-sm text-[var(--color-text-secondary)]">
                 {activeTab === 'overdue' 
                   ? 'Tidak ada tugas overdue. Bagus!' 
                   : 'Semua tugas telah diselesaikan atau tidak ada jadwal hari ini.'}
@@ -214,7 +214,7 @@ export default function PersonalTasksPage() {
           </Card>
         ) : (
           filteredTasks?.map((task) => (
-            <Card key={task.id} className={task.status === 'overdue' ? 'border-destructive/30 bg-destructive/5' : ''}>
+            <Card key={task.id} className={task.status === 'overdue' ? 'border-[var(--color-danger)]/30 bg-[var(--color-danger)]/5' : ''}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
                   {/* Status Toggle */}
@@ -225,23 +225,23 @@ export default function PersonalTasksPage() {
                           taskId: task.id, 
                           status: task.status === 'pending' ? 'in_progress' : 'completed' 
                         })}
-                        className="h-6 w-6 rounded border-2 border-border hover:border-primary hover:bg-primary/5 transition-colors flex items-center justify-center"
+                        className="h-6 w-6 rounded border-2 border-[var(--color-border-default)] hover:border-primary hover:bg-[var(--color-brand-500)]/5 transition-colors flex items-center justify-center"
                         aria-label={task.status === 'pending' ? 'Mulai tugas' : 'Tandai selesai'}
                       >
                         {task.status === 'in_progress' && (
-                          <Clock className="h-4 w-4 text-info" />
+                          <Clock className="h-4 w-4 text-[var(--color-info)]" />
                         )}
                       </button>
                     )}
                     {task.status === 'completed' && (
-                      <CheckCircle className="h-6 w-6 text-success flex-shrink-0" />
+                      <CheckCircle className="h-6 w-6 text-[var(--color-success)] flex-shrink-0" />
                     )}
                   </div>
 
                   {/* Task Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className={task.status === 'completed' ? 'line-through text-muted-foreground' : 'font-medium text-foreground'}>
+                      <h3 className={task.status === 'completed' ? 'line-through text-[var(--color-text-secondary)]' : 'font-medium text-[var(--color-text-primary)]'}>
                         {task.title}
                       </h3>
                       {getTypeBadge(task.type, task.is_carry_over)}
@@ -250,13 +250,13 @@ export default function PersonalTasksPage() {
                     </div>
 
                     {task.description && (
-                      <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{task.description}</p>
+                      <p className="mt-2 text-sm text-[var(--color-text-secondary)] line-clamp-2">{task.description}</p>
                     )}
 
                     {/* Meta Info */}
-                    <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                    <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-[var(--color-text-secondary)]">
                       {task.due_date && (
-                        <span className={task.status === 'overdue' ? 'text-destructive font-medium' : ''}>
+                        <span className={task.status === 'overdue' ? 'text-[var(--color-danger)] font-medium' : ''}>
                           <Clock className="h-3 w-3 inline mr-1" />
                           Deadline: {formatDate(task.due_date, { hour: '2-digit', minute: '2-digit' })}
                           {task.status === 'overdue' && ' (OVERDUE)'}
@@ -311,7 +311,7 @@ export default function PersonalTasksPage() {
                         Jadikan Carry-over
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive">
+                      <DropdownMenuItem className="text-[var(--color-danger)]">
                         <AlertTriangle className="h-4 w-4 mr-2" />
                         Batalkan
                       </DropdownMenuItem>
@@ -328,26 +328,26 @@ export default function PersonalTasksPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="font-heading text-3xl font-bold text-success">{tasks?.filter(t => t.status === 'completed').length || 0}</p>
-            <p className="text-sm text-muted-foreground">Selesai</p>
+            <p className="font-heading text-3xl font-bold text-[var(--color-success)]">{tasks?.filter(t => t.status === 'completed').length || 0}</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">Selesai</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="font-heading text-3xl font-bold text-info">{tasks?.filter(t => t.status === 'in_progress').length || 0}</p>
-            <p className="text-sm text-muted-foreground">Sedang Dikerjakan</p>
+            <p className="font-heading text-3xl font-bold text-[var(--color-info)]">{tasks?.filter(t => t.status === 'in_progress').length || 0}</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">Sedang Dikerjakan</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="font-heading text-3xl font-bold text-warning">{tasks?.filter(t => t.is_carry_over).length || 0}</p>
-            <p className="text-sm text-muted-foreground">Carry-over</p>
+            <p className="font-heading text-3xl font-bold text-[var(--color-warning)]">{tasks?.filter(t => t.is_carry_over).length || 0}</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">Carry-over</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="font-heading text-3xl font-bold text-destructive">{tasks?.filter(t => t.status === 'overdue').length || 0}</p>
-            <p className="text-sm text-muted-foreground">Overdue</p>
+            <p className="font-heading text-3xl font-bold text-[var(--color-danger)]">{tasks?.filter(t => t.status === 'overdue').length || 0}</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">Overdue</p>
           </CardContent>
         </Card>
       </div>

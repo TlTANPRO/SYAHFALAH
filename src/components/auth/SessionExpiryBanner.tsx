@@ -32,21 +32,21 @@ export function SessionExpiryBanner() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 max-w-sm rounded-lg border border-warning/50 bg-warning/10 px-4 py-3 shadow-lg backdrop-blur">
+    <div className="fixed bottom-4 right-4 z-50 max-w-sm rounded-lg border border-[var(--color-warning)]/50 bg-[var(--color-warning)]/10 px-4 py-3 shadow-lg backdrop-blur">
       <div className="flex items-start gap-3">
-        <Clock className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
+        <Clock className="h-4 w-4 text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground">
+          <p className="text-sm font-medium text-[var(--color-text-primary)]">
             Session akan berakhir dalam {minutesLeft ?? '<1'} menit
           </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
             Simpan pekerjaan Anda dan refresh session.
           </p>
         </div>
         <button
           onClick={handleRefresh}
           disabled={isPending}
-          className="inline-flex items-center gap-1.5 rounded-md bg-warning/20 px-2 py-1 text-xs font-medium text-warning hover:bg-warning/30 transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-md bg-[var(--color-warning)]/20 px-2 py-1 text-xs font-medium text-[var(--color-warning)] hover:bg-[var(--color-warning)]/30 transition-colors disabled:opacity-50"
         >
           <RefreshCcw className={`h-3 w-3 ${isPending ? 'animate-spin' : ''}`} />
           Refresh

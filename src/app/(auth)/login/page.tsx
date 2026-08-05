@@ -98,14 +98,14 @@ function LoginForm() {
   ]
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-0)] p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-16 w-16 rounded-xl bg-primary mb-4">
+          <div className="inline-flex items-center justify-center h-16 w-16 rounded-xl bg-[var(--color-brand-500)] mb-4">
             <CheckCircle className="h-10 w-10 text-primary-foreground" />
           </div>
-          <h1 className="font-heading text-3xl font-bold text-foreground">Syahfalah Dashboard</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="font-heading text-3xl font-bold text-[var(--color-text-primary)]">Syahfalah Dashboard</h1>
+          <p className="text-[var(--color-text-secondary)] mt-2">
             PT Syahfalah Global · PT Lembayung Wanantara Padha · Grup Majang Mejeng
           </p>
         </div>
@@ -117,7 +117,7 @@ function LoginForm() {
           </CardHeader>
           <CardContent>
             {error && (
-              <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2">
+              <div className="mb-4 p-3 rounded-lg bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/20 text-[var(--color-danger)] text-sm flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 flex-shrink-0" />
                 <span>{error}</span>
               </div>
@@ -151,7 +151,7 @@ function LoginForm() {
                 <button
                   type="button"
                   onClick={() => setShowPin(!showPin)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                   aria-label={showPin ? 'Sembunyikan PIN' : 'Tampilkan PIN'}
                 >
                   {showPin ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -170,18 +170,18 @@ function LoginForm() {
               </Button>
             </form>
 
-            <div className="mt-6 p-4 rounded-lg bg-muted/50 border border-border">
-              <p className="text-xs text-muted-foreground text-center mb-3">Akun Demo (PIN lihat di footer — bukan untuk produksi)</p>
+            <div className="mt-6 p-4 rounded-lg bg-[var(--color-surface-2)]/50 border border-[var(--color-border-default)]">
+              <p className="text-xs text-[var(--color-text-secondary)] text-center mb-3">Akun Demo (PIN lihat di footer — bukan untuk produksi)</p>
               <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto scrollbar-thin">
                 {demoUsers.map((user, i) => (
                   <button
                     key={i}
                     type="button"
                     onClick={() => setPin(user.pin)}
-                    className="text-left p-2 rounded hover:bg-background/50 transition-colors text-sm"
+                    className="text-left p-2 rounded hover:bg-[var(--color-surface-0)]/50 transition-colors text-sm"
                   >
-                    <span className="font-medium text-foreground">{user.name}</span>
-                    <span className="text-xs text-muted-foreground block">Role: {user.role.replace('_', ' ')}</span>
+                    <span className="font-medium text-[var(--color-text-primary)]">{user.name}</span>
+                    <span className="text-xs text-[var(--color-text-secondary)] block">Role: {user.role.replace('_', ' ')}</span>
                   </button>
                 ))}
               </div>
@@ -189,7 +189,7 @@ function LoginForm() {
           </CardContent>
         </Card>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
+        <p className="text-center text-xs text-[var(--color-text-secondary)] mt-6">
           Internal use only — PT Syahfalah Global · Dibuat oleh MADA
         </p>
       </div>

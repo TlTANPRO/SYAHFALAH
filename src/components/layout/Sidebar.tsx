@@ -31,7 +31,6 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/authStore'
-import { useUIStore } from '@/stores/uiStore'
 
 interface NavItem {
   name: string
@@ -144,7 +143,6 @@ export function Sidebar() {
   const { user } = useAuthStore()
   const { sidebarCollapsed, toggleSidebar } = useUIStore()
   const pathname = usePathname()
-  const { sidebarCollapsed, toggleSidebar } = useUIStore()
 
   if (!user) return null
 

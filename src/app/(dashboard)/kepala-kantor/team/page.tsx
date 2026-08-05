@@ -38,7 +38,7 @@ export default async function Page() {
     <div className="space-y-6">
       <div>
         <h1 className="font-heading text-2xl font-bold">Team KPIs</h1>
-        <p className="text-muted-foreground">Overview KPI seluruh tim perusahaan</p>
+        <p className="text-[var(--color-text-secondary)]">Overview KPI seluruh tim perusahaan</p>
       </div>
       <Card>
         <CardContent>

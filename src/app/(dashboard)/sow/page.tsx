@@ -38,7 +38,7 @@ export default async function Page() {
     <div className="space-y-6">
       <div>
         <h1 className="font-heading text-2xl font-bold">SOW Library</h1>
-        <p className="text-muted-foreground">{sow.length} SOW tersedia untuk semua divisi</p>
+        <p className="text-[var(--color-text-secondary)]">{sow.length} SOW tersedia untuk semua divisi</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -48,8 +48,8 @@ export default async function Page() {
               <CardTitle className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <span className="font-mono text-xs text-muted-foreground">{s.code}</span>
+                    <FileText className="h-4 w-4 text-[var(--color-text-secondary)] flex-shrink-0" />
+                    <span className="font-mono text-xs text-[var(--color-text-secondary)]">{s.code}</span>
                   </div>
                   <h3 className="text-base font-medium">{s.title}</h3>
                 </div>
@@ -58,7 +58,7 @@ export default async function Page() {
             </CardHeader>
             <CardContent className="space-y-3">
               {s.description && (
-                <p className="text-sm text-muted-foreground line-clamp-3">{s.description}</p>
+                <p className="text-sm text-[var(--color-text-secondary)] line-clamp-3">{s.description}</p>
               )}
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant={statusVariant[s.status] || 'default'}>{s.status}</Badge>
@@ -66,7 +66,7 @@ export default async function Page() {
                   <Badge variant="outline">{divName.get(s.division_id) || '—'}</Badge>
                 )}
                 {s.estimated_hours && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1 text-xs text-[var(--color-text-secondary)]">
                     <Clock className="h-3 w-3" />
                     {s.estimated_hours}h
                   </span>

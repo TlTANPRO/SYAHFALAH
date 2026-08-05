@@ -29,7 +29,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
             <CommandItem key={cmd.name} onSelect={() => { window.location.href = cmd.href; }}>
               <span className="h-4 w-4 mr-2" data-lucide={cmd.icon} />
               {cmd.name}
-              <span className="ml-auto text-xs text-muted-foreground">{cmd.href}</span>
+              <span className="ml-auto text-xs text-[var(--color-text-secondary)]">{cmd.href}</span>
             </CommandItem>
           ))}
         </CommandGroup>

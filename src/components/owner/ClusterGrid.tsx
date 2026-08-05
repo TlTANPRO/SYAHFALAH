@@ -22,9 +22,9 @@ function formatRupiahShort(n: number): string {
 }
 
 function colorForProgress(p: number): string {
-  if (p >= 75) return 'bg-success'      // green
-  if (p >= 50) return 'bg-info'         // blue
-  if (p >= 30) return 'bg-warning'      // amber
+  if (p >= 75) return 'bg-[var(--color-success)]'      // green
+  if (p >= 50) return 'bg-[var(--color-info)]'         // blue
+  if (p >= 30) return 'bg-[var(--color-warning)]'      // amber
   return 'bg-danger'                    // red
 }
 

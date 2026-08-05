@@ -50,7 +50,7 @@ export function CommandDialog({ open, onOpenChange }: CommandDialogProps) {
         if (e.target === e.currentTarget) onOpenChange(false)
       }}
     >
-      <div className="w-full max-w-lg rounded-lg border border-border bg-popover shadow-2xl overflow-hidden">
+      <div className="w-full max-w-lg rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-3)] shadow-2xl overflow-hidden">
         <CommandPalette open={open} onOpenChange={onOpenChange} />
       </div>
     </div>

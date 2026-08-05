@@ -23,23 +23,23 @@ export default async function DivisiHubPage() {
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-heading font-bold">Divisi</h1>
-        <p className="text-muted-foreground">Pilih divisi untuk melihat KPI, tim, dan tasks</p>
+        <p className="text-[var(--color-text-secondary)]">Pilih divisi untuk melihat KPI, tim, dan tasks</p>
       </div>
 
       {!divisions || divisions.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border p-8 text-center">
-          <Building2 className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-          <p className="text-muted-foreground">Belum ada divisi yang terdaftar.</p>
+        <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-8 text-center">
+          <Building2 className="h-8 w-8 mx-auto text-[var(--color-text-secondary)] mb-2" />
+          <p className="text-[var(--color-text-secondary)]">Belum ada divisi yang terdaftar.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {divisions.map((d: Division) => (
             <Link key={d.id} href={`/divisi/${d.id}`}>
-              <Card className="h-full hover:border-primary/40 hover:bg-muted/30 transition-colors">
+              <Card className="h-full hover:border-primary/40 hover:bg-[var(--color-surface-2)]/30 transition-colors">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <Building2 className="h-6 w-6 text-primary" />
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <ChevronRight className="h-4 w-4 text-[var(--color-text-secondary)]" />
                   </div>
                   <CardTitle className="mt-3">{d.name}</CardTitle>
                   {d.description && <CardDescription>{d.description}</CardDescription>}

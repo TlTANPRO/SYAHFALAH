@@ -56,7 +56,7 @@ export default async function Page() {
     return (
       <div className="space-y-4">
         <h1 className="font-heading text-2xl font-bold">My KPIs</h1>
-        <p className="text-muted-foreground">Sesi tidak valid. Silakan login ulang.</p>
+        <p className="text-[var(--color-text-secondary)]">Sesi tidak valid. Silakan login ulang.</p>
       </div>
     )
   }
@@ -71,7 +71,7 @@ export default async function Page() {
     <div className="space-y-6">
       <div>
         <h1 className="font-heading text-2xl font-bold">My KPIs</h1>
-        <p className="text-muted-foreground">
+        <p className="text-[var(--color-text-secondary)]">
           {user?.position || 'User'} · {kpis.length} KPI personal · {achieved} tercapai
         </p>
       </div>
@@ -79,7 +79,7 @@ export default async function Page() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <div className="flex items-center gap-2 text-[var(--color-text-secondary)] mb-1">
               <Target className="h-3.5 w-3.5" />
               <span className="text-xs uppercase tracking-wide">Total KPI</span>
             </div>
@@ -88,16 +88,16 @@ export default async function Page() {
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <div className="flex items-center gap-2 text-[var(--color-text-secondary)] mb-1">
               <CheckCircle className="h-3.5 w-3.5" />
               <span className="text-xs uppercase tracking-wide">Achieved</span>
             </div>
-            <div className="font-heading text-2xl font-bold tabular-nums text-success">{achieved}</div>
+            <div className="font-heading text-2xl font-bold tabular-nums text-[var(--color-success)]">{achieved}</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <div className="flex items-center gap-2 text-[var(--color-text-secondary)] mb-1">
               <TrendingUp className="h-3.5 w-3.5" />
               <span className="text-xs uppercase tracking-wide">Avg Progress</span>
             </div>
@@ -114,28 +114,28 @@ export default async function Page() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left p-3 font-medium text-muted-foreground">KPI</th>
-                  <th className="text-right p-3 font-medium text-muted-foreground">Progress</th>
-                  <th className="text-right p-3 font-medium text-muted-foreground">Target</th>
-                  <th className="text-right p-3 font-medium text-muted-foreground">Actual</th>
-                  <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                <tr className="border-b border-[var(--color-border-default)]">
+                  <th className="text-left p-3 font-medium text-[var(--color-text-secondary)]">KPI</th>
+                  <th className="text-right p-3 font-medium text-[var(--color-text-secondary)]">Progress</th>
+                  <th className="text-right p-3 font-medium text-[var(--color-text-secondary)]">Target</th>
+                  <th className="text-right p-3 font-medium text-[var(--color-text-secondary)]">Actual</th>
+                  <th className="text-left p-3 font-medium text-[var(--color-text-secondary)]">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {kpis.map(k => (
-                  <tr key={k.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                  <tr key={k.id} className="border-b border-[var(--color-border-default)]/50 hover:bg-[var(--color-surface-2)]/30 transition-colors">
                     <td className="p-3">
                       <div className="font-medium">{k.name || '—'}</div>
-                      <div className="font-mono text-xs text-muted-foreground">{k.code || '—'}</div>
+                      <div className="font-mono text-xs text-[var(--color-text-secondary)]">{k.code || '—'}</div>
                     </td>
                     <td className="p-3 text-right tabular-nums font-medium">
                       {k.progress != null ? `${Math.round(k.progress)}%` : '—'}
                     </td>
-                    <td className="p-3 text-right tabular-nums text-muted-foreground">
+                    <td className="p-3 text-right tabular-nums text-[var(--color-text-secondary)]">
                       {k.baseline_target_value != null ? `${k.baseline_target_value}${k.unit || ''}` : '—'}
                     </td>
-                    <td className="p-3 text-right tabular-nums text-muted-foreground">
+                    <td className="p-3 text-right tabular-nums text-[var(--color-text-secondary)]">
                       {k.actual_value != null ? `${k.actual_value}${k.unit || ''}` : '—'}
                     </td>
                     <td className="p-3">

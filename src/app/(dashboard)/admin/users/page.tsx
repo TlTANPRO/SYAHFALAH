@@ -65,7 +65,7 @@ export default async function Page() {
     <div className="space-y-6">
       <div>
         <h1 className="font-heading text-2xl font-bold">User Management</h1>
-        <p className="text-muted-foreground">{users.length} user terdaftar · {divisions.length} divisi</p>
+        <p className="text-[var(--color-text-secondary)]">{users.length} user terdaftar · {divisions.length} divisi</p>
       </div>
 
       {/* Role summary */}
@@ -73,7 +73,7 @@ export default async function Page() {
         {Object.entries(roleLabels).map(([role, { label }]) => (
           <Card key={role}>
             <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <div className="flex items-center gap-2 text-[var(--color-text-secondary)] mb-1">
                 <Shield className="h-3.5 w-3.5" />
                 <span className="text-xs uppercase tracking-wide">{label}</span>
               </div>
@@ -95,31 +95,31 @@ export default async function Page() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left p-3 font-medium text-muted-foreground">Nama</th>
-                  <th className="text-left p-3 font-medium text-muted-foreground">Role</th>
-                  <th className="text-left p-3 font-medium text-muted-foreground">Divisi</th>
-                  <th className="text-left p-3 font-medium text-muted-foreground">Kontak</th>
-                  <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                <tr className="border-b border-[var(--color-border-default)]">
+                  <th className="text-left p-3 font-medium text-[var(--color-text-secondary)]">Nama</th>
+                  <th className="text-left p-3 font-medium text-[var(--color-text-secondary)]">Role</th>
+                  <th className="text-left p-3 font-medium text-[var(--color-text-secondary)]">Divisi</th>
+                  <th className="text-left p-3 font-medium text-[var(--color-text-secondary)]">Kontak</th>
+                  <th className="text-left p-3 font-medium text-[var(--color-text-secondary)]">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map(u => {
                   const r = roleLabels[u.role] || { label: u.role, variant: 'default' as const }
                   return (
-                    <tr key={u.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                    <tr key={u.id} className="border-b border-[var(--color-border-default)]/50 hover:bg-[var(--color-surface-2)]/30 transition-colors">
                       <td className="p-3">
                         <div className="font-medium">{u.full_name}</div>
-                        <div className="text-xs text-muted-foreground">{u.position || '—'}</div>
+                        <div className="text-xs text-[var(--color-text-secondary)]">{u.position || '—'}</div>
                       </td>
                       <td className="p-3">
                         <Badge variant={r.variant}>{r.label}</Badge>
                       </td>
-                      <td className="p-3 text-muted-foreground">
+                      <td className="p-3 text-[var(--color-text-secondary)]">
                         {u.division_id ? divName.get(u.division_id) || '—' : '—'}
                       </td>
                       <td className="p-3">
-                        <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                        <div className="flex flex-col gap-0.5 text-xs text-[var(--color-text-secondary)]">
                           {u.email && (
                             <span className="flex items-center gap-1">
                               <Mail className="h-3 w-3" />

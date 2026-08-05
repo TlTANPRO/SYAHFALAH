@@ -74,9 +74,9 @@ export function BentoCard({
       style={style as React.CSSProperties}
       className={cn(
         // Base
-        'relative rounded-xl border bg-card p-6 shadow-xs',
+        'relative rounded-xl border bg-[var(--color-surface-1)] p-6 shadow-xs',
         // Micro-interactions
-        'transition-all duration-200 ease-out-expo',
+        'transition-all duration-200 ease-[var(--ease-out-expo)]',
         'hover:shadow-md hover:-translate-y-0.5',
         // Accent
         accent && 'bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20',
@@ -118,7 +118,7 @@ export function SectionLabel({ number, title, subtitle, action, className }: Sec
         <h2 className="font-heading text-lg font-semibold tracking-tight">{title}</h2>
       </div>
       <div className="flex items-center gap-2">
-        {subtitle && <span className="text-sm text-muted-foreground">{subtitle}</span>}
+        {subtitle && <span className="text-sm text-[var(--color-text-secondary)]">{subtitle}</span>}
         {action && <div className="ml-auto">{action}</div>}
       </div>
     </div>
@@ -152,10 +152,10 @@ export function KPICard({
   className 
 }: KPICardProps) {
   const statusStyles = {
-    on_track: 'bg-success/10 text-success border-success/20',
-    at_risk: 'bg-warning/10 text-warning border-warning/20',
-    off_track: 'bg-destructive/10 text-destructive border-destructive/20',
-    achieved: 'bg-info/10 text-info border-info/20',
+    on_track: 'bg-[var(--color-success)]/10 text-[var(--color-success)] border-[var(--color-success)]/20',
+    at_risk: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)] border-[var(--color-warning)]/20',
+    off_track: 'bg-[var(--color-danger)]/10 text-[var(--color-danger)] border-[var(--color-danger)]/20',
+    achieved: 'bg-[var(--color-info)]/10 text-[var(--color-info)] border-[var(--color-info)]/20',
   }
 
   const statusLabels = {
@@ -170,15 +170,15 @@ export function KPICard({
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
-            {icon && <span className="text-muted-foreground">{icon}</span>}
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
+            {icon && <span className="text-[var(--color-text-secondary)]">{icon}</span>}
+            <span className="text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">{label}</span>
             {action && <span className="ml-auto">{action}</span>}
           </div>
-          <div className="font-heading text-3xl font-bold text-foreground tabular-nums line-clamp-1">
+          <div className="font-heading text-3xl font-bold text-[var(--color-text-primary)] tabular-nums line-clamp-1">
             {value}
           </div>
           {target !== undefined && (
-            <div className="mt-1 text-sm text-muted-foreground">
+            <div className="mt-1 text-sm text-[var(--color-text-secondary)]">
               Target: <span className="font-medium tabular-nums">{target}</span>
             </div>
           )}
@@ -193,15 +193,15 @@ export function KPICard({
           {trend && (
             <div className={cn(
               'flex items-center gap-1 text-xs font-medium',
-              trend.value >= 0 ? 'text-success' : 'text-destructive'
+              trend.value >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'
             )}>
               {trend.value >= 0 ? '↑' : '↓'} {Math.abs(trend.value)}% {trend.label}
             </div>
           )}
           {progress !== undefined && (
-            <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden">
+            <div className="w-32 h-1.5 bg-[var(--color-surface-2)] rounded-full overflow-hidden">
               <div 
-                className="h-full bg-primary transition-all duration-500 ease-out-expo"
+                className="h-full bg-[var(--color-brand-500)] transition-all duration-500 ease-[var(--ease-out-expo)]"
                 style={{ width: `${Math.min(progress, 100)}%` }}
               />
             </div>
@@ -229,7 +229,7 @@ export function ChartCard({ title, subtitle, children, className, action, span }
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-heading text-lg font-semibold">{title}</h3>
-            {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+            {subtitle && <p className="text-sm text-[var(--color-text-secondary)]">{subtitle}</p>}
           </div>
           {action && <div>{action}</div>}
         </div>
@@ -257,7 +257,7 @@ export function TableCard({ title, subtitle, children, className, action, span, 
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-heading text-lg font-semibold">{title}</h3>
-            {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+            {subtitle && <p className="text-sm text-[var(--color-text-secondary)]">{subtitle}</p>}
           </div>
           {action && <div>{action}</div>}
         </div>

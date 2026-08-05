@@ -19,13 +19,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const baseStyles = 'inline-flex items-center justify-center gap-2 font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50'
     
     const variants = {
-      primary: 'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 active:bg-primary',
-      secondary: 'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80 active:bg-secondary',
-      outline: 'border border-border bg-transparent hover:bg-muted/50 active:bg-muted',
-      ghost: 'bg-transparent hover:bg-muted/50 active:bg-muted',
-      destructive: 'bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90 active:bg-destructive',
-      success: 'bg-success text-success-foreground shadow-xs hover:bg-success/90 active:bg-success',
-      warning: 'bg-warning text-warning-foreground shadow-xs hover:bg-warning/90 active:bg-warning',
+      primary: 'bg-[var(--color-brand-500)] text-primary-foreground shadow-xs hover:bg-[var(--color-brand-500)]/90 active:bg-[var(--color-brand-500)]',
+      secondary: 'bg-[var(--color-surface-2)] text-secondary-foreground shadow-xs hover:bg-[var(--color-surface-2)]/80 active:bg-[var(--color-surface-2)]',
+      outline: 'border border-[var(--color-border-default)] bg-transparent hover:bg-[var(--color-surface-2)]/50 active:bg-[var(--color-surface-2)]',
+      ghost: 'bg-transparent hover:bg-[var(--color-surface-2)]/50 active:bg-[var(--color-surface-2)]',
+      destructive: 'bg-[var(--color-danger)] text-destructive-foreground shadow-xs hover:bg-[var(--color-danger)]/90 active:bg-[var(--color-danger)]',
+      success: 'bg-[var(--color-success)] text-success-foreground shadow-xs hover:bg-[var(--color-success)]/90 active:bg-[var(--color-success)]',
+      warning: 'bg-[var(--color-warning)] text-warning-foreground shadow-xs hover:bg-[var(--color-warning)]/90 active:bg-[var(--color-warning)]',
     }
     
     const sizes = {
