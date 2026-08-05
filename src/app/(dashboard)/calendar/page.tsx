@@ -5,9 +5,22 @@
 // - Monthly akhir bulan (2 jam)
 // - Quarterly planning & quarterly review
 // - Annual planning ogni Januari
+//
+// Plan C Phase 1 Item 5: append "Upcoming Events" section with
+// real data fetched server-side from /api/calendar/events.
 
-import { CalendarDays, Clock, MapPin, Users } from 'lucide-react'
+import { CalendarDays, Clock, MapPin, Users, Calendar as CalIcon } from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { createClient } from '@supabase/supabase-js'
+
+interface CalendarEvent {
+  id: string
+  kind: 'task' | 'kpi'
+  title: string
+  date: string
+  meta?: { status?: string | null; priority?: string | null; period?: string | null; code?: string | null; level?: string | null }
+}
 
 interface Ritual {
   nama: string
@@ -117,7 +130,73 @@ function matchesToday(r: Ritual, todayIdx: number): boolean {
   return false
 }
 
-export default function Page() {
+async function loadUpcomingEvents(horizonDays = 30): Promise<CalendarEvent[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return []
+  const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+
+  const today = new Date().toISOString().slice(0, 10)
+  const horizon = new Date()
+  horizon.setDate(horizon.getDate() + horizonDays)
+  const horizonIso = horizon.toISOString().slice(0, 10)
+
+  const [tasksRes, kpiRes] = await Promise.all([
+    supabase
+      .from('tasks')
+      .select('id, title, due_date, status, priority')
+      .not('due_date', 'is', null)
+      .gte('due_date', today)
+      .lte('due_date', horizonIso)
+      .order('due_date', { ascending: true })
+      .limit(20),
+    supabase
+      .from('kpis')
+      .select('id, code, name, level, period, status')
+      .gte('period', today.slice(0, 7))
+      .lte('period', horizonIso.slice(0, 7))
+      .order('period', { ascending: true })
+      .limit(20),
+  ])
+
+  const events: CalendarEvent[] = []
+  if (Array.isArray(tasksRes.data)) {
+    for (const t of tasksRes.data) {
+      events.push({
+        id: `task-${(t as any).id}`,
+        kind: 'task',
+        title: (t as any).title ?? '(tanpa judul)',
+        date: (t as any).due_date ?? '',
+        meta: { status: (t as any).status ?? null, priority: (t as any).priority ?? null },
+      })
+    }
+  }
+  if (Array.isArray(kpiRes.data)) {
+    for (const k of kpiRes.data) {
+      events.push({
+        id: `kpi-${(k as any).id}`,
+        kind: 'kpi',
+        title: (k as any).name ?? (k as any).code ?? '(KPI)',
+        date: `${(k as any).period}-01`,
+        meta: {
+          code: (k as any).code ?? null,
+          level: (k as any).level ?? null,
+          status: (k as any).status ?? null,
+          period: (k as any).period ?? null,
+        },
+      })
+    }
+  }
+  events.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+  return events
+}
+
+function fmtDateId(s: string): string {
+  if (!s) return '—'
+  return new Date(s).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+export default async function Page() {
   const grouped = RITUAL.reduce<Record<string, Ritual[]>>((acc, r) => {
     (acc[r.kadarsa] = acc[r.kadarsa] || []).push(r)
     return acc
@@ -136,6 +215,9 @@ export default function Page() {
     : 'Besok 08.30 — Daily Standup'
 
   const todaysRituals = RITUAL.filter(r => matchesToday(r, dayOfWeek))
+
+  // Plan C Phase 1 Item 5: upcoming events from tasks + KPI periods.
+  const upcoming = await loadUpcomingEvents(30)
 
   return (
     <div className="space-y-6">
@@ -234,6 +316,48 @@ export default function Page() {
           </div>
         )
       })}
+
+      {/* Plan C Phase 1 Item 5: Upcoming events */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-[var(--color-info)]/15 text-[var(--color-info)] border border-[var(--color-info)]/30">
+            Upcoming
+          </span>
+          <h2 className="display-sm flex items-center gap-2">
+            <CalIcon className="h-4 w-4 text-[var(--color-brand-500)]" />
+            Event 30 hari ke depan
+          </h2>
+        </div>
+        {upcoming.length === 0 ? (
+          <Card><CardContent className="p-6 text-center text-sm text-[var(--color-text-muted)]">
+            Tidak ada event mendatang (tasks / KPI periods).
+          </CardContent></Card>
+        ) : (
+          <Card>
+            <CardContent className="p-0">
+              <ul className="divide-y divide-[var(--color-border-subtle)]">
+                {upcoming.map((ev) => (
+                  <li key={ev.id} className="flex items-start gap-3 px-4 py-3">
+                    <span className={`mt-1 inline-flex items-center justify-center h-6 w-6 rounded text-[10px] font-bold flex-shrink-0 ${ev.kind === 'task' ? 'bg-[var(--color-brand-500)]/15 text-[var(--color-brand-500)]' : 'bg-[var(--color-info)]/15 text-[var(--color-info)]'}`}>
+                      {ev.kind === 'task' ? 'T' : 'K'}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{ev.title}</p>
+                      <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+                        {fmtDateId(ev.date)}
+                        {ev.kind === 'task' && ev.meta?.status && <> · status {ev.meta.status}</>}
+                        {ev.kind === 'task' && ev.meta?.priority && <> · {ev.meta.priority}</>}
+                        {ev.kind === 'kpi' && ev.meta?.code && <> · {ev.meta.code}</>}
+                        {ev.kind === 'kpi' && ev.meta?.period && <> · {ev.meta.period}</>}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   )
 }
