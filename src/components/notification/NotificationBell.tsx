@@ -1,10 +1,11 @@
 // components/notification/NotificationBell.tsx
-// Notification bell with dropdown
+// Notification bell with dropdown.
+// /api/notifications returns { data: [], total, page, pageSize } — extract .data.
 
 'use client'
 
 import { useState } from 'react'
-import { Bell, CheckCircle, AlertTriangle, Clock, X } from 'lucide-react'
+import { Bell, CheckCircle, AlertTriangle, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -14,54 +15,41 @@ import { useAuthStore } from '@/stores/authStore'
 
 interface Notification {
   id: string
-  type: string
   title: string
-  message: string
+  body: string
+  link?: string | null
   is_read: boolean
+  read_at?: string | null
+  payload?: Record<string, unknown>
   created_at: string
-  reference_id?: string | null
-  reference_type?: string | null
-  priority: string
 }
 
 export function NotificationBell() {
   const { user } = useAuthStore()
-  const { data: notifications, isLoading } = useQuery({
+  const { data: notifications, isLoading } = useQuery<Notification[]>({
     queryKey: ['notifications', user?.id],
     queryFn: async () => {
       if (!user?.id) return []
       const res = await fetch('/api/notifications?limit=20', { credentials: 'include' })
       if (!res.ok) return []
-      return (await res.json()) as Notification[]
+      const j = await res.json() as { data?: Notification[] }
+      // /api/notifications returns { data, total, page, pageSize }; fallback to []
+      return (j.data ?? []) as Notification[]
     },
     refetchInterval: 30000,
     enabled: !!user?.id,
   })
 
-  const unreadCount = notifications?.filter(n => !n.is_read).length || 0
+  const safe = Array.isArray(notifications) ? notifications : []
+  const unreadCount = safe.filter(n => !n.is_read).length
 
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'morning_brief': return <CheckCircle className="h-4 w-4 text-[var(--color-success)]" />
-      case 'deadline_approaching': return <Clock className="h-4 w-4 text-[var(--color-warning)]" />
-      case 'overdue': return <AlertTriangle className="h-4 w-4 text-[var(--color-danger)]" />
-      case 'kpi_at_risk': return <AlertTriangle className="h-4 w-4 text-[var(--color-warning)]" />
-      default: return <Bell className="h-4 w-4 text-[var(--color-info)]" />
-    }
-  }
-
-  const getTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      morning_brief: 'Morning Brief',
-      deadline_approaching: 'Deadline Approaching',
-      overdue: 'Overdue',
-      new_task: 'New Task',
-      carry_over: 'Carry-over',
-      kpi_at_risk: 'KPI At Risk',
-      mention: 'Mention',
-      approval_request: 'Approval Request',
-    }
-    return labels[type] || type
+  const getIcon = (n: Notification) => {
+    const kind = (n.payload as any)?.kind ?? (n.payload as any)?.event ?? ''
+    if (kind.includes('urgent') || /urgent|⚠/i.test(n.title)) return <AlertTriangle className="h-4 w-4 text-[var(--color-warning)]" />
+    if (kind.includes('overdue') || /overdue/i.test(n.title)) return <AlertTriangle className="h-4 w-4 text-[var(--color-danger)]" />
+    if (kind.includes('deadline') || /deadline/i.test(n.title)) return <Clock className="h-4 w-4 text-[var(--color-warning)]" />
+    if (kind.includes('completed') || /selesai/i.test(n.title)) return <CheckCircle className="h-4 w-4 text-[var(--color-success)]" />
+    return <Bell className="h-4 w-4 text-[var(--color-info)]" />
   }
 
   return (
@@ -84,30 +72,26 @@ export function NotificationBell() {
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        
+
         {isLoading ? (
           <div className="py-4 text-center text-[var(--color-text-secondary)]">Memuat...</div>
-        ) : notifications?.length === 0 ? (
+        ) : safe.length === 0 ? (
           <div className="py-4 text-center text-[var(--color-text-secondary)]">Tidak ada notifikasi</div>
         ) : (
           <div className="max-h-[300px] overflow-y-auto scrollbar-thin">
-            {notifications?.map((notif) => (
-              <DropdownMenuItem 
-                key={notif.id} 
+            {safe.map((notif) => (
+              <DropdownMenuItem
+                key={notif.id}
                 className={`flex items-start gap-3 p-3 ${!notif.is_read ? 'bg-[var(--color-surface-2)]/50' : ''}`}
-                onClick={() => {
-                  // Mark as read - could add mutation here
-                }}
               >
                 <div className="flex-shrink-0 mt-0.5">
-                  {getIcon(notif.type)}
+                  {getIcon(notif)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-sm">{notif.title}</span>
-                    <Badge variant="outline" className="text-xs">{getTypeLabel(notif.type)}</Badge>
                   </div>
-                  <p className="text-xs text-[var(--color-text-secondary)] mt-1 line-clamp-2">{notif.message}</p>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-1 line-clamp-2">{notif.body}</p>
                   <p className="text-xs text-[var(--color-text-secondary)] mt-1">{formatRelativeTime(notif.created_at)}</p>
                 </div>
                 {!notif.is_read && (
