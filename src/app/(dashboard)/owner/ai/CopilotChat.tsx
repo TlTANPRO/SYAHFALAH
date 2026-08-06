@@ -157,7 +157,7 @@ export function CopilotChat() {
             <div className="px-4 py-3 bg-[var(--color-surface-1)]">
               <div className="flex items-center gap-2 text-sm text-[var(--color-text-tertiary)]">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Sedang berpikir (max 18 detik)…
+                Sedang berpikir…
               </div>
             </div>
           )}

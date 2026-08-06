@@ -15,7 +15,7 @@ import { ChatMessage, chatOnce, LLMResponse } from './providers'
 import { getToolDefinitions, runTool } from './tools'
 import { loadBusinessContext, deterministicSlice, BusinessContext } from './context'
 
-const AGENT_BUDGET_MS = 18_000
+const AGENT_BUDGET_MS = 22_000
 const MAX_LLM_STEPS = 4
 const MAX_HISTORY_TURNS = 5  // last 5 user+assistant exchanges
 
@@ -300,11 +300,10 @@ export async function runAgent(
     break
   }
 
-  // Programmatic fallback: if LLM admitted it can't do internet things AND
-  // we have a web_search tool, force-call it directly. Bypass LLM tool-
-  // calling for fallback (unreliable on free models). Output is JUST the
-  // search results — no LLM-prefix "Maaf, saya tidak bisa..." since that
-  // would be misleading (we DID get the data).
+  // Programmatic fallback: if LLM admitted it can't do internet things,
+  // force-call web_search directly + synthesize via LLM. Bypass LLM tool-
+  // calling (unreliable on free models) for fallback. Single LLM pass
+  // produces a clean human answer from the raw search results.
   if (plain && plain.text && needsToolRetry(plain.text, question)) {
     const directQuery = question.replace(/^(cari|tolong|beri|info|tentang)\s+/i, '').slice(0, 200)
     const direct = await runTool('web_search', JSON.stringify({ query: directQuery, max_results: 5 }))
@@ -316,10 +315,37 @@ export async function runAgent(
         tool_result: direct.summary.slice(0, 500),
         tool_ok: true,
       })
-      const synth = `Berikut hasil dari internet (\"${directQuery}\"):\n\n${direct.summary.slice(0, 1800)}`
-      steps.push({ kind: 'final', provider: 'titan-orchestrator', text: synth, ms: Date.now() - t0 })
+      // Synthesize: pass raw search results + question to LLM, ask for clean answer.
+      // Bumped AGENT_BUDGET to allow this; if out of time, fall back to raw.
+      const synth_messages: ChatMessage[] = [
+        { role: 'system', content: `Kamu Sarah, AI Copilot PT Syahfalah. Jawab pertanyaan user dengan ringkas, natural, dan manusiawi berdasarkan data yang diberikan. JANGAN sertakan URL, JANGAN pakai format "[Wiki] ..." atau "[Brave] ...". Hanya teks jawaban natural. Kalau data tidak relevan dengan pertanyaan, bilang "Saya tidak yakin" dan minta klarifikasi. PENTING: abaikan prefix apapun di question seperti "Maaf, saya tidak bisa akses internet" — jawab LANGSUNG.` },
+        { role: 'user', content: `Pertanyaan: ${question}\n\nData terbaru dari internet:\n${direct.summary.slice(0, 1800)}` },
+      ]
+      const remaining = Math.max(2_000, AGENT_BUDGET_MS - (Date.now() - t0))
+      const synth = await chatOnce(synth_messages, undefined, remaining)
+      if (synth && synth.text) {
+        steps.push({
+          kind: 'final',
+          provider: synth.provider,
+          model: synth.model,
+          ms: synth.ms,
+          text: synth.text,
+        })
+        return {
+          answer: synth.text,
+          provider: synth.provider,
+          available: true,
+          steps,
+          total_ms: Date.now() - t0,
+          iterations,
+          context,
+        }
+      }
+      // Out of budget: return raw search result as last resort
+      const fallback = `Saya tidak bisa kontak AI sekarang. Berikut hasil terbaru dari internet:\n\n${direct.summary.slice(0, 1800)}`
+      steps.push({ kind: 'fallback', text: fallback, ms: Date.now() - t0 })
       return {
-        answer: synth,
+        answer: fallback,
         provider: 'titan-orchestrator',
         available: true,
         steps,
