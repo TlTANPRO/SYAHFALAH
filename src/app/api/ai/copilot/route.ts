@@ -73,14 +73,7 @@ export async function POST(req: NextRequest) {
         tool_result: s.tool_result?.slice(0, 400),
         tool_ok: s.tool_ok,
       })),
-      context_summary: {
-        metrics: result.context.company.metrics,
-        cashflow: result.context.company.cashflow,
-        clusters: result.context.company.clusters.length,
-        projects: result.context.company.projects.length,
-        people: result.context.company.people,
-        notifications_unread: result.context.company.notifications_unread,
-      },
+      context_summary: null,
       ts: new Date().toISOString(),
     })
   } catch (err: any) {
