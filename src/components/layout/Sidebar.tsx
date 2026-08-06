@@ -51,6 +51,7 @@ const ownerNav: NavItem[] = [
   { name: 'Company KPIs', href: '/owner/kpi', icon: Target, roles: ['owner'] },
   { name: 'Target Cascade', href: '/owner/targets', icon: GitBranch, roles: ['owner'] },
   { name: 'Marketing CRM', href: '/owner/marketing?tab=customers', icon: Megaphone, roles: ['owner'] },
+  { name: 'Project Mgmt', href: '/owner/projects?tab=projects', icon: Building2, roles: ['owner'] },
   { name: 'Digital Twin', href: '/owner/twin', icon: Link2, roles: ['owner'] },
   { name: 'Audit Log', href: '/owner/audit', icon: Activity, roles: ['owner'] },
   { name: 'Approvals', href: '/owner/approvals', icon: ClipboardCheck, roles: ['owner'] },
