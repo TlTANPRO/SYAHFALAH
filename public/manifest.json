@@ -1,90 +1,25 @@
 {
-  "name": "Syahfalah Dashboard",
-  "short_name": "Syahfalah",
-  "description": "Internal management dashboard for PT Syahfalah Global + PT Lembayung Wanantara Padha + Grup Majang Mejeng",
-  "start_url": "/",
+  "name": "Syahfalah Operations",
+  "short_name": "SYAHFALAH",
+  "description": "Dashboard operasional PT Syahfalah",
+  "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
-  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "/icons/icon-192.svg",
+      "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-512.svg",
+      "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/apple-touch-icon.svg",
-      "sizes": "180x180",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ],
-  "categories": [
-    "business",
-    "productivity"
-  ],
-  "screenshots": [],
-  "shortcuts": [
-    {
-      "name": "Owner Dashboard",
-      "short_name": "Owner",
-      "description": "Owner strategic overview",
-      "url": "/owner",
-      "icons": [
-        {
-          "src": "/icons/shortcut-owner.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
-      "name": "KPI Explorer",
-      "short_name": "KPI",
-      "description": "All KPI definitions + progress",
-      "url": "/kpi",
-      "icons": [
-        {
-          "src": "/icons/shortcut-kpi.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
-      "name": "Personal Workspace",
-      "short_name": "Personal",
-      "description": "My tasks + SOW + KPI + schedule",
-      "url": "/personal",
-      "icons": [
-        {
-          "src": "/icons/shortcut-personal.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
-      "name": "Owner Approvals",
-      "short_name": "Approvals",
-      "description": "Pending approvals + notifications",
-      "url": "/owner/approvals",
-      "icons": [
-        {
-          "src": "/icons/shortcut-approvals.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
     }
   ]
 }
