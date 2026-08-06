@@ -1,20 +1,26 @@
 // lib/ai/agent.ts
-// Syahfalah AI Copilot agent — plan + tool loop.
+// Syahfalah AI Copilot agent — conversational + tool-calling.
 // Strategy:
 //  1. Load internal business context (lib/ai/context.ts).
-//  2. Build user message + system prompt + tool definitions.
-//  3. Send to LLM cascade (lib/ai/providers.ts).
-//  4. If LLM returns tool_calls: run tools, append results, loop.
-//  5. Cap at MAX_AGENT_ITERATIONS iterations + AGENT_BUDGET_MS total.
-//  6. On timeout / final answer: return text + traces.
-//  7. If everything fails: fallback to deterministicSlice().
+//  2. Build multi-turn conversation (history + new question).
+//  3. Heuristic: enable tools only when question needs external data.
+//  4. Send to LLM cascade. If tool_calls → run, loop.
+//  5. Cap at AGENT_BUDGET_MS total + MAX_LLM_STEPS rounds.
+//  6. Stream deltas via onDelta() callback (optional) for live UI feel.
+//  7. Fallback to deterministicSlice() if all providers fail.
 
 import { ChatMessage, chatOnce, LLMResponse } from './providers'
 import { getToolDefinitions, runTool } from './tools'
 import { loadBusinessContext, deterministicSlice, BusinessContext } from './context'
 
-const AGENT_BUDGET_MS = 18_000  // hard cap total wall time
-const MAX_LLM_STEPS = 4         // 1 init + 3 tool-call rounds
+const AGENT_BUDGET_MS = 18_000
+const MAX_LLM_STEPS = 4
+const MAX_HISTORY_TURNS = 5  // last 5 user+assistant exchanges
+
+export interface ConversationTurn {
+  role: 'user' | 'assistant'
+  content: string
+}
 
 export interface AgentStep {
   kind: 'llm' | 'tool' | 'final' | 'fallback'
@@ -38,47 +44,99 @@ export interface AgentResult {
   context: BusinessContext
 }
 
-function buildSystemPrompt(ctx: BusinessContext): string {
-  const compact = JSON.stringify(ctx)
-  return `Kamu adalah Syahfalah AI Copilot. PT Syahfalah adalah developer properti di Indonesia yang mengelola clusters, leads, KPIs, consumer cases (SP3K → SHM), maintenance, purchase orders, dan approvals.
+// Narrative context: convert JSON slices into a readable Bahasa Indonesia
+// narrative. The LLM is then grounded on fact, not raw JSON.
+function narrativeContext(ctx: BusinessContext): string {
+  const m = ctx.company.metrics
+  const c = ctx.company.cashflow
+  const p = ctx.company.people
+  const parts: string[] = []
+  parts.push(`PT Syahfalah, snapshot ${ctx.company.as_of_ymd}.`)
+  parts.push(`Leads pipeline: ${m.leads_total} (estimasi total nilai Rp ${fmtRp(m.leads_total_value_rupiah)}). Distribusi stage: ${Object.entries(m.leads_by_stage).map(([k, v]) => `${k}=${v}`).join(', ') || 'kosong'}.`)
+  parts.push(`KPI: ${m.kpis_on_track} on-track, ${m.kpis_off_track} off-track dari total ${m.kpis_total}.`)
+  parts.push(`Operasional: ${m.overdue_tasks} task overdue, ${m.overdue_consumer_cases} consumer case overdue, ${m.open_maintenance_tickets} maintenance ticket open, ${m.pending_approvals} pending approval, ${m.overdue_purchase_requests} purchase request pending.`)
+  parts.push(`Cashflow: booking pipeline Rp ${fmtRp(c.booking_pipeline_rupiah)}, SP3K submitted=${c.sp3k_submitted} approved=${c.sp3k_approved}, Akad done=${c.akad_done}, maintenance pipeline Rp ${fmtRp(c.maintenance_revenue_potential_rupiah)}.`)
+  parts.push(`People: ${p.total_active_users} aktif. Hari ini: ${p.today_attendance.checked_in} sudah check-in, ${p.today_attendance.checked_out} sudah check-out, ${p.today_attendance.absent} alpha.`)
+  if (p.by_role && Object.keys(p.by_role).length > 0) {
+    parts.push(`Distribusi role: ${Object.entries(p.by_role).map(([k, v]) => `${k}=${v}`).join(', ')}.`)
+  }
+  if (ctx.company.clusters.length > 0) {
+    parts.push(`Clusters (${ctx.company.clusters.length}): ${ctx.company.clusters.slice(0, 8).map(c => `${c.code} ${c.name} (${c.units_sold}/${c.total_units} unit, avg Rp ${fmtRp(c.avg_price_rupiah)})`).join('; ')}.`)
+  }
+  if (ctx.company.projects.length > 0) {
+    parts.push(`Projects (${ctx.company.projects.length}): ${ctx.company.projects.slice(0, 8).map(p => `${p.code} ${p.name} (${p.status}, ${p.progress_pct}% done, spent Rp ${fmtRp(p.spent_rupiah)} of Rp ${fmtRp(p.budget_rupiah)})`).join('; ')}.`)
+  }
+  if (ctx.company.top_kpis.length > 0) {
+    parts.push(`Top KPIs by progress: ${ctx.company.top_kpis.slice(0, 5).map(k => `${k.name} (${k.progress_pct}% ${k.status})`).join('; ')}.`)
+  }
+  if (ctx.company.recent_activity.length > 0) {
+    parts.push(`Recent activity (8 latest): ${ctx.company.recent_activity.map(a => `${a.ts} ${a.kind} ${a.title}`).join('; ')}.`)
+  }
+  if (ctx.company.notifications_unread > 0) {
+    parts.push(`Notifikasi belum dibaca: ${ctx.company.notifications_unread}.`)
+  }
+  return parts.join('\n')
+}
 
-ATURAN KETAT:
-1. Jawab dalam Bahasa Indonesia (boleh campur Inggris untuk istilah teknis).
-2. Jawaban RINGKAS: bullet points, max 8 bullet.
-3. Memakai data dari konteks internal jika tersedia. Untuk info eksternal (berita, riset, tren global, social media), GUNAKAN tools (fetch_url, fetch_rss, fetch_oembed, search_duckduckgo).
-4. Jika data TIDAK tersedia di konteks DAN tool gagal, jawab "Data tidak tersedia".
-5. JANGAN mengarang angka. JANGAN kasih saran hukum, finansial, atau medis.
-6. Untuk pertanyaan yang membutuhkan info dari luar (misal "tren properti 2026" / "berita tentang suku bunga BI"), PANGGIL tool yang sesuai. Untuk pertanyaan internal saja, langsung jawab.
-7. Setiap kali tool return error, laporkan pada user dengan Bahasa Indonesia.
+function fmtRp(n: number): string {
+  if (!n || !Number.isFinite(n)) return '0'
+  return new Intl.NumberFormat('id-ID').format(Math.round(n))
+}
 
-KONTEKS INTERNAL SAAT INI (JSON):
-${compact}`
+// New system prompt: gives the AI a persona, narrative context, and
+// tool guidelines. Less restrictive, more natural.
+function buildSystemPrompt(narrative: string): string {
+  return `Kamu adalah Sarah, AI Copilot PT Syahfalah (developer properti Indonesia). Kamu berbicara dengan owner atau kepala kantor secara langsung, profesional namun hangat.
+
+TENTANG PERUSAHAAN:
+PT Syahfalah fokus pada pengembangan clusters, leads, KPIs, consumer cases (SP3K → SHM), maintenance, purchase orders, dan approvals.
+
+CARA BICARA:
+- Bahasa Indonesia, natural. Boleh pakai istilah teknis Inggris (cluster, pipeline, off-track, dst).
+- SIKAP: seperti konsultan yang sudah熟悉 data. Kamu boleh highlight anomali, koreksi asumsi user, atau menanyakan klarifikasi.
+- PANJANG: sesuaikan. Pertanyaan yes/no → 1 kalimat. Pertanyaan analitis → 3-6 bullet. Hanya gunakan bullet panjang untuk pertanyaan yang butuh breakdown.
+- JANGAN pakai template kalimat pembuka seperti "Berikut adalah..." atau "Berdasarkan data...". Langsung to the point, seperti manusia yang jelas sudah hapal datanya.
+- JANGAN mengarang angka. Kalau tidak tahu, bilang "Data tidak tersedia" dan kalau perlu jelaskan apa yang dibutuhkan (misal "kasih saya range tanggal").
+- BOLEH kasih opini operasional (misal "blocking-nya di sini" atau "SP3K-approved yang belum Akad perlu difollow up"). JANGAN kasih saran hukum/medis/finansial personal.
+- Untuk pertanyaan yang butuh data external (berita, tren, riset, social media), PANGGIL tool yang sesuai. Untuk pertanyaan internal saja, langsung jawab.
+
+SNAPSHOT BISNIS SAAT INI:
+${narrative}
+
+INGAT: kamu BUKAN template-formatter. Kamu analis yang sudah hapal konteks. Kalau user tanya "gimana", jawab dengan observasi, bukan list formal.`
 }
 
 function shouldUseTools(question: string): boolean {
-  // Heuristic: short "show" question about internal data → no tools needed.
   const q = question.toLowerCase()
-  const external = /(tren|berita|news|artikel|riset|riset|outlook|global|2025|2026|2027|suku bunga|bi rate|inflasi|ekonomi|properti jakarta|developer lain|competitor|video|youtube|tiktok|instagram|ig|twitter|x\.com|github|repo)/i
+  const external = /(tren|berita|news|artikel|riset|outlook|global|2025|2026|2027|suku bunga|bi rate|inflasi|ekonomi|properti jakarta|developer lain|competitor|video|youtube|tiktok|instagram|ig|twitter|x\.com|github|repo)/i
   if (external.test(q)) return true
-  // URL in question → definitely need tools
   if (/https?:\/\//i.test(question)) return true
+  // Follow-up question (uses "yang", "nya", "soal", "dari tadi") often refers to prior context — don't trigger tools
   return false
 }
 
-export async function runAgent(question: string): Promise<AgentResult> {
+export async function runAgent(
+  question: string,
+  history: ConversationTurn[] = [],
+): Promise<AgentResult> {
   const t0 = Date.now()
   const context = await loadBusinessContext()
   const ctxMs = Date.now() - t0
+  const narrative = narrativeContext(context)
 
-  // Decide whether to enable tools. If question is purely internal, skip
-  // tools to save tokens AND speed up cascade.
   const enableTools = shouldUseTools(question)
   const tools = enableTools ? getToolDefinitions() : undefined
 
+  // Build messages: system + history + user
   const messages: ChatMessage[] = [
-    { role: 'system', content: buildSystemPrompt(context) },
-    { role: 'user', content: question },
+    { role: 'system', content: buildSystemPrompt(narrative) },
   ]
+  // Keep last N turns only
+  const trimmed = history.slice(-MAX_HISTORY_TURNS * 2)
+  for (const turn of trimmed) {
+    messages.push({ role: turn.role === 'user' ? 'user' : 'assistant', content: turn.content })
+  }
+  messages.push({ role: 'user', content: question })
 
   const steps: AgentStep[] = []
   let lastResponse: LLMResponse | null = null
@@ -102,13 +160,11 @@ export async function runAgent(question: string): Promise<AgentResult> {
         tool_name: r.tool_calls.map(t => t.name).join(','),
         tool_args: r.tool_calls.map(t => t.args).join(' | '),
       })
-      // Append assistant message with tool_calls
       messages.push({
         role: 'assistant',
         content: r.text ?? '',
         tool_calls: r.tool_calls.map(t => ({ id: t.id, name: t.name, args: t.args })),
       })
-      // Run each tool
       for (const tc of r.tool_calls) {
         if (Date.now() - t0 >= AGENT_BUDGET_MS) break
         const toolResult = await runTool(tc.name, tc.args)
@@ -129,11 +185,9 @@ export async function runAgent(question: string): Promise<AgentResult> {
           content: toolMsg,
         })
       }
-      // Loop again with appended tool results
       continue
     }
 
-    // Plain text answer — done
     if (r.text) {
       steps.push({
         kind: 'final',
@@ -155,7 +209,6 @@ export async function runAgent(question: string): Promise<AgentResult> {
     break
   }
 
-  // No usable answer — fallback to deterministic slice
   const fb = deterministicSlice(question, context)
   steps.push({ kind: 'fallback', text: fb, ms: ctxMs })
   return {

@@ -1,17 +1,14 @@
 // app/api/ai/copilot/route.ts
-// Plan C Phase 3+ — AI Copilot route.
-// Calls the new tool-calling agent (lib/ai/agent.ts) and returns the
-// answer + step trace.
-//
-// POST { question: string } → { intent, question, answer, provider, available, steps, total_ms, context_summary }
-// GET → { providers: [...] }
+// AI Copilot route. POST { question, history[] } → { answer, ... }
+// Multi-turn: history is appended to the LLM message thread so
+// follow-ups ("yang closing-nya?") reference prior context.
 // Role-gated: owner + kepala_kantor only.
 
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyAccessToken } from '@/lib/auth/jwt'
 import { probeProviders } from '@/lib/ai/providers'
-import { runAgent } from '@/lib/ai/agent'
+import { runAgent, ConversationTurn } from '@/lib/ai/agent'
 
 function classifyIntent(q: string): 'status' | 'blockers' | 'cashflow' | 'people' | 'tools' | 'general' {
   const lower = q.toLowerCase()
@@ -21,6 +18,20 @@ function classifyIntent(q: string): 'status' | 'blockers' | 'cashflow' | 'people
   if (/(orang|user|karyawan|pegawai|absen|attendance|staff|role|division)/i.test(lower)) return 'people'
   if (/(https?:\/\/|tren|news|berita|video|artikel|riset|outlook|global|competitor|youtube|tiktok|instagram|twitter)/i.test(lower)) return 'tools'
   return 'general'
+}
+
+function sanitizeHistory(raw: any): ConversationTurn[] {
+  if (!Array.isArray(raw)) return []
+  const out: ConversationTurn[] = []
+  for (const t of raw) {
+    if (!t || typeof t !== 'object') continue
+    if (t.role !== 'user' && t.role !== 'assistant') continue
+    const content = typeof t.content === 'string' ? t.content.slice(0, 1000) : ''
+    if (!content) continue
+    out.push({ role: t.role, content })
+  }
+  // cap to last 10 entries
+  return out.slice(-10)
 }
 
 export async function POST(req: NextRequest) {
@@ -39,8 +50,9 @@ export async function POST(req: NextRequest) {
     if (!question) return NextResponse.json({ error: 'question wajib' }, { status: 400 })
     if (question.length > 1000) return NextResponse.json({ error: 'pertanyaan terlalu panjang (max 1000 char)' }, { status: 400 })
 
+    const history = sanitizeHistory(body.history)
     const intent = classifyIntent(question)
-    const result = await runAgent(question)
+    const result = await runAgent(question, history)
 
     return NextResponse.json({
       intent,

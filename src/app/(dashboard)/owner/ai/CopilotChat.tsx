@@ -51,13 +51,15 @@ export function CopilotChat() {
 
   async function ask(q: string) {
     if (!q.trim()) return
+    // Build history: last 5 user+assistant exchanges (10 entries)
+    const hist = msgs.slice(-10).map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text }))
     setMsgs(m => [...m, { role: 'user', text: q, ts: new Date().toISOString() }])
     setQuestion('')
     setBusy(true)
     try {
       const res = await fetch('/api/ai/copilot', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', body: JSON.stringify({ question: q }),
+        credentials: 'include', body: JSON.stringify({ question: q, history: hist }),
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
