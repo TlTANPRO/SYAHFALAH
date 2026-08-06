@@ -1,9 +1,11 @@
-// lib/ai/providers.ts
 // Multi-provider LLM cascade for Syahfalah AI Copilot.
-// Tries providers in order: Ollama → NIM → Groq → OpenRouter → null.
-// Multi-key rotation per hosted provider (env keys comma-separated).
-// Returns first successful response. Never throws; returns null on full failure.
-// OpenAI-compatible chat/completions shape for all hosted providers.
+// Race-first strategy: fire first key of each provider in parallel;
+// pick first response. Round 2: sequentially try remaining keys per
+// provider only when overall deadline hasn't been hit. Total budget =
+// 22s (Vercel Hobby max = 30s, leaves 8s headroom for auth + DB).
+//
+// All hosted providers use OpenAI-compatible chat/completions shape;
+// Ollama uses native /api/chat shape (no API key).
 
 import { getKey, keyCount } from './keys'
 
@@ -51,16 +53,17 @@ ${JSON.stringify(ctx, null, 2)}`
   ]
 }
 
-async function callProvider(opts: {
+interface CallAttempt {
   name: ProviderName
   baseUrl: string
   apiKey?: string
   model: string
   messages: ChatMessage[]
-  timeoutMs?: number
-}): Promise<AIResult | null> {
+  timeoutMs: number
+}
+
+async function callProvider(opts: CallAttempt): Promise<AIResult | null> {
   const { name, baseUrl, apiKey, model, messages } = opts
-  const timeoutMs = opts.timeoutMs ?? 8_000
   const url = apiKey ? `${baseUrl}/chat/completions` : `${baseUrl}/api/chat`
   const t0 = Date.now()
   try {
@@ -69,30 +72,18 @@ async function callProvider(opts: {
 
     const body = JSON.stringify(
       apiKey
-        ? {
-            model,
-            messages,
-            temperature: 0.2,
-            max_tokens: 400,
-            stream: false,
-          }
-        : {
-            model,
-            messages,
-            stream: false,
-            options: { temperature: 0.2, num_predict: 400 },
-          }
+        ? { model, messages, temperature: 0.2, max_tokens: 400, stream: false }
+        : { model, messages, stream: false, options: { temperature: 0.2, num_predict: 400 } }
     )
 
     const res = await fetch(url, {
       method: 'POST',
       headers,
       body,
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: AbortSignal.timeout(opts.timeoutMs),
     })
     if (!res.ok) return null
     const j = await res.json()
-    // OpenAI-compatible shape
     const text = j?.choices?.[0]?.message?.content?.trim()
     if (!text) return null
     return { text, provider: name, model, ms: Date.now() - t0 }
@@ -101,71 +92,86 @@ async function callProvider(opts: {
   }
 }
 
-export async function generateAIAnswer(question: string, ctx: AIContext): Promise<AIResult | null> {
-  const messages = buildMessages(question, ctx)
+interface ProviderDefaults { url: string; model: string; ms: number }
+const HOSTED_DEFAULTS: Record<'nim' | 'groq' | 'openrouter', ProviderDefaults> = {
+  nim: { url: 'https://integrate.api.nvidia.com/v1', model: 'meta/llama-3.1-70b-instruct', ms: 5_000 },
+  groq: { url: 'https://api.groq.com/openai/v1', model: 'llama-3.1-70b-versatile', ms: 5_000 },
+  openrouter: { url: 'https://openrouter.ai/api/v1', model: 'meta-llama/llama-3.1-70b-instruct:free', ms: 7_000 },
+}
 
-  // 1. Ollama (self-hosted, free, no API key)
+const HOSTED_KEYS = ['nim', 'groq', 'openrouter'] as const
+
+function raceCandidates(messages: ChatMessage[]): CallAttempt[] {
+  const out: CallAttempt[] = []
   if (process.env.OLLAMA_HOST && process.env.OLLAMA_HOST !== 'off') {
-    const out = await callProvider({
+    out.push({
       name: 'ollama',
-      baseUrl: process.env.OLLAMA_HOST,
+      baseUrl: process.env.OLLAMA_HOST!,
+      apiKey: undefined,
       model: process.env.OLLAMA_MODEL || 'gemma4:12b',
       messages,
+      timeoutMs: 6_000,
     })
-    if (out) return out
   }
+  for (const p of HOSTED_KEYS) {
+    if (keyCount(p) === 0) continue
+    const d = HOSTED_DEFAULTS[p]
+    out.push({
+      name: p,
+      baseUrl: process.env[`${p.toUpperCase()}_BASE_URL`] || d.url,
+      apiKey: getKey(p),
+      model: process.env[`${p.toUpperCase()}_MODEL`] || d.model,
+      messages,
+      timeoutMs: d.ms,
+    })
+  }
+  return out
+}
 
-  // 2. NVIDIA NIM (hosted, free tier) — multi-key rotation
-  if (keyCount('nim') > 0) {
-    const apiKey = getKey('nim')!
-    // Try up to NIM keys sequentially with short timeout
-    for (let i = 0; i < keyCount('nim'); i++) {
-      const k = getKey('nim')!
-      const out = await callProvider({
-        name: 'nim',
-        baseUrl: process.env.NIM_BASE_URL || 'https://integrate.api.nvidia.com/v1',
-        apiKey: k,
-        model: process.env.NIM_MODEL || 'meta/llama-3.1-70b-instruct',
-        messages,
-        timeoutMs: 8_000,
-      })
+function remAttempt(p: 'nim' | 'groq' | 'openrouter', messages: ChatMessage[]): CallAttempt {
+  const d = HOSTED_DEFAULTS[p]
+  return {
+    name: p,
+    baseUrl: process.env[`${p.toUpperCase()}_BASE_URL`] || d.url,
+    apiKey: getKey(p)!,
+    model: process.env[`${p.toUpperCase()}_MODEL`] || d.model,
+    messages,
+    timeoutMs: 3_500,
+  }
+}
+
+export async function generateAIAnswer(
+  question: string,
+  ctx: AIContext,
+  overallTimeoutMs = 22_000
+): Promise<AIResult | null> {
+  const messages = buildMessages(question, ctx)
+  const deadline = Date.now() + overallTimeoutMs
+
+  const initial = raceCandidates(messages)
+  if (initial.length === 0) return null
+
+  try {
+    const winners = await Promise.race([
+      Promise.all(initial.map(a => callProvider(a))),
+      new Promise<null>(resolve => setTimeout(() => resolve(null), overallTimeoutMs)),
+    ])
+    if (winners) {
+      const winner = (winners as Array<AIResult | null>).find(r => r !== null)
+      if (winner) return winner
+    }
+  } catch { /* fall through */ }
+
+  // Round 2: remaining keys per provider (sequential, short timeout)
+  for (const provider of HOSTED_KEYS) {
+    const kc = keyCount(provider)
+    if (kc <= 1) continue
+    for (let i = 1; i < kc; i++) {
+      if (Date.now() >= deadline) return null
+      const out = await callProvider(remAttempt(provider, messages))
       if (out) return out
     }
   }
-
-  // 3. Groq — multi-key rotation
-  if (keyCount('groq') > 0) {
-    for (let i = 0; i < keyCount('groq'); i++) {
-      const k = getKey('groq')!
-      const out = await callProvider({
-        name: 'groq',
-        baseUrl: process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1',
-        apiKey: k,
-        model: process.env.GROQ_MODEL || 'llama-3.1-70b-versatile',
-        messages,
-        timeoutMs: 8_000,
-      })
-      if (out) return out
-    }
-  }
-
-  // 4. OpenRouter (100+ models incl. free ones) — multi-key rotation
-  if (keyCount('openrouter') > 0) {
-    for (let i = 0; i < keyCount('openrouter'); i++) {
-      const k = getKey('openrouter')!
-      const out = await callProvider({
-        name: 'openrouter',
-        baseUrl: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
-        apiKey: k,
-        model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.1-70b-instruct:free',
-        messages,
-        timeoutMs: 10_000,
-      })
-      if (out) return out
-    }
-  }
-
-  // 5. All exhausted → null; caller falls back to deterministic
   return null
 }
 
@@ -181,7 +187,6 @@ export interface ProviderStatus {
 export async function probeProviders(): Promise<{ providers: ProviderStatus[]; any_available: boolean }> {
   const out: ProviderStatus[] = []
 
-  // Ollama
   if (process.env.OLLAMA_HOST && process.env.OLLAMA_HOST !== 'off') {
     const status: ProviderStatus = { name: 'ollama', configured: true, keys: 1 }
     try {
@@ -201,7 +206,6 @@ export async function probeProviders(): Promise<{ providers: ProviderStatus[]; a
     out.push(status)
   } else out.push({ name: 'ollama', configured: false })
 
-  // NIM/Groq/OpenRouter — just report key counts
   out.push({ name: 'nim', configured: keyCount('nim') > 0, reachable: true, keys: keyCount('nim') })
   out.push({ name: 'groq', configured: keyCount('groq') > 0, reachable: true, keys: keyCount('groq') })
   out.push({ name: 'openrouter', configured: keyCount('openrouter') > 0, reachable: true, keys: keyCount('openrouter') })
