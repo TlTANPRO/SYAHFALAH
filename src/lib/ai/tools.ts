@@ -109,6 +109,47 @@ const TOOLS: ToolDefinition[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'web_search',
+      description: 'Search the internet using multiple free sources (HN Algolia + Wikipedia + DuckDuckGo + Brave if key). Returns top results with title, summary, url. Use for general queries, latest news, definitions, trending topics.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query' },
+          max_results: { type: 'integer', description: 'Max results per source (default 5)' },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'youtube_trending',
+      description: 'Fetch YouTube trending videos (public, no login). Returns top 10 currently trending videos with title, channel, views, link. Use when user asks "lagu trending", "video populer YouTube", atau sejenisnya.',
+      parameters: {
+        type: 'object',
+        properties: {
+          region: { type: 'string', description: 'ISO country code (default ID for Indonesia). Common: US, ID, GB, JP, KR, IN' },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'billboard_hot_100',
+      description: 'Fetch Billboard Hot 100 chart (public, no login). Returns top 20 songs with rank, title, artist. Use when user asks "lagu terbaik", "top Billboard", "lagu populer dunia".',
+      parameters: {
+        type: 'object',
+        properties: {},
+        required: [],
+      },
+    },
+  },
 ]
 
 export const TOOL_NAMES = TOOLS.map(t => t.function.name)
@@ -263,6 +304,159 @@ async function fetch_company_profile(args: { slice: string }): Promise<ToolResul
   return { ok: true, summary: JSON.stringify(data, null, 2).slice(0, 4000) }
 }
 
+async function web_search(args: { query: string; max_results?: number }): Promise<ToolResult> {
+  const q = (args.query ?? '').trim().slice(0, 200)
+  if (!q) return { ok: false, summary: 'query kosong', error: 'bad_input' }
+  const cap = Math.min(10, Math.max(1, args.max_results ?? 5))
+  const sources: Array<{ source: string; results: string[] }> = []
+
+  // Source 1: HN Algolia (free, no key, good for tech/news/startups)
+  try {
+    const r = await fetch(`https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(q)}&hitsPerPage=${cap}`)
+    if (r.ok) {
+      const j = await r.json() as any
+      const items: string[] = []
+      for (const h of (j.hits ?? []).slice(0, cap)) {
+        const title = (h.title ?? h.story_title ?? '').trim()
+        if (!title) continue
+        const url = h.url || (h.objectID ? `https://news.ycombinator.com/item?id=${h.objectID}` : '')
+        const snippet = (h._highlightResult?.title?.value ?? '').replace(/<[^>]+>/g, '')
+        items.push(`- [HN] ${title} — ${url}${snippet ? `\n  ${snippet.slice(0, 200)}` : ''}`)
+      }
+      if (items.length > 0) sources.push({ source: 'Hacker News', results: items })
+    }
+  } catch { /* skip */ }
+
+  // Source 2: Wikipedia (free, no key, multilingual)
+  try {
+    const r = await fetch(`https://id.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&format=json&srlimit=${cap}`)
+    if (r.ok) {
+      const j = await r.json() as any
+      const items: string[] = []
+      for (const s of (j.query?.search ?? []).slice(0, cap)) {
+        const title = (s.title ?? '').replace(/<[^>]+>/g, '')
+        const snippet = (s.snippet ?? '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+        const pageid = s.pageid
+        items.push(`- [Wiki] ${title} — https://id.wikipedia.org/?curid=${pageid}\n  ${snippet.slice(0, 200)}`)
+      }
+      if (items.length > 0) sources.push({ source: 'Wikipedia', results: items })
+    }
+  } catch { /* skip */ }
+
+  // Source 3: Brave Search (if JINA_API_KEY OR BRAVE_API_KEY set)
+  const jinaKey = process.env.JINA_API_KEY
+  const braveKey = process.env.BRAVE_API_KEY
+  if (braveKey) {
+    try {
+      const r = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(q)}&count=${cap}`, {
+        headers: { 'X-Subscription-Token': braveKey, 'Accept': 'application/json' },
+      })
+      if (r.ok) {
+        const j = await r.json() as any
+        const items: string[] = []
+        for (const w of (j.web?.results ?? []).slice(0, cap)) {
+          items.push(`- [Brave] ${w.title} — ${w.url}\n  ${(w.description ?? '').slice(0, 200)}`)
+        }
+        if (items.length > 0) sources.push({ source: 'Brave', results: items })
+      }
+    } catch { /* skip */ }
+  }
+
+  // Source 4: JINA Search (if key set)
+  if (jinaKey) {
+    try {
+      const r = await fetch(`https://s.jina.ai/${encodeURIComponent(q)}`, {
+        headers: { 'Authorization': `Bearer ${jinaKey}`, 'Accept': 'application/json' },
+      })
+      if (r.ok) {
+        const j = await r.json() as any
+        const results = j.data?.results ?? j.results ?? []
+        const items: string[] = []
+        for (const w of results.slice(0, cap)) {
+          items.push(`- [JINA] ${w.title} — ${w.url}\n  ${(w.description ?? '').slice(0, 200)}`)
+        }
+        if (items.length === 0 && j.data?.answer) {
+          items.push(`- [JINA Answer] ${j.data.answer}`)
+        }
+        if (items.length > 0) sources.push({ source: 'JINA', results: items })
+      }
+    } catch { /* skip */ }
+  }
+
+  // Source 5: DuckDuckGo Instant Answer (free, no key, limited)
+  try {
+    const r = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(q)}&format=json&no_html=1&skip_disambig=1`)
+    if (r.ok) {
+      const j = await r.json() as any
+      const items: string[] = []
+      if (j.Abstract) items.push(`- [DDG] ${j.AbstractText ?? j.Heading ?? q}${j.AbstractURL ? ` — ${j.AbstractURL}` : ''}`)
+      if (Array.isArray(j.RelatedTopics)) {
+        for (const t of j.RelatedTopics.slice(0, 3)) {
+          if (t.Text) items.push(`- [DDG] ${t.Text.slice(0, 200)}${t.FirstURL ? ` — ${t.FirstURL}` : ''}`)
+        }
+      }
+      if (items.length > 0) sources.push({ source: 'DuckDuckGo', results: items })
+    }
+  } catch { /* skip */ }
+
+  if (sources.length === 0) {
+    return { ok: false, summary: 'Tidak ada hasil dari sumber manapun. Coba query lain atau paste URL spesifik.', error: 'no_results' }
+  }
+  const summary = sources.map(s => `## ${s.source}\n${s.results.join('\n')}`).join('\n\n')
+  return { ok: true, summary: summary.slice(0, 4000) }
+}
+
+async function youtube_trending(args: { region?: string }): Promise<ToolResult> {
+  const region = (args.region ?? 'ID').toUpperCase().slice(0, 4)
+  const url = `https://www.youtube.com/feed/trending?gl=${region}`
+  const r = await httpGet(url)
+  if (!r.ok) return { ok: false, summary: 'YouTube trending unreachable', url, error: 'fetch_failed' }
+  // Extract video titles + channels from JSON-embedded data
+  const items: Array<string> = []
+  // YT embeds title in <a> tags within trending page. Just extract titles + view counts.
+  const titleMatches = r.body.match(/"title":\{"runs":\[\{"text":"([^"]{4,150})"\}[\s\S]*?"viewCountText":\{"simpleText":"([^"]+)"\}[\s\S]*?"channelName":\{"simpleText":"([^"]+)"\}[\s\S]*?"videoId":"([^"]+)"/g)
+  if (titleMatches) {
+    for (const m of titleMatches.slice(0, 10)) {
+      const parts = m.match(/"text":"([^"]+)".*?"simpleText":"([^"]+)".*?"simpleText":"([^"]+)".*?"videoId":"([^"]+)"/)
+      if (parts) items.push(`- [${parts[4]}](https://youtu.be/${parts[4]}) ${parts[1]} — ${parts[3]} (${parts[2]})`)
+    }
+  }
+  if (items.length === 0) {
+    // Fallback: parse from raw HTML
+    const titles = r.body.match(/<a[^>]+title="([^"]{4,120})"[^>]+href="\/watch\?v=([^"]+)"/g) || []
+    for (const t of titles.slice(0, 10)) {
+      const tp = t.match(/title="([^"]+)"[^>]+href="\/watch\?v=([^"]+)"/)
+      if (tp) items.push(`- [${tp[2]}](https://youtu.be/${tp[2]}) ${tp[1]}`)
+    }
+  }
+  if (items.length === 0) return { ok: false, summary: 'Could not parse YouTube trending (page structure changed).', url, error: 'parse_failed' }
+  return { ok: true, summary: `YouTube trending (region ${region}):\n${items.join('\n')}`, url }
+}
+
+async function billboard_hot_100(): Promise<ToolResult> {
+  const url = 'https://www.billboard.com/charts/hot-100/'
+  const r = await httpGet(url)
+  if (!r.ok) return { ok: false, summary: 'Billboard unreachable', url, error: 'fetch_failed' }
+  // JSON-embedded data
+  const items: Array<string> = []
+  const re = /"rank":(\d+),"title":"([^"]+)","artist":"([^"]+)"/g
+  let m
+  while ((m = re.exec(r.body)) && items.length < 20) {
+    items.push(`#${m[1]} ${m[2]} — ${m[3]}`)
+  }
+  if (items.length === 0) {
+    // HTML fallback
+    const html = r.body.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
+    const regex = /(\d+)\s*([A-Z][^\d]+?)\s+([A-Z][a-zA-Z\s&]+?)(\s+(?:\d+|NEW|TBA|R&))/g
+    let match
+    while ((match = regex.exec(html)) && items.length < 20) {
+      items.push(`#${match[1]} ${match[2].trim()} — ${match[3].trim()}`)
+    }
+  }
+  if (items.length === 0) return { ok: false, summary: 'Billboard parse failed', url, error: 'parse_failed' }
+  return { ok: true, summary: `Billboard Hot 100 (top ${items.length}):\n${items.join('\n')}`, url }
+}
+
 export async function runTool(name: string, argsJson: string): Promise<ToolResult> {
   let args: any = {}
   try { args = argsJson ? JSON.parse(argsJson) : {} } catch { return { ok: false, summary: 'JSON args invalid', error: 'bad_args' } }
@@ -272,6 +466,9 @@ export async function runTool(name: string, argsJson: string): Promise<ToolResul
     case 'fetch_oembed': return fetch_oembed(args)
     case 'search_duckduckgo': return search_duckduckgo(args)
     case 'fetch_company_profile': return fetch_company_profile(args)
+    case 'web_search': return web_search(args)
+    case 'youtube_trending': return youtube_trending(args)
+    case 'billboard_hot_100': return billboard_hot_100()
     default: return { ok: false, summary: `unknown tool: ${name}`, error: 'unknown_tool' }
   }
 }
