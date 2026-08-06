@@ -1,9 +1,14 @@
-// public/sw.js — Phase 4 PWA service worker stub.
-// Cache-first for static assets, network-first for /api/*.
-// Full offline sync engine deferred to next sprint.
-
-const CACHE = 'syahfalah-v2'
-const STATIC = ['/', '/manifest.json', '/icon-192.png']
+// public/sw.js — Phase 4 PWA service worker.
+// Cache-first for static assets, network-first for /api/*. Cache is
+// per-content (immutable file names), key = full URL.
+const CACHE = 'syahfalah-v3'
+const STATIC = [
+  '/',
+  '/manifest.json',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/apple-touch-icon.png',
+]
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(STATIC) }))
