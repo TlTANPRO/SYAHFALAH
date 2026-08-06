@@ -5,19 +5,24 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
-  const name = searchParams.get('name')
-  
+  const rawName = searchParams.get('name') ?? ''
+
+  // Sanitize: only allow letters/digits/spaces/'-.'  (ASCII subset is enough
+  // for Indonesian names — Unicode flag conflicts with current tsconfig)
+  const name = rawName.replace(/[^A-Za-z0-9 '\-.]/g, '').slice(0, 60).trim()
+
   if (!name || name === 'undefined' || name === 'null') {
     return new NextResponse(null, { status: 404 })
   }
 
-  // Generate initials from name
+  // Generate initials from sanitized name
   const initials = name
-    .split(' ')
-    .map(n => n[0])
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(n => n[0] || '')
     .join('')
     .toUpperCase()
-    .slice(0, 2)
+    .slice(0, 2) || '?'
 
   // Generate consistent color from name
   let hash = 0
