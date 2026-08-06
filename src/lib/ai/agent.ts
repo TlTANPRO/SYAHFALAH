@@ -1,12 +1,14 @@
 // lib/ai/agent.ts
 // Syahfalah AI Copilot agent — conversational + tool-calling.
+//
 // Strategy:
 //  1. Load internal business context (lib/ai/context.ts).
 //  2. Build multi-turn conversation (history + new question).
-//  3. Heuristic: enable tools only when question needs external data.
-//  4. Send to LLM cascade. If tool_calls → run, loop.
-//  5. Cap at AGENT_BUDGET_MS total + MAX_LLM_STEPS rounds.
-//  6. Stream deltas via onDelta() callback (optional) for live UI feel.
+//  3. CHAT-FIRST: ask LLM plain first (no tools). Faster, more reliable.
+//  4. If plain response looks like it needs external data (URL, "saya
+//     tidak bisa", "beri saya link"), retry with tools enabled.
+//  5. With tools: LLM cascade. If tool_calls → run, loop.
+//  6. Cap at AGENT_BUDGET_MS total + MAX_LLM_STEPS rounds.
 //  7. Fallback to deterministicSlice() if all providers fail.
 
 import { ChatMessage, chatOnce, LLMResponse } from './providers'
@@ -23,7 +25,7 @@ export interface ConversationTurn {
 }
 
 export interface AgentStep {
-  kind: 'llm' | 'tool' | 'final' | 'fallback'
+  kind: 'llm' | 'tool' | 'final' | 'fallback' | 'plain-retry'
   provider?: string
   model?: string
   ms?: number
@@ -44,8 +46,6 @@ export interface AgentResult {
   context: BusinessContext
 }
 
-// Narrative context: convert JSON slices into a readable Bahasa Indonesia
-// narrative. The LLM is then grounded on fact, not raw JSON.
 function narrativeContext(ctx: BusinessContext): string {
   const m = ctx.company.metrics
   const c = ctx.company.cashflow
@@ -83,10 +83,13 @@ function fmtRp(n: number): string {
   return new Intl.NumberFormat('id-ID').format(Math.round(n))
 }
 
-// New system prompt: gives the AI a persona, narrative context, and
-// tool guidelines. Less restrictive, more natural.
-function buildSystemPrompt(narrative: string): string {
-  return `Kamu adalah Sarah, AI Copilot PT Syahfalah (developer properti Indonesia). Kamu berbicara dengan owner atau kepala kantor secara langsung, profesional namun hangat.
+// Two system prompts:
+//  - "plain" = no tools, just chat. LLM can answer from its own knowledge
+//    (and modest conversation).
+//  - "tools" = with tools enabled. Tells LLM to call fetch_url for
+//    answering external questions.
+function buildSystemPrompt(narrative: string, withTools: boolean): string {
+  const persona = `Kamu adalah Sarah, AI Copilot PT Syahfalah (developer properti Indonesia). Kamu berbicara dengan owner atau kepala kantor secara langsung, profesional namun hangat.
 
 TENTANG PERUSAHAAN:
 PT Syahfalah fokus pada pengembangan clusters, leads, KPIs, consumer cases (SP3K → SHM), maintenance, purchase orders, dan approvals.
@@ -96,22 +99,66 @@ CARA BICARA:
 - SIKAP: seperti konsultan yang sudah熟悉 data. Kamu boleh highlight anomali, koreksi asumsi user, atau menanyakan klarifikasi.
 - PANJANG: sesuaikan. Pertanyaan yes/no → 1 kalimat. Pertanyaan analitis → 3-6 bullet. Hanya gunakan bullet panjang untuk pertanyaan yang butuh breakdown.
 - JANGAN pakai template kalimat pembuka seperti "Berikut adalah..." atau "Berdasarkan data...". Langsung to the point, seperti manusia yang jelas sudah hapal datanya.
-- JANGAN mengarang angka. Kalau tidak tahu, bilang "Data tidak tersedia" dan kalau perlu jelaskan apa yang dibutuhkan (misal "kasih saya range tanggal").
+- JANGAN mengarang angka. Kalau tidak tahu, bilang "Saya tidak yakin" dan jelaskan apa yang dibutuhkan.
 - BOLEH kasih opini operasional (misal "blocking-nya di sini" atau "SP3K-approved yang belum Akad perlu difollow up"). JANGAN kasih saran hukum/medis/finansial personal.
-- Untuk pertanyaan yang butuh data external (berita, tren, riset, social media), PANGGIL tool yang sesuai. Untuk pertanyaan internal saja, langsung jawab.
 
 SNAPSHOT BISNIS SAAT INI:
-${narrative}
+${narrative}`
 
-INGAT: kamu BUKAN template-formatter. Kamu analis yang sudah hapal konteks. Kalau user tanya "gimana", jawab dengan observasi, bukan list formal.`
+  if (!withTools) {
+    return persona + `
+
+PENTING: pertanyaan kamu tidak punya akses internet / tidak bisa fetch URL. Untuk pertanyaan external (YouTube, berita, video, dll), jawab apa yang kamu tahu dari pengetahuan internal kamu, dan kalau tidak tahu, minta user paste URL nya.`
+  }
+  return persona + `
+
+KAMU PUNYA AKSES KE TOOLS:
+- fetch_url: buka web page, dapat teks penuh
+- fetch_rss: RSS feed
+- fetch_oembed: YouTube/TikTok/IG metadata
+- search_duckduckgo: cari fakta (free, no key)
+- fetch_company_profile: re-load internal context
+
+Untuk pertanyaan yang butuh data external (tren, berita, video, dll), PANGGIL tool yang sesuai. Beri jawaban natural setelah dapat data.`
 }
 
-function shouldUseTools(question: string): boolean {
+// Detect "did the LLM admit it can't help" — signal to retry with tools.
+function needsToolRetry(text: string, question: string): boolean {
+  const low = text.toLowerCase()
+  const triggers = [
+    'saya tidak bisa akses',
+    'saya tidak punya akses',
+    'tidak dapat mengakses',
+    'tidak bisa mengambil data',
+    'saya tidak memiliki',
+    'saya tidak bisa',
+    'tidak tersedia untuk',
+    'tidak punya',
+    'cari di youtube',
+    'buka youtube',
+    'kamu bisa',
+    'silakan kunjungi',
+    'tidak bisa fetch',
+    'butuh url',
+    'berikan url',
+    'beri link',
+    'berikan link',
+    'tidak yakin',
+    'saya tidak tahu',
+    'tidak tahu',
+    'maaf, saya',
+    'maaf saya',
+  ]
+  if (triggers.some(t => low.includes(t))) return true
+  // Question explicitly asks for a URL fetch
+  if (/(https?:\/\/|youtube\.com|youtu\.be|tiktok\.com|instagram\.com|twitter\.com|x\.com)/i.test(question)) return true
+  return false
+}
+
+function shouldRunToolsFirst(question: string): boolean {
   const q = question.toLowerCase()
-  const external = /(tren|berita|news|artikel|riset|outlook|global|2025|2026|2027|suku bunga|bi rate|inflasi|ekonomi|properti jakarta|developer lain|competitor|video|youtube|tiktok|instagram|ig|twitter|x\.com|github|repo)/i
-  if (external.test(q)) return true
+  // Strong signals: question references a URL or asks for live data
   if (/https?:\/\//i.test(question)) return true
-  // Follow-up question (uses "yang", "nya", "soal", "dari tadi") often refers to prior context — don't trigger tools
   return false
 }
 
@@ -124,29 +171,70 @@ export async function runAgent(
   const ctxMs = Date.now() - t0
   const narrative = narrativeContext(context)
 
-  const enableTools = shouldUseTools(question)
-  const tools = enableTools ? getToolDefinitions() : undefined
-
-  // Build messages: system + history + user
-  const messages: ChatMessage[] = [
-    { role: 'system', content: buildSystemPrompt(narrative) },
+  // Build messages with PLAIN prompt (no tools) for first round.
+  const baseMessages: ChatMessage[] = [
+    { role: 'system', content: buildSystemPrompt(narrative, false) },
   ]
-  // Keep last N turns only
   const trimmed = history.slice(-MAX_HISTORY_TURNS * 2)
   for (const turn of trimmed) {
-    messages.push({ role: turn.role === 'user' ? 'user' : 'assistant', content: turn.content })
+    baseMessages.push({ role: turn.role === 'user' ? 'user' : 'assistant', content: turn.content })
   }
-  messages.push({ role: 'user', content: question })
+  baseMessages.push({ role: 'user', content: question })
 
   const steps: AgentStep[] = []
   let lastResponse: LLMResponse | null = null
   let iterations = 0
 
-  for (let i = 0; i < MAX_LLM_STEPS; i++) {
+  // Round 1: plain chat (no tools). Fastest, most reliable.
+  iterations = 1
+  const remaining1 = Math.max(2_000, AGENT_BUDGET_MS - (Date.now() - t0))
+  const plain = await chatOnce(baseMessages, undefined, remaining1)
+  if (plain && plain.text) {
+    // If LLM already answered fully and doesn't need tools → done.
+    if (!needsToolRetry(plain.text, question) && !shouldRunToolsFirst(question)) {
+      steps.push({
+        kind: 'final',
+        provider: plain.provider,
+        model: plain.model,
+        ms: plain.ms,
+        text: plain.text,
+      })
+      return {
+        answer: plain.text,
+        provider: plain.provider,
+        available: true,
+        steps,
+        total_ms: Date.now() - t0,
+        iterations,
+        context,
+      }
+    }
+    // If LLM admitted it can't OR question contains URL → retry with tools.
+    lastResponse = plain
+    steps.push({
+      kind: 'plain-retry',
+      provider: plain.provider,
+      model: plain.model,
+      ms: plain.ms,
+      text: plain.text.slice(0, 200),
+    })
+  }
+
+  // Round 2+: with tools. Build new messages with tool-enabled prompt.
+  const toolsMessages: ChatMessage[] = [
+    { role: 'system', content: buildSystemPrompt(narrative, true) },
+  ]
+  for (const turn of trimmed) {
+    toolsMessages.push({ role: turn.role === 'user' ? 'user' : 'assistant', content: turn.content })
+  }
+  toolsMessages.push({ role: 'user', content: question })
+
+  const tools = getToolDefinitions()
+  for (let i = 0; i < MAX_LLM_STEPS - 1; i++) {
     if (Date.now() - t0 >= AGENT_BUDGET_MS) break
-    iterations = i + 1
+    iterations += 1
     const remaining = Math.max(2_000, AGENT_BUDGET_MS - (Date.now() - t0))
-    const r = await chatOnce(messages, tools, remaining)
+    const r = await chatOnce(toolsMessages, tools, remaining)
     if (!r) break
     lastResponse = r
 
@@ -160,7 +248,7 @@ export async function runAgent(
         tool_name: r.tool_calls.map(t => t.name).join(','),
         tool_args: r.tool_calls.map(t => t.args).join(' | '),
       })
-      messages.push({
+      toolsMessages.push({
         role: 'assistant',
         content: r.text ?? '',
         tool_calls: r.tool_calls.map(t => ({ id: t.id, name: t.name, args: t.args })),
@@ -178,7 +266,7 @@ export async function runAgent(
           tool_result: toolMsg.slice(0, 500),
           tool_ok: toolResult.ok,
         })
-        messages.push({
+        toolsMessages.push({
           role: 'tool',
           name: tc.name,
           tool_call_id: tc.id,
@@ -207,6 +295,21 @@ export async function runAgent(
       }
     }
     break
+  }
+
+  // If we got a plain response earlier, surface it as fallback (better than
+  // deterministicSlice when the LLM admitted limitations).
+  if (lastResponse && plain && plain.text) {
+    steps.push({ kind: 'fallback', text: plain.text, ms: Date.now() - t0 })
+    return {
+      answer: plain.text,
+      provider: plain.provider,
+      available: true,
+      steps,
+      total_ms: Date.now() - t0,
+      iterations,
+      context,
+    }
   }
 
   const fb = deterministicSlice(question, context)
