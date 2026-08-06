@@ -2,6 +2,8 @@
 // Custom JWT-based authentication middleware. Also strips aggressive
 // CDN caching for dynamic (user-data) routes so Vercel's edge doesn't
 // serve stale HTML when we ship a new commit (Age=9h observed 5-Aug).
+// Additionally, logs every /api/* hit to api_gateway_log table for
+// observability (foundation for Phase 5 ops work).
 
 import { NextResponse, type NextRequest } from 'next/server'
 import { verifyAccessToken } from '@/lib/auth/jwt'
@@ -97,9 +99,38 @@ export async function middleware(request: NextRequest) {
       return applyNoStore(NextResponse.redirect(url))
     }
 
+  const t0 = Date.now()
   const res = NextResponse.next()
   if (noStore) applyNoStore(res)
+
+  // Fire-and-forget gateway log for /api/* requests (no await, no DB
+  // pressure on hot path). Failures silently dropped.
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    logApiHit(request, res.status, Date.now() - t0, user?.userId)
+  }
+
   return res
+}
+
+async function logApiHit(req: NextRequest, status: number, durationMs: number, userId: string | undefined) {
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) return
+    const { createClient } = await import('@supabase/supabase-js')
+    const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+    await sb.from('api_gateway_log').insert({
+      user_id: userId ?? null,
+      method: req.method,
+      path: req.nextUrl.pathname,
+      status_code: status,
+      duration_ms: durationMs,
+      ip_address: req.headers.get('x-forwarded-for') ?? null,
+      user_agent: req.headers.get('user-agent')?.slice(0, 500) ?? null,
+    })
+  } catch {
+    // intentional no-op
+  }
 }
 
 function applyNoStore(res: NextResponse) {
