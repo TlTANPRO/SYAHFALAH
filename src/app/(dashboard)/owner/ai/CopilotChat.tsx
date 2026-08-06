@@ -39,8 +39,8 @@ const SUGGESTIONS_INTERNAL = [
 const SUGGESTIONS_EXTERNAL = [
   'Cek tren BI rate 2026',
   'Berita properti Jakarta terbaru',
-  'Apa itu SP3K dan apa bedanya dengan SHM?',
-  'https://www.cnnindonesia.com/ekonomi/uang',
+  'Lagu trending YouTube Indonesia',
+  'Top Billboard minggu ini',
 ]
 
 export function CopilotChat() {
@@ -101,7 +101,7 @@ export function CopilotChat() {
           <div className="flex items-center gap-2 flex-wrap">
             <Brain className="h-4 w-4 text-[var(--color-brand-500)]" />
             <span className="text-sm font-medium">Saran pertanyaan</span>
-            <span className="text-xs text-[var(--color-text-tertiary)]">— klik chip atau paste URL untuk uji web tool</span>
+            
           </div>
           <div className="flex flex-wrap gap-2">
             {SUGGESTIONS_INTERNAL.map((s, i) => (
@@ -159,7 +159,7 @@ export function CopilotChat() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-medium">{m.role === 'user' ? 'Anda' : 'SyhfalAI'}</span>
+                      <span className="text-xs font-medium">{m.role === 'user' ? 'Anda' : 'TITAN'}</span>
                       {m.intent && <Badge variant="outline">{m.intent}</Badge>}
                       {m.provider && (
                         <Badge variant={m.provider === 'deterministic' ? 'warning' : 'success'}>

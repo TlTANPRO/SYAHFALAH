@@ -112,14 +112,17 @@ PENTING: pertanyaan kamu tidak punya akses internet / tidak bisa fetch URL. Untu
   }
   return persona + `
 
-KAMU PUNYA AKSES KE TOOLS:
+KAMU PUNYA AKSES KE TOOLS (8 total):
+- web_search: search internet (HN Algolia + Wikipedia + DuckDuckGo + Brave + JINA jika ada key)
+- youtube_trending: top 10 trending YouTube Indonesia/US/etc
+- billboard_hot_100: top 20 Billboard Hot 100 minggu ini
 - fetch_url: buka web page, dapat teks penuh
 - fetch_rss: RSS feed
 - fetch_oembed: YouTube/TikTok/IG metadata
 - search_duckduckgo: cari fakta (free, no key)
 - fetch_company_profile: re-load internal context
 
-Untuk pertanyaan yang butuh data external (tren, berita, video, dll), PANGGIL tool yang sesuai. Beri jawaban natural setelah dapat data.`
+Untuk pertanyaan yang butuh data external (tren, berita, video, lagu, dll), PANGGIL tool yang sesuai. Setelah dapat data, beri jawaban natural dalam Bahasa Indonesia.`
 }
 
 // Detect "did the LLM admit it can't help" — signal to retry with tools.
@@ -295,6 +298,34 @@ export async function runAgent(
       }
     }
     break
+  }
+
+  // Programmatic fallback: if LLM admitted it can't do internet things AND
+  // we have a web_search tool, force-call it directly. This bypasses
+  // LLM tool-calling (which often fails on free models) for fallback.
+  if (plain && plain.text && needsToolRetry(plain.text, question)) {
+    const directQuery = question.replace(/^(cari|tolong|beri|info|tentang)\s+/i, '').slice(0, 200)
+    const direct = await runTool('web_search', JSON.stringify({ query: directQuery, max_results: 5 }))
+    if (direct.ok && direct.summary) {
+      steps.push({
+        kind: 'tool',
+        tool_name: 'web_search',
+        tool_args: JSON.stringify({ query: directQuery, max_results: 5 }),
+        tool_result: direct.summary.slice(0, 500),
+        tool_ok: true,
+      })
+      const synth = `${plain.text}\n\nHasil pencarian terbaru:\n${direct.summary.slice(0, 1500)}`
+      steps.push({ kind: 'final', provider: 'titan-orchestrator', text: synth, ms: Date.now() - t0 })
+      return {
+        answer: synth,
+        provider: 'titan-orchestrator',
+        available: true,
+        steps,
+        total_ms: Date.now() - t0,
+        iterations,
+        context,
+      }
+    }
   }
 
   // If we got a plain response earlier, surface it as fallback (better than

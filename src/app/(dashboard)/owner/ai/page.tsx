@@ -17,7 +17,7 @@ export default function AIPage() {
           AI Copilot
         </h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          Read-only agent powered by Ollama (gemma4:12b, on-device). Bertanya seputar kondisi bisnis.
+          Tanya apa saja — data internal Syahfalah, berita, riset, atau URL eksternal.
         </p>
       </div>
 
