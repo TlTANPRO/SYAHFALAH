@@ -1,23 +1,22 @@
 // lib/ai/agent.ts
-// Syahfalah AI Copilot agent — conversational + tool-calling.
+// TITAN — Syahfalah AI Copilot agent.
+// Architecture: intent-driven orchestrator.
 //
-// Strategy:
-//  1. Load internal business context (lib/ai/context.ts).
-//  2. Build multi-turn conversation (history + new question).
-//  3. CHAT-FIRST: ask LLM plain first (no tools). Faster, more reliable.
-//  4. If plain response looks like it needs external data (URL, "saya
-//     tidak bisa", "beri saya link"), retry with tools enabled.
-//  5. With tools: LLM cascade. If tool_calls → run, loop.
-//  6. Cap at AGENT_BUDGET_MS total + MAX_LLM_STEPS rounds.
-//  7. Fallback to deterministicSlice() if all providers fail.
+// Flow:
+//   1. Detect intent (internal / external / news / music / analysis /
+//      analysis-with-data / social / url).
+//   2. Load internal business context if relevant.
+//   3. Run tools per intent (deterministic, not LLM-decided).
+//   4. Pass collected evidence to LLM with focused prompt to synthesize
+//      a clean Bahasa Indonesia answer.
+//   5. If LLM synthesis fails, fall back to formatted raw evidence.
 
 import { ChatMessage, chatOnce, LLMResponse } from './providers'
-import { getToolDefinitions, runTool } from './tools'
+import { getToolDefinitions, runTool, web_search, youtube_trending, billboard_hot_100 } from './tools'
 import { loadBusinessContext, deterministicSlice, BusinessContext } from './context'
 
-const AGENT_BUDGET_MS = 20_000
+const AGENT_BUDGET_MS = 24_000
 const MAX_LLM_STEPS = 4
-const MAX_HISTORY_TURNS = 5  // last 5 user+assistant exchanges
 
 export interface ConversationTurn {
   role: 'user' | 'assistant'
@@ -25,7 +24,7 @@ export interface ConversationTurn {
 }
 
 export interface AgentStep {
-  kind: 'llm' | 'tool' | 'final' | 'fallback' | 'plain-retry'
+  kind: 'intent' | 'context' | 'tool' | 'llm' | 'final' | 'fallback' | 'synth'
   provider?: string
   model?: string
   ms?: number
@@ -34,6 +33,7 @@ export interface AgentStep {
   tool_args?: string
   tool_result?: string
   tool_ok?: boolean
+  intent?: string
 }
 
 export interface AgentResult {
@@ -83,86 +83,76 @@ function fmtRp(n: number): string {
   return new Intl.NumberFormat('id-ID').format(Math.round(n))
 }
 
-// Two system prompts:
-//  - "plain" = no tools, just chat. LLM can answer from its own knowledge
-//    (and modest conversation).
-//  - "tools" = with tools enabled. Tells LLM to call fetch_url for
-//    answering external questions.
-function buildSystemPrompt(narrative: string, withTools: boolean): string {
-  const persona = `Kamu adalah Sarah, AI Copilot PT Syahfalah (developer properti Indonesia). Kamu berbicara dengan owner atau kepala kantor secara langsung, profesional namun hangat.
+// Intent detection — deterministic, not LLM-decided.
+export type QuestionIntent =
+  | 'internal'      // ask about Syahfalah data
+  | 'music'         // trending songs / charts
+  | 'news'          // current events / politics / economy
+  | 'business'      // companies / markets / real estate / industry
+  | 'tech'          // AI / programming / dev tools
+  | 'social'        // TikTok / IG / FB / YouTube content
+  | 'url'           // specific URL to fetch
+  | 'general'       // fallback: anything else
 
-TENTANG PERUSAHAAN:
-PT Syahfalah fokus pada pengembangan clusters, leads, KPIs, consumer cases (SP3K → SHM), maintenance, purchase orders, dan approvals.
+function detectIntent(q: string): QuestionIntent {
+  const low = q.toLowerCase()
+  if (/https?:\/\//.test(q)) return 'url'
+  if (/\b(syahfalah|leads?|kpi|cluster|project|booking|sp3k|akad|maintenance|cashflow|approval|task|consumer|cabang|properti kita|perusahaan kita|kantor)\b/.test(low)) return 'internal'
+  if (/\b(lagu|musik|band|artis|song|music|charts|billboard|trending music|populer|terpopuler|spotify|album|remix|cover)\b/.test(low)) return 'music'
+  if (/\b(berita|news|artikel|terbaru|hari ini|minggu ini|bulan ini|rilis)\b.*(ekonomi|politik|teknologi|properti|housing|konstruksi|developer|inflasi|suku bunga|bi rate|rupiah|ihsg|ihkg|keuangan|perbankan)|^\s*(apa|siapa|kapan|dimana|bagaimana).*?(terjadi|berita|hari ini|minggu ini)\b/.test(low)) return 'news'
+  if (/\b(developer|perusahaan|properti|real estate|kontraktor|arsitek|listing|proyek Konstruksi|jalan tol)\b/.test(low)) return 'business'
+  if (/\b(ai|llm|gpt|claude|gemini|programming|kode|github|stack overflow|developer|programmer|software|teknologi|startup)\b/.test(low)) return 'tech'
+  if (/\b(tiktok|instagram|ig|reels|tweet|twitter|x\.com|sosial media|influencer|trending yt|trending youtube)\b/.test(low)) return 'social'
+  if (/\b(berita|news|artikel|hari ini|minggu ini|bulan ini|terbaru|ekonomi|politik|properti|inflasi|bi rate|suku bunga|pertumbuhan|inflasi)\b/.test(low)) return 'news'
+  return 'general'
+}
+
+// STOP words for query extraction (Indonesian + English)
+const STOP_WORDS = new Set([
+  'cari', 'tolong', 'beri', 'kasih', 'info', 'tentang', 'dong', 'ya', 'sih', 'deh',
+  'platform', 'khususnya', 'terbaik', 'di', 'yang', 'dan', 'atau', 'ke', 'dari',
+  'untuk', 'adalah', 'apa', 'siapa', 'kapan', 'dimana', 'bagaimana', 'gmana',
+  'gimana', 'how', 'why', 'what', 'who', 'where', 'when', 'the', 'a', 'an',
+  'in', 'on', 'at', 'to', 'for', 'of', 'is', 'are', 'was', 'were', 'be', 'been',
+  'being', 'top', '10', 'best', 'sebutkan', 'sebut', 'berikan', 'tampilkan',
+  'list', 'daftar', 'list', 'show', 'terbaik', 'handphone', 'hp', 'laptop',
+  'tahun', '2025', '2026', '2024', '2027', 'sekarang', 'saat', 'ini',
+])
+
+function extractQuery(q: string): string {
+  const low = q.toLowerCase()
+  const tokens = low.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(t => t && !STOP_WORDS.has(t) && t.length > 1)
+  return tokens.slice(0, 8).join(' ').trim() || low.slice(0, 80)
+}
+
+function buildSystemPrompt(intent: QuestionIntent, narrative: string, withTools: boolean): string {
+  const persona = `Kamu adalah TITAN, AI Copilot PT Syahfalah (developer properti Indonesia). Kamu bicara dengan owner atau kepala kantor. Personality: hangat, analitis, tajam, banyak referensi — seperti konsultan senior yang hapal data. JANGAN terdengar template.
 
 CARA BICARA:
-- Bahasa Indonesia, natural. Boleh pakai istilah teknis Inggris (cluster, pipeline, off-track, dst).
-- SIKAP: seperti konsultan yang sudah熟悉 data. Kamu boleh highlight anomali, koreksi asumsi user, atau menanyakan klarifikasi.
-- PANJANG: sesuaikan. Pertanyaan yes/no → 1 kalimat. Pertanyaan analitis → 3-6 bullet. Hanya gunakan bullet panjang untuk pertanyaan yang butuh breakdown.
-- JANGAN pakai template kalimat pembuka seperti "Berikut adalah..." atau "Berdasarkan data...". Langsung to the point, seperti manusia yang jelas sudah hapal datanya.
-- JANGAN mengarang angka. Kalau tidak tahu, bilang "Saya tidak yakin" dan jelaskan apa yang dibutuhkan.
-- BOLEH kasih opini operasional (misal "blocking-nya di sini" atau "SP3K-approved yang belum Akad perlu difollow up"). JANGAN kasih saran hukum/medis/finansial personal.
+- Bahasa Indonesia natural, boleh pakai istilah teknis Inggris (cluster, pipeline, off-track, dst).
+- PANJANG: sesuaikan. Yes/no → 1 kalimat. Analitis → 3-6 bullet. Breakdown → max 8 bullet.
+- JANGAN pakai pembuka template ("Berikut adalah...", "Berdasarkan data..."). Langsung to the point.
+- JANGAN mengarang angka. Kalau tidak yakin, bilang "Saya tidak yakin" dan jelaskan.
+- BOLEH kasih opini operasional. JANGAN kasih saran hukum/medis/finansial personal.
+- Selalu jawab dalam Bahasa Indonesia.
 
-SNAPSHOT BISNIS SAAT INI:
+SNAPSHOT BISNIS:
 ${narrative}`
 
-  if (!withTools) {
-    return persona + `
+  if (!withTools) return persona
 
-PENTING: pertanyaan kamu tidak punya akses internet / tidak bisa fetch URL. Untuk pertanyaan external (YouTube, berita, video, dll), jawab apa yang kamu tahu dari pengetahuan internal kamu, dan kalau tidak tahu, minta user paste URL nya.`
-  }
-  return persona + `
+  const toolNote = `
 
-KAMU PUNYA AKSES KE TOOLS (8 total):
-- web_search: search internet (HN Algolia + Wikipedia + DuckDuckGo + Brave + JINA jika ada key)
-- youtube_trending: top 10 trending YouTube Indonesia/US/etc
-- billboard_hot_100: top 20 Billboard Hot 100 minggu ini
-- fetch_url: buka web page, dapat teks penuh
-- fetch_rss: RSS feed
-- fetch_oembed: YouTube/TikTok/IG metadata
-- search_duckduckgo: cari fakta (free, no key)
-- fetch_company_profile: re-load internal context
+KAMU PUNYA AKSES KE TOOLS (pakai kalau perlu):
+- web_search: internet search (multiple sources)
+- youtube_trending: top 10 trending YouTube
+- billboard_hot_100: top 20 Billboard Hot 100
+- fetch_url: buka web page
+- fetch_oembed: metadata YouTube/TikTok/IG
+- fetch_company_profile: reload internal context
 
-Untuk pertanyaan yang butuh data external (tren, berita, video, lagu, dll), PANGGIL tool yang sesuai. Setelah dapat data, beri jawaban natural dalam Bahasa Indonesia.`
-}
-
-// Detect "did the LLM admit it can't help" — signal to retry with tools.
-function needsToolRetry(text: string, question: string): boolean {
-  const low = text.toLowerCase()
-  const triggers = [
-    'saya tidak bisa akses',
-    'saya tidak punya akses',
-    'tidak dapat mengakses',
-    'tidak bisa mengambil data',
-    'saya tidak memiliki',
-    'saya tidak bisa',
-    'tidak tersedia untuk',
-    'tidak punya',
-    'cari di youtube',
-    'buka youtube',
-    'kamu bisa',
-    'silakan kunjungi',
-    'tidak bisa fetch',
-    'butuh url',
-    'berikan url',
-    'beri link',
-    'berikan link',
-    'tidak yakin',
-    'saya tidak tahu',
-    'tidak tahu',
-    'maaf, saya',
-    'maaf saya',
-  ]
-  if (triggers.some(t => low.includes(t))) return true
-  // Question explicitly asks for a URL fetch
-  if (/(https?:\/\/|youtube\.com|youtu\.be|tiktok\.com|instagram\.com|twitter\.com|x\.com)/i.test(question)) return true
-  return false
-}
-
-function shouldRunToolsFirst(question: string): boolean {
-  const q = question.toLowerCase()
-  // Strong signals: question references a URL or asks for live data
-  if (/https?:\/\//i.test(question)) return true
-  return false
+Pakai tool HANYA kalau user butuh data live (yang kamu tidak punya di training). Kalau pertanyaan cukup dijawab dari pengetahuan atau dari snapshot bisnis, langsung jawab tanpa tool.`
+  return persona + toolNote
 }
 
 export async function runAgent(
@@ -170,238 +160,154 @@ export async function runAgent(
   history: ConversationTurn[] = [],
 ): Promise<AgentResult> {
   const t0 = Date.now()
-  const context = await loadBusinessContext()
-  const ctxMs = Date.now() - t0
-  const narrative = narrativeContext(context)
-
-  // Build messages with PLAIN prompt (no tools) for first round.
-  const baseMessages: ChatMessage[] = [
-    { role: 'system', content: buildSystemPrompt(narrative, false) },
-  ]
-  const trimmed = history.slice(-MAX_HISTORY_TURNS * 2)
-  for (const turn of trimmed) {
-    baseMessages.push({ role: turn.role === 'user' ? 'user' : 'assistant', content: turn.content })
-  }
-  baseMessages.push({ role: 'user', content: question })
-
   const steps: AgentStep[] = []
-  let lastResponse: LLMResponse | null = null
   let iterations = 0
 
-  // Round 1: plain chat (no tools). Fastest, most reliable.
-  iterations = 1
-  const remaining1 = Math.max(5_000, AGENT_BUDGET_MS - (Date.now() - t0))
-  const plain = await chatOnce(baseMessages, undefined, remaining1)
-  if (plain && plain.text) {
-    // If LLM already answered fully and doesn't need tools → done.
-    if (!needsToolRetry(plain.text, question) && !shouldRunToolsFirst(question)) {
-      steps.push({
-        kind: 'final',
-        provider: plain.provider,
-        model: plain.model,
-        ms: plain.ms,
-        text: plain.text,
-      })
-      return {
-        answer: plain.text,
-        provider: plain.provider,
-        available: true,
-        steps,
-        total_ms: Date.now() - t0,
-        iterations,
-        context,
-      }
+  // 1. Detect intent (deterministic)
+  const intent = detectIntent(question)
+  steps.push({ kind: 'intent', intent })
+
+  // 2. Load internal context (always parallel with intent detection)
+  const context = await loadBusinessContext()
+  const narrative = narrativeContext(context)
+
+  // 3. Decide tools to call based on intent
+  const searchQuery = extractQuery(question)
+  const tToolStart = Date.now()
+
+  // Always try web_search first for any external query
+  const toolCalls: Array<Promise<{ name: string; ok: boolean; summary: string; error?: string }>> = []
+
+  if (intent === 'url') {
+    const urlMatch = question.match(/https?:\/\/[^\s]+/)?.[0]
+    if (urlMatch) {
+      toolCalls.push(runTool('fetch_url', JSON.stringify({ url: urlMatch, max_chars: 4000 })).then(r => ({ name: 'fetch_url', ...r })))
     }
-    // If LLM admitted it can't OR question contains URL → retry with tools.
-    lastResponse = plain
+  } else if (intent === 'music') {
+    toolCalls.push(
+      web_search({ query: searchQuery, max_results: 5 }).then(r => ({ name: 'web_search', ...r })),
+      youtube_trending({ region: 'ID' }).then(r => ({ name: 'youtube_trending', ...r })),
+      billboard_hot_100().then(r => ({ name: 'billboard_hot_100', ...r })),
+    )
+  } else if (intent === 'news' || intent === 'business' || intent === 'tech' || intent === 'general') {
+    toolCalls.push(
+      web_search({ query: searchQuery, max_results: 5 }).then(r => ({ name: 'web_search', ...r })),
+    )
+  } else if (intent === 'social') {
+    toolCalls.push(
+      web_search({ query: searchQuery, max_results: 5 }).then(r => ({ name: 'web_search', ...r })),
+    )
+  }
+
+  // 4. Run all tools in parallel — fastest path
+  const toolResults = await Promise.all(toolCalls)
+  for (const tr of toolResults) {
     steps.push({
-      kind: 'plain-retry',
-      provider: plain.provider,
-      model: plain.model,
-      ms: plain.ms,
-      text: plain.text.slice(0, 200),
+      kind: 'tool',
+      tool_name: tr.name,
+      tool_args: '',
+      tool_result: tr.ok ? tr.summary.slice(0, 500) : (tr.error ?? 'failed'),
+      tool_ok: tr.ok,
     })
   }
 
-  // Round 2+: with tools. Build new messages with tool-enabled prompt.
-  const toolsMessages: ChatMessage[] = [
-    { role: 'system', content: buildSystemPrompt(narrative, true) },
+  // 5. Internal-only: ask LLM directly with internal narrative (no synthesis needed)
+  if (intent === 'internal') {
+    const messages: ChatMessage[] = [
+      { role: 'system', content: buildSystemPrompt('internal', narrative, false) },
+      ...history.slice(-10).map(h => ({ role: h.role === 'user' ? 'user' as const : 'assistant' as const, content: h.content })),
+      { role: 'user', content: question },
+    ]
+    iterations = 1
+    const r = await chatOnce(messages, undefined, Math.max(5_000, AGENT_BUDGET_MS - (Date.now() - t0)))
+    if (r && r.text) {
+      steps.push({ kind: 'final', provider: r.provider, model: r.model, ms: r.ms, text: r.text })
+      return { answer: r.text, provider: r.provider, available: true, steps, total_ms: Date.now() - t0, iterations, context }
+    }
+  }
+
+  // 6. Synthesis: pass collected evidence to LLM with focused prompt
+  const evidence = toolResults
+    .filter(tr => tr.ok && tr.summary)
+    .map(tr => `== ${tr.name.toUpperCase()} ==\n${tr.summary.slice(0, 1200)}`)
+    .join('\n\n')
+
+  if (!evidence.trim()) {
+    // No tool data — try plain LLM (no tools)
+    const messages: ChatMessage[] = [
+      { role: 'system', content: buildSystemPrompt(intent, narrative, false) },
+      ...history.slice(-10).map(h => ({ role: h.role === 'user' ? 'user' as const : 'assistant' as const, content: h.content })),
+      { role: 'user', content: question },
+    ]
+    iterations = 1
+    const r = await chatOnce(messages, undefined, Math.max(5_000, AGENT_BUDGET_MS - (Date.now() - t0)))
+    if (r && r.text) {
+      steps.push({ kind: 'final', provider: r.provider, model: r.model, ms: r.ms, text: r.text })
+      return { answer: r.text, provider: r.provider, available: true, steps, total_ms: Date.now() - t0, iterations, context }
+    }
+    // deterministic fallback
+    const fb = deterministicSlice(question, context)
+    steps.push({ kind: 'fallback', text: fb })
+    return { answer: fb + '\n\n(Catatan: TITAN tidak menemukan data dari internet dan internal untuk pertanyaan ini. Coba spesifikkan pertanyaan, atau paste URL sumber yang Anda maksud.)', provider: 'deterministic', available: !!r, steps, total_ms: Date.now() - t0, iterations, context }
+  }
+
+  // 7. Synthesize via LLM with collected evidence
+  const synthMessages: ChatMessage[] = [
+    {
+      role: 'system',
+      content: `Kamu TITAN, AI Copilot PT Syahfalah. Personality: tajam, analitis, banyak referensi, Bahasa Indonesia natural, bukan template-formatter.
+
+ATURAN SINTESIS:
+- Jawab SERTA dengan data dari "BUKTI" di bawah.
+- JANGAN sertakan URL apapun di jawaban (kecuali konteks benar-benar butuh link).
+- JANGAN pakai format "[Wiki] ..." atau "[Brave] ...". Konversi jadi bahasa natural.
+- Kalau data tidak cukup relevan dengan pertanyaan, bilang "Saya tidak yakin" dan minta klarifikasi.
+- JANGAN mengarang angka / fakta. Kalau tidak ada di bukti, bilang tidak tahu.
+- Jawaban natural, seperti manusia yang hapal data. Bukan chatbot.`
+    },
+    {
+      role: 'user',
+      content: `Pertanyaan: ${question}
+
+BUKTI dari internet (${searchQuery}):
+${evidence.slice(0, 2400)}
+
+Jawab sekarang dalam Bahasa Indonesia.`
+    },
   ]
-  for (const turn of trimmed) {
-    toolsMessages.push({ role: turn.role === 'user' ? 'user' : 'assistant', content: turn.content })
-  }
-  toolsMessages.push({ role: 'user', content: question })
-
-  const tools = getToolDefinitions()
-  for (let i = 0; i < MAX_LLM_STEPS - 1; i++) {
-    if (Date.now() - t0 >= AGENT_BUDGET_MS) break
-    iterations += 1
-    const remaining = Math.max(2_000, AGENT_BUDGET_MS - (Date.now() - t0))
-    const r = await chatOnce(toolsMessages, tools, remaining)
-    if (!r) break
-    lastResponse = r
-
-    if (r.tool_calls && r.tool_calls.length > 0) {
-      steps.push({
-        kind: 'llm',
-        provider: r.provider,
-        model: r.model,
-        ms: r.ms,
-        text: r.text,
-        tool_name: r.tool_calls.map(t => t.name).join(','),
-        tool_args: r.tool_calls.map(t => t.args).join(' | '),
-      })
-      toolsMessages.push({
-        role: 'assistant',
-        content: r.text ?? '',
-        tool_calls: r.tool_calls.map(t => ({ id: t.id, name: t.name, args: t.args })),
-      })
-      for (const tc of r.tool_calls) {
-        if (Date.now() - t0 >= AGENT_BUDGET_MS) break
-        const toolResult = await runTool(tc.name, tc.args)
-        const toolMsg = toolResult.ok
-          ? (toolResult.summary || '(empty)')
-          : `Error: ${toolResult.error ?? 'unknown'} — ${toolResult.summary ?? ''}`
-        steps.push({
-          kind: 'tool',
-          tool_name: tc.name,
-          tool_args: tc.args,
-          tool_result: toolMsg.slice(0, 500),
-          tool_ok: toolResult.ok,
-        })
-        toolsMessages.push({
-          role: 'tool',
-          name: tc.name,
-          tool_call_id: tc.id,
-          content: toolMsg,
-        })
-      }
-      continue
-    }
-
-    if (r.text) {
-      steps.push({
-        kind: 'final',
-        provider: r.provider,
-        model: r.model,
-        ms: r.ms,
-        text: r.text,
-      })
-      return {
-        answer: r.text,
-        provider: r.provider,
-        available: true,
-        steps,
-        total_ms: Date.now() - t0,
-        iterations,
-        context,
-      }
-    }
-    break
+  iterations = 1
+  const synth = await chatOnce(synthMessages, undefined, Math.max(5_000, AGENT_BUDGET_MS - (Date.now() - t0)))
+  if (synth && synth.text) {
+    steps.push({ kind: 'synth', provider: synth.provider, model: synth.model, ms: synth.ms, text: synth.text })
+    return { answer: synth.text, provider: synth.provider, available: true, steps, total_ms: Date.now() - t0, iterations, context }
   }
 
-  // Programmatic fallback: if LLM admitted it can't do internet things,
-  // force-call web_search directly + synthesize via LLM. Bypass LLM tool-
-  // calling (unreliable on free models) for fallback.
-  if (plain && plain.text && needsToolRetry(plain.text, question)) {
-    // Extract short core query. Strip filler words, keep important keywords.
-    const STOP = new Set(['cari', 'tolong', 'beri', 'kasih', 'info', 'tentang', 'dong', 'ya', 'dong', 'sih', 'deh', 'platform', 'khususnya', 'terbaik', 'di', 'yang', 'dan', 'atau', 'ke', 'dari', 'untuk', 'adalah', 'apa', 'siapa', 'kapan', 'dimana', 'bagaimana', 'gmana', 'gimana', 'how', 'why', 'what', 'who', 'where', 'when', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'is', 'are', 'was', 'were', 'be', 'been', 'being'])
-    const qLower = question.toLowerCase()
-    const tokens = qLower.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(t => t && !STOP.has(t) && t.length > 1)
-    let directQuery = tokens.slice(0, 6).join(' ').trim() || qLower.slice(0, 80)
-    // Music-related queries: also call specialized tools
-    const isMusicQuery = /(lagu|musik|band|artis|song|music|charts|billboard|trending|populer|terpopuler|video|klip)/i.test(question)
-    const wantYT = /(youtube|yt|youtu\.be|youtube\.com)/i.test(question)
-    const wantTik = /(tiktok|tt|tik\.tok)/i.test(question)
-    const direct = await runTool('web_search', JSON.stringify({ query: directQuery, max_results: 5 }))
-    // For music queries: run youtube_trending + billboard_hot_100 ONCE each.
-    // Note: youtube_trending often fails (YouTube renders client-side), so
-    // we rely on JINA-Trending + kworb.net via web_search as primary.
-    let extra = ''
-    if (isMusicQuery) {
-      const opts = { region: 'ID' }
-      const [yt, bb] = await Promise.all([
-        runTool('youtube_trending', JSON.stringify(opts)),
-        runTool('billboard_hot_100', JSON.stringify({})),
-      ])
-      steps.push({ kind: 'tool', tool_name: 'youtube_trending', tool_args: JSON.stringify(opts), tool_result: yt.ok ? yt.summary.slice(0, 400) : (yt.error ?? 'failed'), tool_ok: yt.ok })
-      steps.push({ kind: 'tool', tool_name: 'billboard_hot_100', tool_args: '{}', tool_result: bb.ok ? bb.summary.slice(0, 400) : (bb.error ?? 'failed'), tool_ok: bb.ok })
-      if (yt.ok) extra += '\n\nYouTube Trending Indonesia:\n' + yt.summary.slice(0, 800)
-      if (bb.ok) extra += '\n\nBillboard Hot 100:\n' + bb.summary.slice(0, 800)
-    }
-    const allData = (direct.ok ? direct.summary : '') + extra
-    if (allData.trim()) {
-      steps.push({
-        kind: 'tool',
-        tool_name: 'web_search',
-        tool_args: JSON.stringify({ query: directQuery, max_results: 5 }),
-        tool_result: (direct.ok ? direct.summary : '(no web_search result)').slice(0, 500),
-        tool_ok: direct.ok,
-      })
-      // Synthesize: pass raw search results + question to LLM, ask for clean answer.
-      const synth_messages: ChatMessage[] = [
-        { role: 'system', content: `Kamu Sarah, AI Copilot PT Syahfalah. Jawab pertanyaan user dengan ringkas, natural, dan manusiawi berdasarkan data yang diberikan. JANGAN sertakan URL, JANGAN pakai format "[Wiki] ..." atau "[Brave] ...". Hanya teks jawaban natural. Bahasa Indonesia. Kalau data tidak relevan dengan pertanyaan, bilang "Saya tidak yakin" dan jelaskan apa yang perlu dilengkapi user. PENTING: abaikan prefix apapun di question seperti "Maaf, saya tidak bisa akses internet" — jawab LANGSUNG.` },
-        { role: 'user', content: `Pertanyaan: ${question}\n\nData terbaru dari internet (${directQuery}):\n${allData.slice(0, 1800)}` },
-      ]
-      const remaining = Math.max(2_000, AGENT_BUDGET_MS - (Date.now() - t0))
-      const synth = await chatOnce(synth_messages, undefined, remaining)
-      if (synth && synth.text) {
-        steps.push({
-          kind: 'final',
-          provider: synth.provider,
-          model: synth.model,
-          ms: synth.ms,
-          text: synth.text,
-        })
-        return {
-          answer: synth.text,
-          provider: synth.provider,
-          available: true,
-          steps,
-          total_ms: Date.now() - t0,
-          iterations,
-          context,
-        }
-      }
-      // Out of budget: return clean truncated results, no raw citations
-      const fallback = `Berikut rangkuman dari internet:\n\n${allData.slice(0, 1500).replace(/^\s*[\-\*]\s+\[(Wiki|HN|Brave|JINA|Hacker News|Wikipedia|DuckDuckGo)\]\s*/gim, '• ').replace(/^\s*##\s*/gim, '')}`
-      steps.push({ kind: 'fallback', text: fallback, ms: Date.now() - t0 })
-      return {
-        answer: fallback,
-        provider: 'titan-orchestrator',
-        available: true,
-        steps,
-        total_ms: Date.now() - t0,
-        iterations,
-        context,
-      }
-    }
-  }
+  // 8. Last resort: formatted raw evidence
+  const formatted = formatRawEvidence(evidence, intent, searchQuery)
+  steps.push({ kind: 'fallback', text: formatted })
+  return { answer: formatted, provider: 'titan-orchestrator', available: true, steps, total_ms: Date.now() - t0, iterations, context }
+}
 
-  // If we got a plain response earlier, surface it as fallback (better than
-  // deterministicSlice when the LLM admitted limitations).
-  if (lastResponse && plain && plain.text) {
-    steps.push({ kind: 'fallback', text: plain.text, ms: Date.now() - t0 })
-    return {
-      answer: plain.text,
-      provider: plain.provider,
-      available: true,
-      steps,
-      total_ms: Date.now() - t0,
-      iterations,
-      context,
-    }
-  }
+// Format raw tool evidence into a clean, human-readable answer.
+// Strips raw citations, decodes HTML entities, structures by section.
+function formatRawEvidence(evidence: string, intent: QuestionIntent, query: string): string {
+  if (!evidence.trim()) return `Saya tidak menemukan data spesifik untuk "${query}". Bisa spesifikkan lebih lanjut?`
 
-  const fb = deterministicSlice(question, context)
-  steps.push({ kind: 'fallback', text: fb, ms: ctxMs })
-  return {
-    answer: fb,
-    provider: 'deterministic',
-    available: !!lastResponse,
-    steps,
-    total_ms: Date.now() - t0,
-    iterations,
-    context,
-  }
+  // Strip raw "[Wiki] ..." prefixes
+  const cleaned = evidence
+    .replace(/^==\s*[A-Z_]+\s*==\s*$/gm, '')
+    .replace(/^##\s*[^\n]+\n/gm, '')
+    .replace(/^\s*[-*]\s*\[(Wiki|HN|Brave|JINA|Hacker News|Wikipedia|DuckDuckGo)\]\s+/gim, '• ')
+    .replace(/https?:\/\/[^\s)\]]+/g, '')  // strip URLs
+    .replace(/&amp;/g, '&').replace(/&#039;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  // Build short intro
+  const intro = `Berikut rangkuman dari ${intent} untuk "${query}":`
+
+  // Take first 800 chars of meaningful content
+  const body = cleaned.slice(0, 1200).trim()
+
+  return `${intro}\n\n${body}${body.length < cleaned.length ? '…' : ''}`
 }
