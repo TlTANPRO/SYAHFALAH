@@ -18,20 +18,8 @@ export interface AIResult {
   ms: number
 }
 
-export interface AIContext {
-  metrics: {
-    leads_total: number
-    leads_by_stage: Record<string, number>
-    kpis_total: number
-    kpis_off_track: number
-    overdue_tasks: number
-    overdue_consumer_cases: number
-    open_maintenance_tickets: number
-    overdue_purchase_requests: number
-    pending_approvals: number
-  }
-  recent_blocks: string[]
-}
+// Free-form — accepts BusinessContext or any JSON-serialisable shape.
+export type AIContext = unknown
 
 interface ChatMessage { role: 'system' | 'user'; content: string }
 
