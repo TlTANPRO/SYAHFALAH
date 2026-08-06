@@ -162,7 +162,7 @@ export function getToolDefinitions(): ToolDefinition[] {
 
 async function httpGet(url: string, accept?: string, host?: string): Promise<{ ok: boolean; body: string; bytes: number; ct: string }> {
   try {
-    const ua = host === 'kworb.net'
+    const ua = (host === 'kworb.net' || host === 'billboard.com')
       ? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'
       : 'SyahfalahBot/1.0 (+https://syahfalah-dashboard.vercel.app)'
     const r = await fetch(url, {
@@ -421,27 +421,27 @@ export async function youtube_trending(args: { region?: string }): Promise<ToolR
   const url = `https://kworb.net/youtube/trending/${kworbRegion}.html`
   const r = await httpGet(url, 'text/html', 'kworb.net')
   if (!r.ok) return { ok: false, summary: 'YouTube trending unreachable (kworb.net down?)', url, error: 'fetch_failed' }
-  // kworb.net: each <tr> in the table has rank, title, channel, views, etc.
-  // Title link is in href="/watch?v=..." pattern.
+  // kworb.net structure: <tr>...<td>1</td><td>NEW</td><td class="text"><div><a href="https://youtu.be/ID" target="_blank">Title</a></div></td></tr>
   const items: Array<string> = []
   const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/g
   let m: RegExpExecArray | null
   while ((m = rowRe.exec(r.body)) && items.length < 10) {
     const row = m[1]
-    const rankMatch = row.match(/data-rank="(\d+)"/) || row.match(/<td>(\d+)<\/td>/)
-    const titleMatch = row.match(/<a[^>]+href="\/watch\?v=([A-Za-z0-9_-]{11})"[^>]*>([^<]+)<\/a>/) || row.match(/<a[^>]+>([^<]+)<\/a>\s*<\/td>\s*<td>[^<]*<a[^>]+href="\/watch\?v=([A-Za-z0-9_-]{11})/)
+    const rankMatch = row.match(/<td>(\d+)<\/td>/)
+    const titleMatch = row.match(/<a[^>]+href="https?:\/\/youtu\.be\/([A-Za-z0-9_-]{11})"[^>]*>([^<]+)<\/a>/)
+                || row.match(/<a[^>]+href="\/watch\?v=([A-Za-z0-9_-]{11})"[^>]*>([^<]+)<\/a>/)
     if (titleMatch) {
-      const vid = titleMatch[1] || titleMatch[2]
-      const title = titleMatch[2] || titleMatch[1]
+      const vid = titleMatch[1]
+      const title = titleMatch[2]
       const rank = rankMatch?.[1] ?? '?'
       if (vid && title) items.push(`- ${rank}. ${title.trim()}  https://youtu.be/${vid}`)
     }
   }
   if (items.length === 0) {
-    // Fallback: extract all <a href="/watch?v=..."> with inner text
-    const links = r.body.match(/<a[^>]+href="\/watch\?v=([A-Za-z0-9_-]{11})"[^>]*>([^<]{4,100})<\/a>/g) || []
+    // Fallback: extract all <a href="youtu.be/ID"> with inner text
+    const links = r.body.match(/<a[^>]+href="https?:\/\/youtu\.be\/([A-Za-z0-9_-]{11})"[^>]*>([^<]{4,200})<\/a>/g) || []
     for (const link of links.slice(0, 10)) {
-      const lm = link.match(/\/watch\?v=([A-Za-z0-9_-]{11})"[^>]*>([^<]+)/)
+      const lm = link.match(/youtu\.be\/([A-Za-z0-9_-]{11})"[^>]*>([^<]+)/)
       if (lm) items.push(`- ${lm[2].trim()}  https://youtu.be/${lm[1]}`)
     }
   }
@@ -451,25 +451,25 @@ export async function youtube_trending(args: { region?: string }): Promise<ToolR
 
 export async function billboard_hot_100(): Promise<ToolResult> {
   const url = 'https://www.billboard.com/charts/hot-100/'
-  const r = await httpGet(url)
+  const r = await httpGet(url, 'text/html', 'billboard.com')
   if (!r.ok) return { ok: false, summary: 'Billboard unreachable', url, error: 'fetch_failed' }
-  // JSON-embedded data
+  // Billboard's chart row structure: <ul class="o-chart-results-list-row..." data-detail-target="N">
+  // Inside: <h3 id="title-of-a-story">Title</h3> + <a href="/artist/...">Artist</a>
   const items: Array<string> = []
-  const re = /"rank":(\d+),"title":"([^"]+)","artist":"([^"]+)"/g
-  let m
-  while ((m = re.exec(r.body)) && items.length < 20) {
-    items.push(`#${m[1]} ${m[2]} — ${m[3]}`)
-  }
-  if (items.length === 0) {
-    // HTML fallback
-    const html = r.body.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
-    const regex = /(\d+)\s*([A-Z][^\d]+?)\s+([A-Z][a-zA-Z\s&]+?)(\s+(?:\d+|NEW|TBA|R&))/g
-    let match
-    while ((match = regex.exec(html)) && items.length < 20) {
-      items.push(`#${match[1]} ${match[2].trim()} — ${match[3].trim()}`)
+  const rowRe = /<ul class="o-chart-results-list-row[^"]*"[^>]*data-detail-target="(\d+)"[^>]*>([\s\S]*?)<\/ul>/g
+  let m: RegExpExecArray | null
+  while ((m = rowRe.exec(r.body)) && items.length < 20) {
+    const rank = m[1]
+    const content = m[2]
+    const titleMatch = content.match(/<h3[^>]*>([^<]+)<\/h3>/)
+    const artistMatch = content.match(/<a[^>]+href="\/artist\/[^"]*"[^>]*>([^<]+)<\/a>/)
+    if (titleMatch) {
+      const title = titleMatch[1].replace(/&#039;/g, "'").replace(/&amp;/g, '&').trim()
+      const artist = artistMatch?.[1].replace(/&#039;/g, "'").trim() ?? '?'
+      items.push(`#${rank} ${title} — ${artist}`)
     }
   }
-  if (items.length === 0) return { ok: false, summary: 'Billboard parse failed', url, error: 'parse_failed' }
+  if (items.length === 0) return { ok: false, summary: 'Billboard parse failed (page structure changed).', url, error: 'parse_failed' }
   return { ok: true, summary: `Billboard Hot 100 (top ${items.length}):\n${items.join('\n')}`, url }
 }
 
