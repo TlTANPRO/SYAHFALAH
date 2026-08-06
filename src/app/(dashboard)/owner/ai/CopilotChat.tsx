@@ -86,17 +86,7 @@ export function CopilotChat() {
               <p className="text-sm text-[var(--color-text-muted)]">
                 Ketik pertanyaan untuk memulai.
               </p>
-              {providers && providers.length > 0 && (
-                <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-emerald-500">
-                  AI: {providers.filter(p => p.configured !== false).map(p => `${p.name}(${p.keys ?? 1})`).join(' + ')}
-                </div>
-              )}
-              {providers && providers.every(p => p.configured === false) && (
-                <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-amber-500">
-                  <AlertTriangle className="h-3 w-3" />
-                  Mode fallback (deterministic) — semua provider offline.
-                </div>
-              )}
+
             </div>
           )}
           {msgs.map((m, i) => (
