@@ -1,61 +1,64 @@
-// components/ui/avatar.tsx
-// User avatar with initials fallback when src is null/missing.
+// Avatar fallback component.
+// Renders photo if URL provided, else initials on color based on name hash.
+// Pure presentation component — no API calls.
 
-import * as React from 'react'
-import { cn } from '@/lib/utils'
+import { User } from 'lucide-react'
 
-interface AvatarProps {
-  src?: string | null
-  name: string
-  className?: string
-  /** Optional override for the initials derivation */
-  size?: 'sm' | 'md' | 'lg'
+const PALETTE = [
+  ['bg-rose-500', 'text-white'],
+  ['bg-amber-500', 'text-white'],
+  ['bg-emerald-500', 'text-white'],
+  ['bg-sky-500', 'text-white'],
+  ['bg-violet-500', 'text-white'],
+  ['bg-fuchsia-500', 'text-white'],
+  ['bg-lime-500', 'text-stone-900'],
+  ['bg-cyan-500', 'text-white'],
+] as const
+
+function hashCode(s: string): number {
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0
+  return Math.abs(h)
 }
 
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return '?'
+function getInitials(name: string | null | undefined): string {
+  if (!name) return ''
+  const parts = name.trim().split(/\s+/)
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
-const SIZE_MAP = {
-  sm: 'h-8 w-8 text-xs',
-  md: 'h-10 w-10 text-sm',
-  lg: 'h-20 w-20 text-xl',
-} as const
+interface AvatarProps {
+  name?: string | null
+  photoUrl?: string | null
+  src?: string | null
+  size?: number
+  className?: string
+}
 
-export function Avatar({ src, name, className, size = 'md' }: AvatarProps) {
+export function Avatar({ name, photoUrl, src, size = 32, className = '' }: AvatarProps) {
+  const sz = `${size}px`
   const initials = getInitials(name)
-
-  if (src) {
-    return (
-      <img
-        src={src}
-        alt={name}
-        className={cn(
-          'rounded-full object-cover flex-shrink-0',
-          SIZE_MAP[size],
-          className
-        )}
-        loading="lazy"
-      />
-    )
-  }
+  const palette = PALETTE[hashCode(name ?? 'x') % PALETTE.length]
+  const photo = photoUrl ?? src
 
   return (
     <div
-      role="img"
-      aria-label={name}
-      className={cn(
-        'rounded-full flex items-center justify-center font-semibold flex-shrink-0',
-        'bg-[var(--color-brand-500)]/15 text-[var(--color-brand-500)]',
-        'select-none',
-        SIZE_MAP[size],
-        className
-      )}
+      className={`inline-flex items-center justify-center rounded-full font-medium select-none overflow-hidden ${className}`}
+      style={{ width: sz, height: sz, fontSize: size * 0.42 }}
+      aria-label={name ?? 'avatar'}
     >
-      {initials}
+      {photo ? (
+        <img src={photo} alt={name ?? ''} className="h-full w-full object-cover" />
+      ) : initials ? (
+        <div className={`h-full w-full flex items-center justify-center ${palette[0]} ${palette[1]}`}>
+          {initials}
+        </div>
+      ) : (
+        <div className="h-full w-full flex items-center justify-center bg-stone-200 text-stone-500">
+          <User style={{ width: size * 0.55, height: size * 0.55 }} />
+        </div>
+      )}
     </div>
   )
 }
