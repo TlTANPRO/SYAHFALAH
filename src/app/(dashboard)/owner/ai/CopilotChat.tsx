@@ -132,7 +132,7 @@ export function CopilotChat() {
             )}
           </div>
           <form onSubmit={(e) => { e.preventDefault(); ask(question) }} className="border-t border-[var(--color-border-subtle)] p-3 flex gap-2">
-            <input type="text" value={question} onChange={(e) => setQuestion(e.target.value)}
+            <input name="input" type="text" value={question} onChange={(e) => setQuestion(e.target.value)}
               disabled={busy}
               placeholder="Ketik pertanyaan…"
               className="flex-1 h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />

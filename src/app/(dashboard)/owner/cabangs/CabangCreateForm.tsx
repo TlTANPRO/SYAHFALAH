@@ -49,7 +49,7 @@ export function CabangCreateForm() {
           ] as const).map(([k, l, t, req]) => (
             <div key={k}>
               <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">{l}{req && ' *'}</label>
-              <input type={t} value={form[k]} onChange={(e) => set(k, e.target.value)} required={req}
+              <input name="input" type={t} value={form[k]} onChange={(e) => set(k, e.target.value)} required={req}
                 className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
             </div>
           ))}

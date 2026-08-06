@@ -69,22 +69,22 @@ export function HouseUnitCreateForm({ blocks }: { blocks: Block[] }) {
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Unit number</label>
-            <input type="text" value={form.unit_number} onChange={(e) => set('unit_number', e.target.value)} required
+            <input name="input" type="text" value={form.unit_number} onChange={(e) => set('unit_number', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Type (mis. 36/72)</label>
-            <input type="text" value={form.type} onChange={(e) => set('type', e.target.value)}
+            <input name="input" type="text" value={form.type} onChange={(e) => set('type', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Size (m²)</label>
-            <input type="number" min="0" step="0.01" value={form.size_m2} onChange={(e) => set('size_m2', e.target.value)}
+            <input name="input" type="number" min="0" step="0.01" value={form.size_m2} onChange={(e) => set('size_m2', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Price (IDR)</label>
-            <input type="number" min="0" value={form.price_rupiah} onChange={(e) => set('price_rupiah', e.target.value)}
+            <input name="input" type="number" min="0" value={form.price_rupiah} onChange={(e) => set('price_rupiah', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>

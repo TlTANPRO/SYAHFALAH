@@ -48,7 +48,7 @@ export function SupplierCreateForm() {
           ].map(f => (
             <div key={f.k}>
               <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">{f.l}{f.req && ' *'}</label>
-              <input type={f.t} value={form[f.k]} onChange={(e) => set(f.k, e.target.value)} required={f.req}
+              <input name="input" type={f.t} value={form[f.k]} onChange={(e) => set(f.k, e.target.value)} required={f.req}
                 className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
             </div>
           ))}

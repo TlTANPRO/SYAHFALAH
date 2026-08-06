@@ -111,12 +111,12 @@ export function EntityCreateForm({ entity }: Props) {
         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">{req.label} (UUID)</label>
-            <input type="text" value={primary} onChange={(e) => setPrimary(e.target.value)} required
+            <input name="input" type="text" value={primary} onChange={(e) => setPrimary(e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-xs font-mono focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Customer ID (UUID, opsional)</label>
-            <input type="text" value={secondary} onChange={(e) => setSecondary(e.target.value)}
+            <input name="input" type="text" value={secondary} onChange={(e) => setSecondary(e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-xs font-mono focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
@@ -128,12 +128,12 @@ export function EntityCreateForm({ entity }: Props) {
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Tanggal</label>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+            <input name="input" type="date" value={date} onChange={(e) => setDate(e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-4">
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Notes</label>
-            <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
+            <input name="input" type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-4 flex items-center gap-3">

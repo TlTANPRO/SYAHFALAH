@@ -55,7 +55,7 @@ export function TicketCreateForm() {
         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="md:col-span-2">
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Title *</label>
-            <input type="text" value={form.title} onChange={(e) => set('title', e.target.value)} required
+            <input name="input" type="text" value={form.title} onChange={(e) => set('title', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
@@ -67,22 +67,22 @@ export function TicketCreateForm() {
           </div>
           <div className="md:col-span-2">
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Description</label>
-            <input type="text" value={form.description} onChange={(e) => set('description', e.target.value)}
+            <input name="input" type="text" value={form.description} onChange={(e) => set('description', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Category</label>
-            <input type="text" value={form.category} onChange={(e) => set('category', e.target.value)} placeholder="plumbing/electrical/etc"
+            <input name="input" type="text" value={form.category} onChange={(e) => set('category', e.target.value)} placeholder="plumbing/electrical/etc"
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Customer ID (UUID, opsional)</label>
-            <input type="text" value={form.customer_id} onChange={(e) => set('customer_id', e.target.value)}
+            <input name="input" type="text" value={form.customer_id} onChange={(e) => set('customer_id', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-xs font-mono focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">House Unit ID (UUID, opsional)</label>
-            <input type="text" value={form.house_unit_id} onChange={(e) => set('house_unit_id', e.target.value)}
+            <input name="input" type="text" value={form.house_unit_id} onChange={(e) => set('house_unit_id', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-xs font-mono focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-3 flex items-center gap-3">

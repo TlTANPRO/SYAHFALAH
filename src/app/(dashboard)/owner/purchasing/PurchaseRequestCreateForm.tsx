@@ -54,22 +54,22 @@ export function PurchaseRequestCreateForm() {
         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="md:col-span-2">
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Title *</label>
-            <input type="text" value={form.title} onChange={(e) => set('title', e.target.value)} required
+            <input name="input" type="text" value={form.title} onChange={(e) => set('title', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Requester (UUID) *</label>
-            <input type="text" value={form.requester_id} onChange={(e) => set('requester_id', e.target.value)} required
+            <input name="input" type="text" value={form.requester_id} onChange={(e) => set('requester_id', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-xs font-mono focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-2">
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Description</label>
-            <input type="text" value={form.description} onChange={(e) => set('description', e.target.value)}
+            <input name="input" type="text" value={form.description} onChange={(e) => set('description', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Needed by</label>
-            <input type="date" value={form.needed_by} onChange={(e) => set('needed_by', e.target.value)}
+            <input name="input" type="date" value={form.needed_by} onChange={(e) => set('needed_by', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-3 flex items-center gap-3">

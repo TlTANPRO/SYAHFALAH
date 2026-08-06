@@ -51,27 +51,27 @@ export function PurchaseOrderCreateForm() {
         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Supplier (UUID) *</label>
-            <input type="text" value={form.supplier_id} onChange={(e) => set('supplier_id', e.target.value)} required
+            <input name="input" type="text" value={form.supplier_id} onChange={(e) => set('supplier_id', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-xs font-mono focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Request ID (UUID, opsional)</label>
-            <input type="text" value={form.request_id} onChange={(e) => set('request_id', e.target.value)}
+            <input name="input" type="text" value={form.request_id} onChange={(e) => set('request_id', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-xs font-mono focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Total (IDR) *</label>
-            <input type="number" min="0" value={form.total_rupiah} onChange={(e) => set('total_rupiah', e.target.value)} required
+            <input name="input" type="number" min="0" value={form.total_rupiah} onChange={(e) => set('total_rupiah', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Order date</label>
-            <input type="date" value={form.order_date} onChange={(e) => set('order_date', e.target.value)}
+            <input name="input" type="date" value={form.order_date} onChange={(e) => set('order_date', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Expected delivery</label>
-            <input type="date" value={form.expected_date} onChange={(e) => set('expected_date', e.target.value)}
+            <input name="input" type="date" value={form.expected_date} onChange={(e) => set('expected_date', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-3 flex items-center gap-3">

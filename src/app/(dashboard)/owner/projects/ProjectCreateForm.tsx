@@ -76,32 +76,32 @@ export function ProjectCreateForm({ clusters }: { clusters: Cluster[] }) {
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Code (auto-generated jika kosong)</label>
-            <input type="text" value={form.code} onChange={(e) => set('code', e.target.value)} placeholder="PRJ-BSA-01"
+            <input name="input" type="text" value={form.code} onChange={(e) => set('code', e.target.value)} placeholder="PRJ-BSA-01"
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Name</label>
-            <input type="text" value={form.name} onChange={(e) => set('name', e.target.value)} required
+            <input name="input" type="text" value={form.name} onChange={(e) => set('name', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Total units</label>
-            <input type="number" min="1" value={form.total_units} onChange={(e) => set('total_units', e.target.value)}
+            <input name="input" type="number" min="1" value={form.total_units} onChange={(e) => set('total_units', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Start date</label>
-            <input type="date" value={form.start_date} onChange={(e) => set('start_date', e.target.value)} required
+            <input name="input" type="date" value={form.start_date} onChange={(e) => set('start_date', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Target completion</label>
-            <input type="date" value={form.target_completion_date} onChange={(e) => set('target_completion_date', e.target.value)}
+            <input name="input" type="date" value={form.target_completion_date} onChange={(e) => set('target_completion_date', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Budget (IDR)</label>
-            <input type="number" min="0" value={form.budget_rupiah} onChange={(e) => set('budget_rupiah', e.target.value)}
+            <input name="input" type="number" min="0" value={form.budget_rupiah} onChange={(e) => set('budget_rupiah', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-3 flex items-center gap-3">
