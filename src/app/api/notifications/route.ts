@@ -18,8 +18,14 @@ export async function GET(req: NextRequest) {
 
     const url = req.nextUrl
     const unread = url.searchParams.get('unread') === '1'
+    const rawPage = url.searchParams.get('page') ?? url.searchParams.get('pageSize') ?? url.searchParams.get('limit')
     const page = Math.max(1, Number(url.searchParams.get('page')) || 1)
-    const pageSize = Math.min(Number(url.searchParams.get('pageSize')) || 50, 100)
+    // Accept both pageSize and limit (clients use 'limit'); default 20 (more JSON-friendly)
+    const pageSize = Math.min(
+      Math.max(1, Number(url.searchParams.get('limit') ?? url.searchParams.get('pageSize') ?? '20')),
+      100
+    )
+    void rawPage // reserved for future use; page is computed above
     const offset = (page - 1) * pageSize
 
     const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } })

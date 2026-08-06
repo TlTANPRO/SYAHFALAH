@@ -1,6 +1,6 @@
 // app/api/tasks/route.ts
-// Server-side proxy for personal/tasks (client anon key tidak bisa setelah
-// migration 010). Verifies JWT cookie lalu fetch via service-role.
+// Server-side proxy for personal/tasks. JWT-gated. Filters by user_id
+// (not assignee_id — schema uses user_id since migration 011).
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
@@ -21,10 +21,10 @@ export async function GET(req: NextRequest) {
     const status = url.searchParams.get('status')
     const limit = Math.min(Number(url.searchParams.get('limit')) || 50, 200)
     const onlyMine = url.searchParams.get('mine') !== 'false'
-    // Pagination (server-side)
     const page = Math.max(1, Number(url.searchParams.get('page')) || 1)
-    const pageSize = Math.min(Number(url.searchParams.get('pageSize')) || 50, 200)
+    const pageSize = Math.min(Number(url.searchParams.get('pageSize')) || limit, 200)
     const offset = (page - 1) * pageSize
+    void limit  // accepted but unused (kept for back-compat)
 
     const serviceClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,13 +33,13 @@ export async function GET(req: NextRequest) {
 
     let query = serviceClient
       .from('tasks')
-      .select('id, code, title, description, status, priority, scheduled_date, due_date, completed_at, assignee_id, division_id, sow_task_id, reference_id, reference_type, created_at, updated_at', { count: 'exact' })
+      .select('id, title, description, status, priority, scheduled_date, due_date, completed_at, user_id, division_id, sow_task_id, kpi_target_id, parent_task_id, is_carry_over, estimated_hours, actual_hours, sort_order, created_at, updated_at', { count: 'exact' })
       .order('priority', { ascending: false })
       .order('created_at', { ascending: true })
       .range(offset, offset + pageSize - 1)
 
     if (onlyMine) {
-      query = query.eq('assignee_id', payload.userId)
+      query = query.eq('user_id', payload.userId)
     }
     if (scheduledDate) {
       query = query.eq('scheduled_date', scheduledDate)
@@ -66,7 +66,6 @@ export async function PATCH(req: NextRequest) {
     const cookieStore = await cookies()
     const accessToken = cookieStore.get('access_token')?.value
     if (!accessToken) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 })
-
     const payload = await verifyAccessToken(accessToken)
     if (!payload) return NextResponse.json({ error: 'invalid session' }, { status: 401 })
 
@@ -92,7 +91,7 @@ export async function PATCH(req: NextRequest) {
       .from('tasks')
       .update(updates)
       .eq('id', id)
-      .eq('assignee_id', payload.userId)
+      .eq('user_id', payload.userId)
       .select('id, status, completed_at, updated_at')
       .single()
 
