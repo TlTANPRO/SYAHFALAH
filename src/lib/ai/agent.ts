@@ -14,7 +14,7 @@ import { ChatMessage, chatOnce, LLMResponse } from './providers'
 import { web_search, youtube_trending, runTool } from './tools'
 import { loadBusinessSummary, formatSummary } from './context-summary'
 
-const AGENT_BUDGET_MS = 12_000
+const AGENT_BUDGET_MS = 18_000
 
 export interface ConversationTurn {
   role: 'user' | 'assistant'
@@ -51,7 +51,7 @@ function detectIntent(q: string): QuestionIntent {
   if (/\b(syahfalah|leads?|kpi|cluster|project|booking|sp3k|akad|maintenance|cashflow|approval|task|consumer|cabang|properti kita|perusahaan kita)\b/.test(low)) return 'internal'
   if (/\b(lagu|musik|band|artis|song|music|charts|billboard|spotify)\b/.test(low)) return 'music'
   if (/\b(berita|news|hari ini|minggu ini|inflasi|bi rate|suku bunga|rupiah|ekonomi|politik|ihsg|terbaru)\b/.test(low)) return 'news'
-  if (/\b(developer|perusahaan|properti|real estate|kontraktor|arsitek|listing|konstruksi)\b/.test(low)) return 'business'
+  if (/\b(developer|perusahaan|properti|real estate|kontraktor|arsitek|listing|konstruksi|software house|software developer|programmer|dev |tech company)\b/.test(low)) return 'business'
   if (/\b(tiktok|instagram|ig|reels|tweet|twitter|x\.com|youtube|youtu\.be)\b/.test(low)) return 'social'
   if (q.length < 6) return 'chat'
   return 'chat'
@@ -102,33 +102,46 @@ export async function runAgent(
   let summary = ''
   let evidence = ''
 
-  // Always run context + relevant tools in parallel
+  // Always run context + relevant tools in parallel with 4s hard cap
+  const TOOL_TIMEOUT_MS = 4_000
+  const toolCall = <T>(p: Promise<T>): Promise<T | null> =>
+    Promise.race([
+      p,
+      new Promise<null>(resolve => setTimeout(() => resolve(null), TOOL_TIMEOUT_MS)),
+    ])
+
   const parallel: Array<Promise<void>> = []
 
   if (intent === 'internal') {
-    parallel.push(loadBusinessSummary().then(s => { summary = formatSummary(s); steps.push({ kind: 'ctx', text: summary }) }))
+    parallel.push(toolCall(loadBusinessSummary()).then(s => {
+      if (s) { summary = formatSummary(s); steps.push({ kind: 'ctx', text: summary }) }
+    }))
   } else if (intent === 'url') {
     const urlMatch = question.match(/https?:\/\/[^\s]+/)?.[0]
     if (urlMatch) {
-      parallel.push(runTool('fetch_url', JSON.stringify({ url: urlMatch, max_chars: 4000 })).then(r => {
+      parallel.push(toolCall(runTool('fetch_url', JSON.stringify({ url: urlMatch, max_chars: 4000 }))).then(r => {
+        if (!r) { steps.push({ kind: 'tool', tool_name: 'fetch_url', tool_ok: false, tool_result: 'timeout' }); return }
         steps.push({ kind: 'tool', tool_name: 'fetch_url', tool_ok: r.ok, tool_result: r.ok ? r.summary.slice(0, 800) : (r.error ?? 'failed') })
         if (r.ok) evidence = `== DATA DARI URL ==\n${r.summary.slice(0, 1500)}`
       }))
     }
   } else if (intent === 'music') {
     parallel.push(
-      runTool('web_search', JSON.stringify({ query: searchQuery, max_results: 3 })).then(r => {
+      toolCall(runTool('web_search', JSON.stringify({ query: searchQuery, max_results: 3 }))).then(r => {
+        if (!r) { steps.push({ kind: 'tool', tool_name: 'web_search', tool_ok: false, tool_result: 'timeout' }); return }
         steps.push({ kind: 'tool', tool_name: 'web_search', tool_ok: r.ok, tool_result: r.ok ? r.summary.slice(0, 500) : (r.error ?? 'failed') })
         if (r.ok) evidence += (evidence ? '\n\n' : '') + `== SEARCH (${searchQuery}) ==\n${r.summary.slice(0, 1000)}`
       }),
-      runTool('youtube_trending', JSON.stringify({ region: 'ID' })).then(r => {
+      toolCall(runTool('youtube_trending', JSON.stringify({ region: 'ID' }))).then(r => {
+        if (!r) { steps.push({ kind: 'tool', tool_name: 'youtube_trending', tool_ok: false, tool_result: 'timeout' }); return }
         steps.push({ kind: 'tool', tool_name: 'youtube_trending', tool_ok: r.ok, tool_result: r.ok ? r.summary.slice(0, 500) : (r.error ?? 'failed') })
         if (r.ok) evidence += (evidence ? '\n\n' : '') + `== YOUTUBE TRENDING INDONESIA ==\n${r.summary.slice(0, 800)}`
       }),
     )
   } else if (intent === 'news' || intent === 'business' || intent === 'social') {
     parallel.push(
-      runTool('web_search', JSON.stringify({ query: searchQuery, max_results: 5 })).then(r => {
+      toolCall(runTool('web_search', JSON.stringify({ query: searchQuery, max_results: 5 }))).then(r => {
+        if (!r) { steps.push({ kind: 'tool', tool_name: 'web_search', tool_ok: false, tool_result: 'timeout' }); return }
         steps.push({ kind: 'tool', tool_name: 'web_search', tool_ok: r.ok, tool_result: r.ok ? r.summary.slice(0, 500) : (r.error ?? 'failed') })
         if (r.ok) evidence = `== SEARCH (${searchQuery}) ==\n${r.summary.slice(0, 1500)}`
       }),
@@ -155,10 +168,28 @@ export async function runAgent(
     return { answer: r.text, provider: r.provider, available: true, steps, total_ms: Date.now() - t0, iterations: 1 }
   }
 
-  // Fallback: detailed summary template
-  const fallback = intent === 'internal' && summary
-    ? `AI copilot tidak bisa diakses sekarang. Snapshot bisnis:\n\n${summary}\n\nCoba lagi dalam 30 detik.`
-    : `AI copilot tidak bisa diakses sekarang. Bukti yang tersedia:\n\n${evidence.slice(0, 800) || '(tidak ada data internet yang berhasil diambil)'}`
+  // Fallback: structured answer from raw evidence (no LLM)
+  const fallback = formatRawEvidence(evidence, intent, searchQuery, summary)
   steps.push({ kind: 'fallback', text: fallback })
   return { answer: fallback, provider: 'titan-orchestrator', available: false, steps, total_ms: Date.now() - t0, iterations: 1 }
+}
+
+// Format raw evidence into Bahasa Indonesia answer when LLM is unavailable.
+function formatRawEvidence(evidence: string, intent: string, query: string, summary: string): string {
+  if (intent === 'internal' && summary) {
+    return `Saya belum bisa jawab spesifik, tapi ini snapshot bisnis:\n\n${summary}\n\nTanya lagi dengan lebih spesifik?`
+  }
+  if (!evidence.trim()) {
+    return `Saya tidak menemukan data terbaru untuk "${query}". Bisa spesifikkan lebih lanjut?`
+  }
+  // Strip raw citations + clean up
+  const cleaned = evidence
+    .replace(/^==\s*[A-Z_]+\s*==\s*$/gm, '')
+    .replace(/^##\s*[^\n]+\n/gm, '')
+    .replace(/^\s*[-*]\s*\[(Wiki|HN|Brave|JINA|Hacker News|Wikipedia|DuckDuckGo)\]\s+/gim, '• ')
+    .replace(/https?:\/\/[^\s)\]\]]+/g, '')
+    .replace(/&amp;/g, '&').replace(/&#039;/g, "'").replace(/&quot;/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return `Saya belum bisa synthesize dengan tools AI, tapi berikut rangkuman dari internet untuk "${query}":\n\n${cleaned.slice(0, 1200)}${cleaned.length > 1200 ? '…' : ''}`
 }
