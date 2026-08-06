@@ -1,14 +1,13 @@
 // lib/ai/providers.ts
 // Multi-provider LLM cascade for Syahfalah AI Copilot.
-// Tries providers in order: Ollama (on-prem) → NVIDIA NIM (hosted) → Groq (hosted) → null.
+// Tries providers in order: Ollama → NIM → Groq → OpenRouter → null.
+// Multi-key rotation per hosted provider (env keys comma-separated).
 // Returns first successful response. Never throws; returns null on full failure.
-//
-// All providers share an OpenAI-compatible chat completions schema, so the
-// upstream prompts are normalized to `{system, user}` messages.
-//
-// Rate-limit guards: per-provider 8s timeout + 1 retry on 429.
+// OpenAI-compatible chat/completions shape for all hosted providers.
 
-export type ProviderName = 'ollama' | 'nim' | 'groq'
+import { getKey, keyCount } from './keys'
+
+export type ProviderName = 'ollama' | 'nim' | 'groq' | 'openrouter'
 
 export interface AIResult {
   text: string
@@ -105,7 +104,7 @@ async function callProvider(opts: {
 export async function generateAIAnswer(question: string, ctx: AIContext): Promise<AIResult | null> {
   const messages = buildMessages(question, ctx)
 
-  // 1. Ollama (self-hosted, free)
+  // 1. Ollama (self-hosted, free, no API key)
   if (process.env.OLLAMA_HOST && process.env.OLLAMA_HOST !== 'off') {
     const out = await callProvider({
       name: 'ollama',
@@ -116,33 +115,57 @@ export async function generateAIAnswer(question: string, ctx: AIContext): Promis
     if (out) return out
   }
 
-  // 2. NVIDIA NIM (hosted, free tier with API key)
-  if (process.env.NIM_API_KEY) {
-    const out = await callProvider({
-      name: 'nim',
-      baseUrl: process.env.NIM_BASE_URL || 'https://integrate.api.nvidia.com/v1',
-      apiKey: process.env.NIM_API_KEY,
-      model: process.env.NIM_MODEL || 'meta/llama-3.1-70b-instruct',
-      messages,
-      timeoutMs: 12_000,
-    })
-    if (out) return out
+  // 2. NVIDIA NIM (hosted, free tier) — multi-key rotation
+  if (keyCount('nim') > 0) {
+    const apiKey = getKey('nim')!
+    // Try up to NIM keys sequentially with short timeout
+    for (let i = 0; i < keyCount('nim'); i++) {
+      const k = getKey('nim')!
+      const out = await callProvider({
+        name: 'nim',
+        baseUrl: process.env.NIM_BASE_URL || 'https://integrate.api.nvidia.com/v1',
+        apiKey: k,
+        model: process.env.NIM_MODEL || 'meta/llama-3.1-70b-instruct',
+        messages,
+        timeoutMs: 8_000,
+      })
+      if (out) return out
+    }
   }
 
-  // 3. Groq (hosted, free tier with API key, fast inference)
-  if (process.env.GROQ_API_KEY) {
-    const out = await callProvider({
-      name: 'groq',
-      baseUrl: process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1',
-      apiKey: process.env.GROQ_API_KEY,
-      model: process.env.GROQ_MODEL || 'llama-3.1-70b-versatile',
-      messages,
-      timeoutMs: 12_000,
-    })
-    if (out) return out
+  // 3. Groq — multi-key rotation
+  if (keyCount('groq') > 0) {
+    for (let i = 0; i < keyCount('groq'); i++) {
+      const k = getKey('groq')!
+      const out = await callProvider({
+        name: 'groq',
+        baseUrl: process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1',
+        apiKey: k,
+        model: process.env.GROQ_MODEL || 'llama-3.1-70b-versatile',
+        messages,
+        timeoutMs: 8_000,
+      })
+      if (out) return out
+    }
   }
 
-  // 4. All providers exhausted or absent → deterministic fallback handled by caller
+  // 4. OpenRouter (100+ models incl. free ones) — multi-key rotation
+  if (keyCount('openrouter') > 0) {
+    for (let i = 0; i < keyCount('openrouter'); i++) {
+      const k = getKey('openrouter')!
+      const out = await callProvider({
+        name: 'openrouter',
+        baseUrl: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
+        apiKey: k,
+        model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.1-70b-instruct:free',
+        messages,
+        timeoutMs: 10_000,
+      })
+      if (out) return out
+    }
+  }
+
+  // 5. All exhausted → null; caller falls back to deterministic
   return null
 }
 
@@ -151,6 +174,7 @@ export interface ProviderStatus {
   configured: boolean
   reachable?: boolean
   models?: string[]
+  keys?: number
   error?: string
 }
 
@@ -159,7 +183,7 @@ export async function probeProviders(): Promise<{ providers: ProviderStatus[]; a
 
   // Ollama
   if (process.env.OLLAMA_HOST && process.env.OLLAMA_HOST !== 'off') {
-    const status: ProviderStatus = { name: 'ollama', configured: true }
+    const status: ProviderStatus = { name: 'ollama', configured: true, keys: 1 }
     try {
       const r = await fetch(`${process.env.OLLAMA_HOST}/api/tags`, { signal: AbortSignal.timeout(2000) })
       if (r.ok) {
@@ -177,19 +201,10 @@ export async function probeProviders(): Promise<{ providers: ProviderStatus[]; a
     out.push(status)
   } else out.push({ name: 'ollama', configured: false })
 
-  // NIM
-  if (process.env.NIM_API_KEY) {
-    const status: ProviderStatus = { name: 'nim', configured: true }
-    status.reachable = true  // assume (probed on first request)
-    out.push(status)
-  } else out.push({ name: 'nim', configured: false })
+  // NIM/Groq/OpenRouter — just report key counts
+  out.push({ name: 'nim', configured: keyCount('nim') > 0, reachable: true, keys: keyCount('nim') })
+  out.push({ name: 'groq', configured: keyCount('groq') > 0, reachable: true, keys: keyCount('groq') })
+  out.push({ name: 'openrouter', configured: keyCount('openrouter') > 0, reachable: true, keys: keyCount('openrouter') })
 
-  // Groq
-  if (process.env.GROQ_API_KEY) {
-    const status: ProviderStatus = { name: 'groq', configured: true }
-    status.reachable = true
-    out.push(status)
-  } else out.push({ name: 'groq', configured: false })
-
-  return { providers: out, any_available: out.some(p => p.configured && p.reachable) }
+  return { providers: out, any_available: out.some(p => p.configured) }
 }

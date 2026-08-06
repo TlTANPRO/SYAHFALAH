@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
 
     const aiResult = await generateAIAnswer(question, ctx)
     let answer: string
-    let provider: 'ollama' | 'nim' | 'groq' | 'deterministic'
+    let provider: 'ollama' | 'nim' | 'groq' | 'openrouter' | 'deterministic'
     let available: boolean
     if (aiResult) {
       answer = aiResult.text
