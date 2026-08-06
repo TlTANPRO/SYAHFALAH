@@ -454,19 +454,21 @@ export async function billboard_hot_100(): Promise<ToolResult> {
   const r = await httpGet(url, 'text/html', 'billboard.com')
   if (!r.ok) return { ok: false, summary: 'Billboard unreachable', url, error: 'fetch_failed' }
   // Billboard's chart row structure: <ul class="o-chart-results-list-row..." data-detail-target="N">
-  // Inside: <h3 id="title-of-a-story">Title</h3> + <a href="/artist/...">Artist</a>
+  // Inside: <h3>Title</h3> + <a href="https://www.billboard.com/artist/...">Artist</a>
+  // Note: h3 contains tabs/whitespace; artist href may be absolute or relative.
   const items: Array<string> = []
   const rowRe = /<ul class="o-chart-results-list-row[^"]*"[^>]*data-detail-target="(\d+)"[^>]*>([\s\S]*?)<\/ul>/g
   let m: RegExpExecArray | null
   while ((m = rowRe.exec(r.body)) && items.length < 20) {
     const rank = m[1]
     const content = m[2]
-    const titleMatch = content.match(/<h3[^>]*>([^<]+)<\/h3>/)
-    const artistMatch = content.match(/<a[^>]+href="\/artist\/[^"]*"[^>]*>([^<]+)<\/a>/)
+    // Strip whitespace + HTML entities from h3
+    const titleMatch = content.match(/<h3[^>]*>([\s\S]*?)<\/h3>/)
+    const artistMatch = content.match(/<a[^>]+href="(?:https?:\/\/www\.billboard\.com)?\/artist\/[^"]*"[^>]*>([^<]+)<\/a>/)
     if (titleMatch) {
-      const title = titleMatch[1].replace(/&#039;/g, "'").replace(/&amp;/g, '&').trim()
-      const artist = artistMatch?.[1].replace(/&#039;/g, "'").trim() ?? '?'
-      items.push(`#${rank} ${title} — ${artist}`)
+      const title = titleMatch[1].replace(/\s+/g, ' ').replace(/&#039;/g, "'").replace(/&amp;/g, '&').trim()
+      const artist = artistMatch?.[1].replace(/&#039;/g, "'").replace(/&amp;/g, '&').trim() ?? '?'
+      if (title) items.push(`#${rank} ${title} — ${artist}`)
     }
   }
   if (items.length === 0) return { ok: false, summary: 'Billboard parse failed (page structure changed).', url, error: 'parse_failed' }
