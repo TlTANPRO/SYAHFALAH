@@ -301,8 +301,10 @@ export async function runAgent(
   }
 
   // Programmatic fallback: if LLM admitted it can't do internet things AND
-  // we have a web_search tool, force-call it directly. This bypasses
-  // LLM tool-calling (which often fails on free models) for fallback.
+  // we have a web_search tool, force-call it directly. Bypass LLM tool-
+  // calling for fallback (unreliable on free models). Output is JUST the
+  // search results — no LLM-prefix "Maaf, saya tidak bisa..." since that
+  // would be misleading (we DID get the data).
   if (plain && plain.text && needsToolRetry(plain.text, question)) {
     const directQuery = question.replace(/^(cari|tolong|beri|info|tentang)\s+/i, '').slice(0, 200)
     const direct = await runTool('web_search', JSON.stringify({ query: directQuery, max_results: 5 }))
@@ -314,7 +316,7 @@ export async function runAgent(
         tool_result: direct.summary.slice(0, 500),
         tool_ok: true,
       })
-      const synth = `${plain.text}\n\nHasil pencarian terbaru:\n${direct.summary.slice(0, 1500)}`
+      const synth = `Berikut hasil dari internet (\"${directQuery}\"):\n\n${direct.summary.slice(0, 1800)}`
       steps.push({ kind: 'final', provider: 'titan-orchestrator', text: synth, ms: Date.now() - t0 })
       return {
         answer: synth,

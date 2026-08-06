@@ -16,9 +16,7 @@ export default function AIPage() {
           <Brain className="h-6 w-6 text-[var(--color-brand-500)]" />
           AI Copilot
         </h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          Tanya apa saja — data internal Syahfalah, berita, riset, atau URL eksternal.
-        </p>
+
       </div>
 
       <CopilotChat />
