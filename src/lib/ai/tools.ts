@@ -304,7 +304,7 @@ async function fetch_company_profile(args: { slice: string }): Promise<ToolResul
   return { ok: true, summary: JSON.stringify(data, null, 2).slice(0, 4000) }
 }
 
-async function web_search(args: { query: string; max_results?: number }): Promise<ToolResult> {
+export async function web_search(args: { query: string; max_results?: number }): Promise<ToolResult> {
   const q = (args.query ?? '').trim().slice(0, 200)
   if (!q) return { ok: false, summary: 'query kosong', error: 'bad_input' }
   const cap = Math.min(10, Math.max(1, args.max_results ?? 5))
@@ -406,7 +406,7 @@ async function web_search(args: { query: string; max_results?: number }): Promis
   return { ok: true, summary: summary.slice(0, 4000) }
 }
 
-async function youtube_trending(args: { region?: string }): Promise<ToolResult> {
+export async function youtube_trending(args: { region?: string }): Promise<ToolResult> {
   const region = (args.region ?? 'ID').toUpperCase().slice(0, 4)
   const url = `https://www.youtube.com/feed/trending?gl=${region}`
   const r = await httpGet(url)
@@ -433,7 +433,7 @@ async function youtube_trending(args: { region?: string }): Promise<ToolResult> 
   return { ok: true, summary: `YouTube trending (region ${region}):\n${items.join('\n')}`, url }
 }
 
-async function billboard_hot_100(): Promise<ToolResult> {
+export async function billboard_hot_100(): Promise<ToolResult> {
   const url = 'https://www.billboard.com/charts/hot-100/'
   const r = await httpGet(url)
   if (!r.ok) return { ok: false, summary: 'Billboard unreachable', url, error: 'fetch_failed' }
