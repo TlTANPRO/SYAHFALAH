@@ -1,14 +1,15 @@
 // Multi-provider LLM cascade for Syahfalah AI Copilot.
-// Race-first strategy with tool-calling support.
+// Tier-based strategy:
+//   Round 1: Best model of each provider in parallel (race).
+//   Round 2: 2nd-best model of each provider (race).
+//   Round 3: 3rd-best model of each provider in parallel (race).
+//   Round 4 (if budget allows): next key on best model per provider.
 //
-// OpenAI-shaped chat/completions body for hosted providers. Ollama
-// uses native /api/chat (no API key, but accepts `tools` field too).
-// Each call returns either:
-//   - { text, provider, model, ms } : plain answer
-//   - { tool_calls: [{name, args}], provider, model, ms } : LLM wants a tool
-//   - null : provider failed / refused
+// All models are free-tier (NIM, Groq, OpenRouter free).
+// Tool-calling supported via OpenAI-shaped body.
 
 import { getKey, keyCount } from './keys'
+import { TIERS, getModelFor } from './model-tier'
 
 export type ProviderName = 'ollama' | 'nim' | 'groq' | 'openrouter'
 
@@ -49,6 +50,16 @@ interface CallAttempt {
   timeoutMs: number
 }
 
+interface ProviderURL { url: string; ms: number }
+
+const PROVIDER_URL: Record<'nim' | 'groq' | 'openrouter', ProviderURL> = {
+  nim: { url: 'https://integrate.api.nvidia.com/v1', ms: 6_000 },
+  groq: { url: 'https://api.groq.com/openai/v1', ms: 5_000 },
+  openrouter: { url: 'https://openrouter.ai/api/v1', ms: 8_000 },
+}
+
+const HOSTED_KEYS = ['nim', 'groq', 'openrouter'] as const
+
 async function callProvider(opts: CallAttempt): Promise<LLMResponse | null> {
   const { name, baseUrl, apiKey, model, messages, tools } = opts
   const url = apiKey ? `${baseUrl}/chat/completions` : `${baseUrl}/api/chat`
@@ -68,17 +79,14 @@ async function callProvider(opts: CallAttempt): Promise<LLMResponse | null> {
         body.tools = tools
         body.tool_choice = 'auto'
       } else {
-        // Ollama native API — different key name
         body.tools = tools.map(t => ({
           type: 'function',
           function: { name: t.function.name, description: t.function.description, parameters: t.function.parameters },
         }))
       }
     }
-
     if (!apiKey) {
       body.options = { temperature: 0.2, num_predict: 500 }
-      delete body.max_tokens
     } else {
       body.max_tokens = 500
     }
@@ -112,16 +120,33 @@ async function callProvider(opts: CallAttempt): Promise<LLMResponse | null> {
   }
 }
 
-interface ProviderDefaults { url: string; model: string; ms: number }
-const HOSTED_DEFAULTS: Record<'nim' | 'groq' | 'openrouter', ProviderDefaults> = {
-  nim: { url: 'https://integrate.api.nvidia.com/v1', model: 'meta/llama-3.1-70b-instruct', ms: 5_000 },
-  groq: { url: 'https://api.groq.com/openai/v1', model: 'llama-3.1-70b-versatile', ms: 5_000 },
-  openrouter: { url: 'https://openrouter.ai/api/v1', model: 'meta-llama/llama-3.1-70b-instruct:free', ms: 7_000 },
+function resolveProvider(p: 'nim' | 'groq' | 'openrouter'): ProviderURL {
+  const fallback = PROVIDER_URL[p]
+  const envUrl = process.env[`${p.toUpperCase()}_BASE_URL`]
+  return { url: envUrl || fallback.url, ms: fallback.ms }
 }
 
-const HOSTED_KEYS = ['nim', 'groq', 'openrouter'] as const
+function buildAttempt(
+  p: 'nim' | 'groq' | 'openrouter',
+  modelIndex: number,
+  messages: ChatMessage[],
+  tools?: ToolDefinition[],
+): CallAttempt | null {
+  if (keyCount(p) === 0) return null
+  const { url, ms } = resolveProvider(p)
+  const model = getModelFor(p, modelIndex)
+  return {
+    name: p,
+    baseUrl: url,
+    apiKey: getKey(p),
+    model,
+    messages,
+    tools,
+    timeoutMs: ms,
+  }
+}
 
-function raceCandidates(messages: ChatMessage[], tools?: ToolDefinition[]): CallAttempt[] {
+function buildAttempts(messages: ChatMessage[], tools?: ToolDefinition[]): CallAttempt[] {
   const out: CallAttempt[] = []
   if (process.env.OLLAMA_HOST && process.env.OLLAMA_HOST !== 'off') {
     out.push({
@@ -135,65 +160,86 @@ function raceCandidates(messages: ChatMessage[], tools?: ToolDefinition[]): Call
     })
   }
   for (const p of HOSTED_KEYS) {
-    if (keyCount(p) === 0) continue
-    const d = HOSTED_DEFAULTS[p]
-    out.push({
-      name: p,
-      baseUrl: process.env[`${p.toUpperCase()}_BASE_URL`] || d.url,
-      apiKey: getKey(p),
-      model: process.env[`${p.toUpperCase()}_MODEL`] || d.model,
-      messages,
-      tools,
-      timeoutMs: d.ms,
-    })
+    const a = buildAttempt(p, 0, messages, tools)
+    if (a) out.push(a)
   }
   return out
 }
 
-function remAttempt(p: 'nim' | 'groq' | 'openrouter', messages: ChatMessage[], tools?: ToolDefinition[]): CallAttempt {
-  const d = HOSTED_DEFAULTS[p]
-  return {
-    name: p,
-    baseUrl: process.env[`${p.toUpperCase()}_BASE_URL`] || d.url,
-    apiKey: getKey(p)!,
-    model: process.env[`${p.toUpperCase()}_MODEL`] || d.model,
-    messages,
-    tools,
-    timeoutMs: 3_500,
-  }
+async function runRound(candidates: CallAttempt[], budgetMs: number): Promise<LLMResponse | null> {
+  if (candidates.length === 0) return null
+  try {
+    const winners = await Promise.race([
+      Promise.all(candidates.map(a => callProvider(a))),
+      new Promise<null>(resolve => setTimeout(() => resolve(null), budgetMs)),
+    ])
+    if (winners) {
+      return (winners as Array<LLMResponse | null>).find(r => r !== null) ?? null
+    }
+  } catch { /* fall through */ }
+  return null
 }
 
-// One-shot call. Returns the first non-null result among providers.
-// Used for both deterministic and tool-calling flows.
+// One-shot call with tier-based cascade.
+// Race model-tier[0] across all providers. On no-winner, race model-tier[1].
+// Then tier[2]. Then start rotating keys on tier[0].
 export async function chatOnce(
   messages: ChatMessage[],
   tools?: ToolDefinition[],
-  overallTimeoutMs = 22_000,
+  overallTimeoutMs = 18_000,
 ): Promise<LLMResponse | null> {
-  const deadline = Date.now() + overallTimeoutMs
-  const initial = raceCandidates(messages, tools)
-  if (initial.length === 0) return null
+  const t0 = Date.now()
 
-  try {
-    const winners = await Promise.race([
-      Promise.all(initial.map(a => callProvider(a))),
-      new Promise<null>(resolve => setTimeout(() => resolve(null), overallTimeoutMs)),
-    ])
-    if (winners) {
-      const winner = (winners as Array<LLMResponse | null>).find(r => r !== null)
-      if (winner) return winner
+  // Round 1: best model per provider
+  let budget = Math.max(2_000, overallTimeoutMs - (Date.now() - t0))
+  let r = await runRound(buildAttempts(messages, tools), budget)
+  if (r) return r
+
+  // Round 2: 2nd-best model per provider
+  if (Date.now() - t0 < overallTimeoutMs) {
+    budget = overallTimeoutMs - (Date.now() - t0)
+    const round2: CallAttempt[] = []
+    for (const p of HOSTED_KEYS) {
+      const tier = TIERS[p]
+      if (tier.length < 2) continue
+      const a = buildAttempt(p, 1, messages, tools)
+      if (a) round2.push(a)
     }
-  } catch { /* fall through */ }
+    if (round2.length > 0) {
+      r = await runRound(round2, budget)
+      if (r) return r
+    }
+  }
 
-  for (const provider of HOSTED_KEYS) {
-    const kc = keyCount(provider)
+  // Round 3: 3rd-best model per provider
+  if (Date.now() - t0 < overallTimeoutMs) {
+    budget = overallTimeoutMs - (Date.now() - t0)
+    const round3: CallAttempt[] = []
+    for (const p of HOSTED_KEYS) {
+      const tier = TIERS[p]
+      if (tier.length < 3) continue
+      const a = buildAttempt(p, 2, messages, tools)
+      if (a) round3.push(a)
+    }
+    if (round3.length > 0) {
+      r = await runRound(round3, budget)
+      if (r) return r
+    }
+  }
+
+  // Round 4: rotate keys on best model only (sequential, short timeout)
+  for (const p of HOSTED_KEYS) {
+    const kc = keyCount(p)
     if (kc <= 1) continue
+    const baseAttempt = buildAttempt(p, 0, messages, tools)
+    if (!baseAttempt) continue
     for (let i = 1; i < kc; i++) {
-      if (Date.now() >= deadline) return null
-      const out = await callProvider(remAttempt(provider, messages, tools))
+      if (Date.now() - t0 >= overallTimeoutMs) return null
+      const out = await callProvider({ ...baseAttempt, apiKey: getKey(p), timeoutMs: 3_500 })
       if (out) return out
     }
   }
+
   return null
 }
 
@@ -204,6 +250,7 @@ export interface ProviderStatus {
   models?: string[]
   keys?: number
   error?: string
+  primary_model?: string
 }
 
 export async function probeProviders(): Promise<{ providers: ProviderStatus[]; any_available: boolean }> {
@@ -228,9 +275,16 @@ export async function probeProviders(): Promise<{ providers: ProviderStatus[]; a
     out.push(status)
   } else out.push({ name: 'ollama', configured: false })
 
-  out.push({ name: 'nim', configured: keyCount('nim') > 0, reachable: true, keys: keyCount('nim') })
-  out.push({ name: 'groq', configured: keyCount('groq') > 0, reachable: true, keys: keyCount('groq') })
-  out.push({ name: 'openrouter', configured: keyCount('openrouter') > 0, reachable: true, keys: keyCount('openrouter') })
+  for (const p of HOSTED_KEYS) {
+    const tier = TIERS[p]
+    out.push({
+      name: p,
+      configured: keyCount(p) > 0,
+      reachable: true,
+      keys: keyCount(p),
+      primary_model: tier[0].model,
+    })
+  }
 
   return { providers: out, any_available: out.some(p => p.configured) }
 }
