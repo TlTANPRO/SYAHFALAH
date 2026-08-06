@@ -1,52 +1,30 @@
-// app/not-found.tsx
-// Branded 404 page — falls back gracefully when users hit missing routes
-// (very common since the sidebar has many links to not-yet-implemented pages).
+// app/not-found.tsx — 404 page (root-level only, full app shell renders inside).
+// Renders for non-existent routes. Server component.
 
 import Link from 'next/link'
-import { ArrowLeft, Home, Compass } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { FileSearch, Home, ArrowLeft } from 'lucide-react'
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-0)] p-4">
-      <Card className="max-w-lg w-full shadow-xl">
-        <CardContent className="pt-12 pb-10 px-8 text-center">
-          <div className="inline-flex items-center justify-center h-20 w-20 rounded-2xl bg-[var(--color-brand-500)]/10 mb-6">
-            <Compass className="h-12 w-12 text-[var(--color-brand-500)]" />
-                      </div>
-          <h1 className="font-heading text-4xl font-bold tracking-tight mb-3">
-            404
-          </h1>
-          <h2 className="font-heading text-lg font-semibold text-[var(--color-text-primary)] mb-2">
-            Halaman tidak ditemukan
-          </h2>
-          <p className="text-[var(--color-text-secondary)] text-sm mb-8 max-w-sm mx-auto">
-            Halaman yang kamu cari belum ada atau sudah dipindahkan. Cek URL,
-            atau kembali ke dashboard.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            {/* Plain anchor styled as a button — avoids <Button asChild>
-                Slot/forwardRef conflicts during static prerendering. */}
-            <a
-              href="javascript:history.back()"
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--color-border-default)] bg-transparent px-4 py-2 text-sm font-medium hover:bg-[var(--color-surface-2)]/50 transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Kembali
-            </a>
-            <Link
-              href="/"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--color-brand-500)] text-[var(--color-text-inverse)] px-4 py-2 text-sm font-medium shadow-xs hover:bg-[var(--color-brand-500)]/90 transition-colors"
-            >
-              <Home className="h-4 w-4" />
-              Ke Dashboard
-            </Link>
-          </div>
-          <p className="text-xs text-[var(--color-text-secondary)] mt-8">
-            Syahfalah Dashboard · PT Syahfalah Global
-          </p>
-        </CardContent>
-      </Card>
+    <div className="min-h-[60vh] flex items-center justify-center p-6">
+      <div className="max-w-md text-center">
+        <FileSearch className="mx-auto h-12 w-12 text-[var(--color-text-tertiary)]" />
+        <p className="text-6xl font-heading font-bold tabular-nums text-[var(--color-brand-500)] mt-4">404</p>
+        <h1 className="display-lg mt-2">Halaman Tidak Ditemukan</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-2">
+          Tautan ini tidak aktif atau halaman sudah dipindahkan. Coba kembali ke beranda atau dashboard pribadi.
+        </p>
+        <div className="flex items-center justify-center gap-3 mt-6">
+          <Link href="/"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-md border border-[var(--color-border-default)] hover:border-[var(--color-brand-500)] text-sm font-medium">
+            <ArrowLeft className="h-4 w-4" /> Kembali
+          </Link>
+          <Link href="/personal/tasks"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-md bg-[var(--color-brand-500)] text-white text-sm font-medium hover:bg-[var(--color-brand-600)]">
+            <Home className="h-4 w-4" /> Dashboard
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }

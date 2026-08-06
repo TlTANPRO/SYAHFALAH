@@ -2,8 +2,8 @@
 // Cache-first for static assets, network-first for /api/*.
 // Full offline sync engine deferred to next sprint.
 
-const CACHE = 'syahfalah-v1'
-const STATIC = ['/', '/dashboard', '/manifest.json', '/icon-192.png']
+const CACHE = 'syahfalah-v2'
+const STATIC = ['/', '/manifest.json', '/icon-192.png']
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(STATIC) }))

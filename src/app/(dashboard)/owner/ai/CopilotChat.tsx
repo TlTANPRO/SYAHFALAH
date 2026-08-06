@@ -43,7 +43,13 @@ export function CopilotChat() {
       }
       const j = await res.json()
       setOllamaAvailable(j.ollama_available ?? false)
-      setMsgs(m => [...m, { role: 'ai', text: j.answer ?? '(no answer)', intent: j.intent, ts: j.ts ?? new Date().toISOString() }])
+      const sourceTag = j.source === 'deterministic' ? ' [fallback]' : ''
+      setMsgs(m => [...m, {
+        role: 'ai',
+        text: (j.answer ?? '(no answer)') + (sourceTag ? '' : ''),
+        intent: j.intent ? `${j.intent}${sourceTag}` : sourceTag || undefined,
+        ts: j.ts ?? new Date().toISOString(),
+      }])
     } catch (e: any) {
       setMsgs(m => [...m, { role: 'ai', text: `Network error: ${e?.message ?? 'failed'}`, ts: new Date().toISOString() }])
     } finally {
@@ -83,7 +89,12 @@ export function CopilotChat() {
                 {ollamaAvailable === false && (
                   <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-amber-500">
                     <AlertTriangle className="h-3 w-3" />
-                    Ollama tidak tersedia. Cek OLLAMA_HOST.
+                    AI mode fallback (deterministic) — Ollama tidak tersedia. Set OLLAMA_HOST di Vercel env.
+                  </div>
+                )}
+                {ollamaAvailable === true && (
+                  <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-emerald-500">
+                    AI model aktif (Ollama {process.env.NEXT_PUBLIC_OLLAMA_MODEL ?? 'gemma4:12b'}).
                   </div>
                 )}
               </div>

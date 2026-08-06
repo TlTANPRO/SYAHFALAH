@@ -1,14 +1,15 @@
 // app/api/ai/copilot/route.ts
 // Plan C Phase 3 — AI Copilot read-only agent.
-// Uses Ollama (local, free) with gemma4:12b for inference. Strictly
-// read-only: agent never mutates DB, only advises.
+// Multi-provider cascade: Ollama → NVIDIA NIM → Groq → deterministic.
+// Strictly read-only: agent never mutates DB, only advises.
 // POST body: { question: string }
-// Role-gated: owner + kepala_kantor only (sensitive org-data context).
+// Role-gated: owner + kepala_kantor only.
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { verifyAccessToken } from '@/lib/auth/jwt'
+import { generateAIAnswer, probeProviders, ProviderName } from '@/lib/ai/providers'
 
 interface AgentContext {
   metrics: {
@@ -31,7 +32,6 @@ async function loadContext(): Promise<AgentContext> {
   if (!url || !key) throw new Error('supabase env missing')
   const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
 
-  // 9 parallel cheap queries — total budget: ~9 RTTs.
   const [leads, kpiAtRisk, overdueTasks, overdueCC, openMaint, overduePR, pendingAppr, recentAppr] = await Promise.all([
     sb.from('leads').select('stage'),
     sb.from('kpis').select('id', { count: 'exact', head: true }).eq('progress_status', 'off_track'),
@@ -53,7 +53,7 @@ async function loadContext(): Promise<AgentContext> {
     metrics: {
       leads_total: leadsTotal,
       leads_by_stage: byStage,
-      kpis_total: 348, // known seed; could query but cached
+      kpis_total: 348,
       kpis_off_track: kpiAtRisk.count ?? 0,
       overdue_tasks: overdueTasks.count ?? 0,
       overdue_consumer_cases: overdueCC.count ?? 0,
@@ -73,41 +73,44 @@ function classifyIntent(q: string): 'status' | 'blockers' | 'summary' | 'general
   return 'general'
 }
 
-async function callOllama(prompt: string, context: AgentContext): Promise<string> {
-  const ollamaHost = process.env.OLLAMA_HOST || 'http://127.0.0.1:11434'
-  const ollamaModel = process.env.OLLAMA_MODEL || 'gemma4:12b'
-
-  const systemPrompt = `Kamu adalah Syahfalah AI Copilot. Bantu owner/kepala kantor PT Syahfalah memahami kondisi operasional bisnis property (clusters, leads, KPIs, consumer cases, maintenance, purchasing, approvals).
-Aturan:
-1. Pakai Bahasa Indonesia (campur Inggris untuk istilah teknis dibolehkan).
-2. Jawaban ringkas: bullet points, tidak lebih dari 8 bullet.
-3. WAJIB pakai data konteks, tidak boleh mengarang angka.
-4. Jika data tidak tersedia, jawab "Data tidak tersedia untuk itu."
-5. Jangan buat saran hukum/finansial spesifik; cukup rangkum fakta + highlight anomali.
-
-KONTEKS SAAT INI:
-${JSON.stringify(context, null, 2)}`
-
-  const body = JSON.stringify({
-    model: ollamaModel,
-    prompt: `${systemPrompt}\n\nPertanyaan user: ${prompt}\n\nJawaban:`,
-    stream: false,
-    options: { temperature: 0.2, num_predict: 400 },
-  })
-
-  try {
-    const res = await fetch(`${ollamaHost}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body,
-      signal: AbortSignal.timeout(12_000), // 12s cap
-    })
-    if (!res.ok) return `[Ollama error: HTTP ${res.status}]`
-    const j = await res.json()
-    return j.response?.trim() ?? '(tidak ada jawaban)'
-  } catch (e: any) {
-    return `[AI tidak tersedia: ${e?.message ?? 'timeout'}]`
+function deterministicAnswer(q: string, ctx: AgentContext): string {
+  const m = ctx.metrics
+  const lines: string[] = []
+  if (q.match(/status|kpi|kondisi|health/i)) {
+    lines.push(`- Total leads aktif: ${m.leads_total}`)
+    const stagePart = Object.entries(m.leads_by_stage)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([s, n]) => `${s}=${n}`)
+      .join(', ')
+    if (stagePart) lines.push(`- Distribusi stage: ${stagePart}`)
+    lines.push(`- KPI off-track: ${m.kpis_off_track}`)
+    lines.push(`- Tasks overdue: ${m.overdue_tasks}`)
+    lines.push(`- Consumer cases overdue: ${m.overdue_consumer_cases}`)
+    lines.push(`- Maintenance tickets open: ${m.open_maintenance_tickets}`)
+  } else if (q.match(/block|hambat|tahan|overdue|telat|macet|risk/i)) {
+    if (m.overdue_tasks > 0) lines.push(`- ⚠ ${m.overdue_tasks} tasks overdue`)
+    if (m.overdue_consumer_cases > 0) lines.push(`- ⚠ ${m.overdue_consumer_cases} consumer cases overdue`)
+    if (m.kpis_off_track > 0) lines.push(`- ⚠ ${m.kpis_off_track} KPI off-track`)
+    if (m.open_maintenance_tickets > 0) lines.push(`- ${m.open_maintenance_tickets} maintenance tickets open`)
+    if (m.pending_approvals > 0) lines.push(`- ${m.pending_approvals} pending approval`)
+    if (m.overdue_purchase_requests > 0) lines.push(`- ⚠ ${m.overdue_purchase_requests} purchase request pending`)
+    if (lines.length === 0) lines.push('- Tidak ada blocker terdeteksi.')
+  } else if (q.match(/ringkas|rekap|summary|overview|cashflow|uang/i)) {
+    lines.push(`- Pipeline aktif: ${m.leads_total} leads`)
+    lines.push(`- Backlog tasks: ${m.overdue_tasks} overdue, ${m.kpis_total} KPI`)
+    lines.push(`- Tunggakan konsumen: ${m.overdue_consumer_cases} cases`)
+    lines.push(`- Operasional: ${m.open_maintenance_tickets} tickets, ${m.pending_approvals} approval`)
+  } else {
+    lines.push(`- Leads pipeline: ${m.leads_total} aktif`)
+    lines.push(`- KPI off-track: ${m.kpis_off_track} / ${m.kpis_total}`)
+    lines.push(`- Overdue tasks: ${m.overdue_tasks}`)
+    if (ctx.recent_blocks.length > 0) {
+      lines.push(`- Pending approvals:`)
+      ctx.recent_blocks.slice(0, 3).forEach(b => lines.push(`  · ${b}`))
+    }
   }
+  return lines.join('\n')
 }
 
 export async function POST(req: NextRequest) {
@@ -117,7 +120,6 @@ export async function POST(req: NextRequest) {
     if (!token) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 })
     const payload = await verifyAccessToken(token)
     if (!payload) return NextResponse.json({ error: 'invalid session' }, { status: 401 })
-    // Read-only on sensitive org data: owner + kepala_kantor only.
     if (!['owner', 'kepala_kantor'].includes(payload.role)) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
     }
@@ -129,14 +131,29 @@ export async function POST(req: NextRequest) {
 
     const intent = classifyIntent(question)
     const ctx = await loadContext()
-    const answer = await callOllama(question, ctx)
+
+    const aiResult = await generateAIAnswer(question, ctx)
+    let answer: string
+    let provider: 'ollama' | 'nim' | 'groq' | 'deterministic'
+    let available: boolean
+    if (aiResult) {
+      answer = aiResult.text
+      provider = aiResult.provider
+      available = true
+    } else {
+      answer = deterministicAnswer(question, ctx)
+      provider = 'deterministic'
+      available = false
+    }
 
     return NextResponse.json({
       intent,
       question,
       answer,
       context_summary: ctx.metrics,
-      ollama_available: !answer.startsWith('[AI tidak tersedia'),
+      ollama_available: provider === 'ollama' || process.env.OLLAMA_HOST === '1',
+      provider,
+      available,
       ts: new Date().toISOString(),
     })
   } catch (err: any) {
@@ -145,12 +162,6 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  // Liveness probe (also gates inference availability)
-  try {
-    const r = await fetch(`${process.env.OLLAMA_HOST || 'http://127.0.0.1:11434'}/api/tags`, { signal: AbortSignal.timeout(2000) })
-    const j = await r.json()
-    return NextResponse.json({ status: 'ok', models: (j.models ?? []).map((m: any) => m.name) })
-  } catch (e: any) {
-    return NextResponse.json({ status: 'degraded', reason: e?.message ?? 'ollama unreachable' })
-  }
+  const result = await probeProviders()
+  return NextResponse.json(result)
 }
