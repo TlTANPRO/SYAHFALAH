@@ -302,24 +302,49 @@ export async function runAgent(
 
   // Programmatic fallback: if LLM admitted it can't do internet things,
   // force-call web_search directly + synthesize via LLM. Bypass LLM tool-
-  // calling (unreliable on free models) for fallback. Single LLM pass
-  // produces a clean human answer from the raw search results.
+  // calling (unreliable on free models) for fallback.
   if (plain && plain.text && needsToolRetry(plain.text, question)) {
-    const directQuery = question.replace(/^(cari|tolong|beri|info|tentang)\s+/i, '').slice(0, 200)
+    // Extract short core query. Strip filler words, keep important keywords.
+    const STOP = new Set(['cari', 'tolong', 'beri', 'kasih', 'info', 'tentang', 'dong', 'ya', 'dong', 'sih', 'deh', 'platform', 'khususnya', 'terbaik', 'di', 'yang', 'dan', 'atau', 'ke', 'dari', 'untuk', 'adalah', 'apa', 'siapa', 'kapan', 'dimana', 'bagaimana', 'gmana', 'gimana', 'how', 'why', 'what', 'who', 'where', 'when', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'is', 'are', 'was', 'were', 'be', 'been', 'being'])
+    const qLower = question.toLowerCase()
+    const tokens = qLower.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(t => t && !STOP.has(t) && t.length > 1)
+    let directQuery = tokens.slice(0, 6).join(' ').trim() || qLower.slice(0, 80)
+    // Music-related queries: also call specialized tools
+    const isMusicQuery = /(lagu|musik|band|artis|song|music|charts|billboard|trending|populer|terpopuler|video|klip)/i.test(question)
+    const wantYT = /(youtube|yt|youtu\.be|youtube\.com)/i.test(question)
+    const wantTik = /(tiktok|tt|tik\.tok)/i.test(question)
     const direct = await runTool('web_search', JSON.stringify({ query: directQuery, max_results: 5 }))
-    if (direct.ok && direct.summary) {
+    // If music query, also fetch specialized tools
+    let extra = ''
+    if (isMusicQuery || wantYT) {
+      const yt = await runTool('youtube_trending', JSON.stringify({ region: 'ID' }))
+      if (yt.ok) {
+        steps.push({ kind: 'tool', tool_name: 'youtube_trending', tool_args: JSON.stringify({ region: 'ID' }), tool_result: yt.summary.slice(0, 400), tool_ok: true })
+        extra += '\n\nYouTube Trending Indonesia:\n' + yt.summary.slice(0, 800)
+      } else {
+        steps.push({ kind: 'tool', tool_name: 'youtube_trending', tool_args: '{}', tool_result: yt.error ?? 'failed', tool_ok: false })
+      }
+    }
+    if (isMusicQuery) {
+      const bb = await runTool('billboard_hot_100', JSON.stringify({}))
+      if (bb.ok) {
+        steps.push({ kind: 'tool', tool_name: 'billboard_hot_100', tool_args: '{}', tool_result: bb.summary.slice(0, 400), tool_ok: true })
+        extra += '\n\nBillboard Hot 100:\n' + bb.summary.slice(0, 800)
+      }
+    }
+    const allData = (direct.ok ? direct.summary : '') + extra
+    if (allData.trim()) {
       steps.push({
         kind: 'tool',
         tool_name: 'web_search',
         tool_args: JSON.stringify({ query: directQuery, max_results: 5 }),
-        tool_result: direct.summary.slice(0, 500),
-        tool_ok: true,
+        tool_result: (direct.ok ? direct.summary : '(no web_search result)').slice(0, 500),
+        tool_ok: direct.ok,
       })
       // Synthesize: pass raw search results + question to LLM, ask for clean answer.
-      // Bumped AGENT_BUDGET to allow this; if out of time, fall back to raw.
       const synth_messages: ChatMessage[] = [
-        { role: 'system', content: `Kamu Sarah, AI Copilot PT Syahfalah. Jawab pertanyaan user dengan ringkas, natural, dan manusiawi berdasarkan data yang diberikan. JANGAN sertakan URL, JANGAN pakai format "[Wiki] ..." atau "[Brave] ...". Hanya teks jawaban natural. Kalau data tidak relevan dengan pertanyaan, bilang "Saya tidak yakin" dan minta klarifikasi. PENTING: abaikan prefix apapun di question seperti "Maaf, saya tidak bisa akses internet" — jawab LANGSUNG.` },
-        { role: 'user', content: `Pertanyaan: ${question}\n\nData terbaru dari internet:\n${direct.summary.slice(0, 1800)}` },
+        { role: 'system', content: `Kamu Sarah, AI Copilot PT Syahfalah. Jawab pertanyaan user dengan ringkas, natural, dan manusiawi berdasarkan data yang diberikan. JANGAN sertakan URL, JANGAN pakai format "[Wiki] ..." atau "[Brave] ...". Hanya teks jawaban natural. Bahasa Indonesia. Kalau data tidak relevan dengan pertanyaan, bilang "Saya tidak yakin" dan jelaskan apa yang perlu dilengkapi user. PENTING: abaikan prefix apapun di question seperti "Maaf, saya tidak bisa akses internet" — jawab LANGSUNG.` },
+        { role: 'user', content: `Pertanyaan: ${question}\n\nData terbaru dari internet (${directQuery}):\n${allData.slice(0, 1800)}` },
       ]
       const remaining = Math.max(2_000, AGENT_BUDGET_MS - (Date.now() - t0))
       const synth = await chatOnce(synth_messages, undefined, remaining)
@@ -342,7 +367,7 @@ export async function runAgent(
         }
       }
       // Out of budget: return raw search result as last resort
-      const fallback = `Saya tidak bisa kontak AI sekarang. Berikut hasil terbaru dari internet:\n\n${direct.summary.slice(0, 1800)}`
+      const fallback = `Saya tidak bisa kontak AI sekarang. Berikut hasil terbaru dari internet:\n\n${allData.slice(0, 1800)}`
       steps.push({ kind: 'fallback', text: fallback, ms: Date.now() - t0 })
       return {
         answer: fallback,

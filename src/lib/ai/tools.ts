@@ -411,22 +411,28 @@ export async function youtube_trending(args: { region?: string }): Promise<ToolR
   const url = `https://www.youtube.com/feed/trending?gl=${region}`
   const r = await httpGet(url)
   if (!r.ok) return { ok: false, summary: 'YouTube trending unreachable', url, error: 'fetch_failed' }
-  // Extract video titles + channels from JSON-embedded data
+  // YT uses JSON-embedded data. Try multiple schemas — page structure has changed over time.
   const items: Array<string> = []
-  // YT embeds title in <a> tags within trending page. Just extract titles + view counts.
-  const titleMatches = r.body.match(/"title":\{"runs":\[\{"text":"([^"]{4,150})"\}[\s\S]*?"viewCountText":\{"simpleText":"([^"]+)"\}[\s\S]*?"channelName":\{"simpleText":"([^"]+)"\}[\s\S]*?"videoId":"([^"]+)"/g)
-  if (titleMatches) {
-    for (const m of titleMatches.slice(0, 10)) {
-      const parts = m.match(/"text":"([^"]+)".*?"simpleText":"([^"]+)".*?"simpleText":"([^"]+)".*?"videoId":"([^"]+)"/)
-      if (parts) items.push(`- [${parts[4]}](https://youtu.be/${parts[4]}) ${parts[1]} — ${parts[3]} (${parts[2]})`)
+  let m: RegExpExecArray | null
+  // Schema A: videoId + title + viewCountText + channelName (newer)
+  const reNew = /"videoId":"([A-Za-z0-9_-]{11})"[\s\S]*?"title":\{"runs":\[\{"text":"([^"]+)"\}\][\s\S]*?"viewCountText":\{"simpleText":"([^"]+)"\}[\s\S]*?"channelName":\{"simpleText":"([^"]+)"\}/g
+  while ((m = reNew.exec(r.body)) && items.length < 10) {
+    items.push(`- ${m[2]} — ${m[4]} (${m[3]})  https://youtu.be/${m[1]}`)
+  }
+  if (items.length === 0) {
+    // Schema B: videoId + title + shortViewCountText + ownerText (older)
+    const reMid = /"videoId":"([A-Za-z0-9_-]{11})"[\s\S]*?"title":\{"runs":\[\{"text":"([^"]+)"\}\][\s\S]*?"shortViewCountText":\{"simpleText":"([^"]+)"\}[\s\S]*?"ownerText":\{"runs":\[\{"text":"([^"]+)"\}\]/g
+    while ((m = reMid.exec(r.body)) && items.length < 10) {
+      items.push(`- ${m[2]} — ${m[4]} (${m[3]} views)  https://youtu.be/${m[1]}`)
     }
   }
   if (items.length === 0) {
-    // Fallback: parse from raw HTML
-    const titles = r.body.match(/<a[^>]+title="([^"]{4,120})"[^>]+href="\/watch\?v=([^"]+)"/g) || []
-    for (const t of titles.slice(0, 10)) {
-      const tp = t.match(/title="([^"]+)"[^>]+href="\/watch\?v=([^"]+)"/)
-      if (tp) items.push(`- [${tp[2]}](https://youtu.be/${tp[2]}) ${tp[1]}`)
+    // Schema C: HTML anchor with title + href
+    const reHtml = /<a[^>]+href="\/watch\?v=([A-Za-z0-9_-]{11})"[^>]+title="([^"]+)"|<a[^>]+title="([^"]+)"[^>]+href="\/watch\?v=([A-Za-z0-9_-]{11})"/g
+    while ((m = reHtml.exec(r.body)) && items.length < 10) {
+      const id = m[1] || m[4]
+      const title = m[2] || m[3]
+      if (id && title) items.push(`- ${title}  https://youtu.be/${id}`)
     }
   }
   if (items.length === 0) return { ok: false, summary: 'Could not parse YouTube trending (page structure changed).', url, error: 'parse_failed' }
