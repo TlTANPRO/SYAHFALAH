@@ -15,7 +15,7 @@ import { ChatMessage, chatOnce, LLMResponse } from './providers'
 import { getToolDefinitions, runTool } from './tools'
 import { loadBusinessContext, deterministicSlice, BusinessContext } from './context'
 
-const AGENT_BUDGET_MS = 22_000
+const AGENT_BUDGET_MS = 20_000
 const MAX_LLM_STEPS = 4
 const MAX_HISTORY_TURNS = 5  // last 5 user+assistant exchanges
 
@@ -190,7 +190,7 @@ export async function runAgent(
 
   // Round 1: plain chat (no tools). Fastest, most reliable.
   iterations = 1
-  const remaining1 = Math.max(2_000, AGENT_BUDGET_MS - (Date.now() - t0))
+  const remaining1 = Math.max(5_000, AGENT_BUDGET_MS - (Date.now() - t0))
   const plain = await chatOnce(baseMessages, undefined, remaining1)
   if (plain && plain.text) {
     // If LLM already answered fully and doesn't need tools → done.
@@ -314,23 +314,20 @@ export async function runAgent(
     const wantYT = /(youtube|yt|youtu\.be|youtube\.com)/i.test(question)
     const wantTik = /(tiktok|tt|tik\.tok)/i.test(question)
     const direct = await runTool('web_search', JSON.stringify({ query: directQuery, max_results: 5 }))
-    // If music query, also fetch specialized tools
+    // For music queries: run youtube_trending + billboard_hot_100 ONCE each.
+    // Note: youtube_trending often fails (YouTube renders client-side), so
+    // we rely on JINA-Trending + kworb.net via web_search as primary.
     let extra = ''
-    if (isMusicQuery || wantYT) {
-      const yt = await runTool('youtube_trending', JSON.stringify({ region: 'ID' }))
-      if (yt.ok) {
-        steps.push({ kind: 'tool', tool_name: 'youtube_trending', tool_args: JSON.stringify({ region: 'ID' }), tool_result: yt.summary.slice(0, 400), tool_ok: true })
-        extra += '\n\nYouTube Trending Indonesia:\n' + yt.summary.slice(0, 800)
-      } else {
-        steps.push({ kind: 'tool', tool_name: 'youtube_trending', tool_args: '{}', tool_result: yt.error ?? 'failed', tool_ok: false })
-      }
-    }
     if (isMusicQuery) {
-      const bb = await runTool('billboard_hot_100', JSON.stringify({}))
-      if (bb.ok) {
-        steps.push({ kind: 'tool', tool_name: 'billboard_hot_100', tool_args: '{}', tool_result: bb.summary.slice(0, 400), tool_ok: true })
-        extra += '\n\nBillboard Hot 100:\n' + bb.summary.slice(0, 800)
-      }
+      const opts = { region: 'ID' }
+      const [yt, bb] = await Promise.all([
+        runTool('youtube_trending', JSON.stringify(opts)),
+        runTool('billboard_hot_100', JSON.stringify({})),
+      ])
+      steps.push({ kind: 'tool', tool_name: 'youtube_trending', tool_args: JSON.stringify(opts), tool_result: yt.ok ? yt.summary.slice(0, 400) : (yt.error ?? 'failed'), tool_ok: yt.ok })
+      steps.push({ kind: 'tool', tool_name: 'billboard_hot_100', tool_args: '{}', tool_result: bb.ok ? bb.summary.slice(0, 400) : (bb.error ?? 'failed'), tool_ok: bb.ok })
+      if (yt.ok) extra += '\n\nYouTube Trending Indonesia:\n' + yt.summary.slice(0, 800)
+      if (bb.ok) extra += '\n\nBillboard Hot 100:\n' + bb.summary.slice(0, 800)
     }
     const allData = (direct.ok ? direct.summary : '') + extra
     if (allData.trim()) {
@@ -366,8 +363,8 @@ export async function runAgent(
           context,
         }
       }
-      // Out of budget: return raw search result as last resort
-      const fallback = `Saya tidak bisa kontak AI sekarang. Berikut hasil terbaru dari internet:\n\n${allData.slice(0, 1800)}`
+      // Out of budget: return clean truncated results, no raw citations
+      const fallback = `Berikut rangkuman dari internet:\n\n${allData.slice(0, 1500).replace(/^\s*[\-\*]\s+\[(Wiki|HN|Brave|JINA|Hacker News|Wikipedia|DuckDuckGo)\]\s*/gim, '• ').replace(/^\s*##\s*/gim, '')}`
       steps.push({ kind: 'fallback', text: fallback, ms: Date.now() - t0 })
       return {
         answer: fallback,

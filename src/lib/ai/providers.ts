@@ -55,10 +55,10 @@ interface ProviderURL { url: string; ms: number }
 const PROVIDER_URL: Record<'nim' | 'groq' | 'openrouter', ProviderURL> = {
   nim: { url: 'https://integrate.api.nvidia.com/v1', ms: 6_000 },
   groq: { url: 'https://api.groq.com/openai/v1', ms: 5_000 },
-  openrouter: { url: 'https://openrouter.ai/api/v1', ms: 8_000 },
+  openrouter: { url: 'https://openrouter.ai/api/v1', ms: 12_000 },
 }
 
-const HOSTED_KEYS = ['nim', 'groq', 'openrouter'] as const
+const HOSTED_KEYS = ['openrouter', 'nim', 'groq'] as const
 
 async function callProvider(opts: CallAttempt): Promise<LLMResponse | null> {
   const { name, baseUrl, apiKey, model, messages, tools } = opts

@@ -160,11 +160,14 @@ export function getToolDefinitions(): ToolDefinition[] {
 
 // =============== implementations ===============
 
-async function httpGet(url: string, accept?: string): Promise<{ ok: boolean; body: string; bytes: number; ct: string }> {
+async function httpGet(url: string, accept?: string, host?: string): Promise<{ ok: boolean; body: string; bytes: number; ct: string }> {
   try {
+    const ua = host === 'kworb.net'
+      ? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'
+      : 'SyahfalahBot/1.0 (+https://syahfalah-dashboard.vercel.app)'
     const r = await fetch(url, {
       headers: {
-        'User-Agent': 'SyahfalahBot/1.0 (+https://syahfalah-dashboard.vercel.app)',
+        'User-Agent': ua,
         'Accept': accept ?? 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -407,36 +410,43 @@ export async function web_search(args: { query: string; max_results?: number }):
 }
 
 export async function youtube_trending(args: { region?: string }): Promise<ToolResult> {
+  // YouTube trending page is JS-rendered (no static HTML). Use kworb.net
+  // mirror which has stable HTML structure. Region maps to kworb path.
   const region = (args.region ?? 'ID').toUpperCase().slice(0, 4)
-  const url = `https://www.youtube.com/feed/trending?gl=${region}`
-  const r = await httpGet(url)
-  if (!r.ok) return { ok: false, summary: 'YouTube trending unreachable', url, error: 'fetch_failed' }
-  // YT uses JSON-embedded data. Try multiple schemas — page structure has changed over time.
+  const regionMap: Record<string, string> = {
+    ID: 'id', US: 'us', GB: 'gb', JP: 'jp', KR: 'kr', IN: 'in', BR: 'br',
+    DE: 'de', FR: 'fr', CA: 'ca', AU: 'au', MX: 'mx',
+  }
+  const kworbRegion = regionMap[region] ?? 'ww'
+  const url = `https://kworb.net/youtube/trending/${kworbRegion}.html`
+  const r = await httpGet(url, 'text/html', 'kworb.net')
+  if (!r.ok) return { ok: false, summary: 'YouTube trending unreachable (kworb.net down?)', url, error: 'fetch_failed' }
+  // kworb.net: each <tr> in the table has rank, title, channel, views, etc.
+  // Title link is in href="/watch?v=..." pattern.
   const items: Array<string> = []
+  const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/g
   let m: RegExpExecArray | null
-  // Schema A: videoId + title + viewCountText + channelName (newer)
-  const reNew = /"videoId":"([A-Za-z0-9_-]{11})"[\s\S]*?"title":\{"runs":\[\{"text":"([^"]+)"\}\][\s\S]*?"viewCountText":\{"simpleText":"([^"]+)"\}[\s\S]*?"channelName":\{"simpleText":"([^"]+)"\}/g
-  while ((m = reNew.exec(r.body)) && items.length < 10) {
-    items.push(`- ${m[2]} — ${m[4]} (${m[3]})  https://youtu.be/${m[1]}`)
-  }
-  if (items.length === 0) {
-    // Schema B: videoId + title + shortViewCountText + ownerText (older)
-    const reMid = /"videoId":"([A-Za-z0-9_-]{11})"[\s\S]*?"title":\{"runs":\[\{"text":"([^"]+)"\}\][\s\S]*?"shortViewCountText":\{"simpleText":"([^"]+)"\}[\s\S]*?"ownerText":\{"runs":\[\{"text":"([^"]+)"\}\]/g
-    while ((m = reMid.exec(r.body)) && items.length < 10) {
-      items.push(`- ${m[2]} — ${m[4]} (${m[3]} views)  https://youtu.be/${m[1]}`)
+  while ((m = rowRe.exec(r.body)) && items.length < 10) {
+    const row = m[1]
+    const rankMatch = row.match(/data-rank="(\d+)"/) || row.match(/<td>(\d+)<\/td>/)
+    const titleMatch = row.match(/<a[^>]+href="\/watch\?v=([A-Za-z0-9_-]{11})"[^>]*>([^<]+)<\/a>/) || row.match(/<a[^>]+>([^<]+)<\/a>\s*<\/td>\s*<td>[^<]*<a[^>]+href="\/watch\?v=([A-Za-z0-9_-]{11})/)
+    if (titleMatch) {
+      const vid = titleMatch[1] || titleMatch[2]
+      const title = titleMatch[2] || titleMatch[1]
+      const rank = rankMatch?.[1] ?? '?'
+      if (vid && title) items.push(`- ${rank}. ${title.trim()}  https://youtu.be/${vid}`)
     }
   }
   if (items.length === 0) {
-    // Schema C: HTML anchor with title + href
-    const reHtml = /<a[^>]+href="\/watch\?v=([A-Za-z0-9_-]{11})"[^>]+title="([^"]+)"|<a[^>]+title="([^"]+)"[^>]+href="\/watch\?v=([A-Za-z0-9_-]{11})"/g
-    while ((m = reHtml.exec(r.body)) && items.length < 10) {
-      const id = m[1] || m[4]
-      const title = m[2] || m[3]
-      if (id && title) items.push(`- ${title}  https://youtu.be/${id}`)
+    // Fallback: extract all <a href="/watch?v=..."> with inner text
+    const links = r.body.match(/<a[^>]+href="\/watch\?v=([A-Za-z0-9_-]{11})"[^>]*>([^<]{4,100})<\/a>/g) || []
+    for (const link of links.slice(0, 10)) {
+      const lm = link.match(/\/watch\?v=([A-Za-z0-9_-]{11})"[^>]*>([^<]+)/)
+      if (lm) items.push(`- ${lm[2].trim()}  https://youtu.be/${lm[1]}`)
     }
   }
-  if (items.length === 0) return { ok: false, summary: 'Could not parse YouTube trending (page structure changed).', url, error: 'parse_failed' }
-  return { ok: true, summary: `YouTube trending (region ${region}):\n${items.join('\n')}`, url }
+  if (items.length === 0) return { ok: false, summary: 'Could not parse YouTube trending (kworb.net page structure changed).', url, error: 'parse_failed' }
+  return { ok: true, summary: `YouTube trending (region ${region}, via kworb.net):\n${items.join('\n')}`, url }
 }
 
 export async function billboard_hot_100(): Promise<ToolResult> {
