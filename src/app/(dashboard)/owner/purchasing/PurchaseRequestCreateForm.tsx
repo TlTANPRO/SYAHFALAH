@@ -1,0 +1,87 @@
+// app/(dashboard)/owner/purchasing/PurchaseRequestCreateForm.tsx
+'use client'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Plus, Loader2 } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
+interface User { id: string; name: string }
+
+export function PurchaseRequestCreateForm() {
+  const router = useRouter()
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  // requester_id = current user (encoded in JWT). Keep UI simpler: omit and let server set on insert via fallback?
+  // For now require explicit supervisor/manager id from session — store in a lookup later.
+  const [form, setForm] = useState({ requester_id: '', title: '', description: '', needed_by: '' })
+  function set(k: keyof typeof form, v: string) { setForm(f => ({ ...f, [k]: v })) }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.requester_id || !form.title.trim()) {
+      setMsg({ type: 'err', text: 'Requester ID + judul wajib.' }); return
+    }
+    setBusy(true); setMsg(null)
+    try {
+      const body: Record<string, unknown> = {
+        requester_id: form.requester_id.trim(),
+        title: form.title.trim(),
+        description: form.description.trim() || null,
+        needed_by: form.needed_by || null,
+        status: 'pending',
+      }
+      const res = await fetch('/api/purchasing/purchase_requests', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        setMsg({ type: 'err', text: j.error ?? `HTTP ${res.status}` }); return
+      }
+      setMsg({ type: 'ok', text: 'PR dibuat.' })
+      setForm({ requester_id: '', title: '', description: '', needed_by: '' })
+      router.refresh()
+    } catch (e: any) { setMsg({ type: 'err', text: e?.message ?? 'Network error' }) }
+    finally { setBusy(false) }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2"><Plus className="h-4 w-4" /> Purchase Request baru</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="md:col-span-2">
+            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Title *</label>
+            <input type="text" value={form.title} onChange={(e) => set('title', e.target.value)} required
+              className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
+          </div>
+          <div>
+            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Requester (UUID) *</label>
+            <input type="text" value={form.requester_id} onChange={(e) => set('requester_id', e.target.value)} required
+              className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-xs font-mono focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Description</label>
+            <input type="text" value={form.description} onChange={(e) => set('description', e.target.value)}
+              className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
+          </div>
+          <div>
+            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Needed by</label>
+            <input type="date" value={form.needed_by} onChange={(e) => set('needed_by', e.target.value)}
+              className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
+          </div>
+          <div className="md:col-span-3 flex items-center gap-3">
+            <button type="submit" disabled={busy}
+              className="inline-flex items-center gap-2 h-10 px-4 rounded-md bg-[var(--color-brand-500)] text-white text-sm font-medium hover:bg-[var(--color-brand-600)] disabled:opacity-50">
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              Submit
+            </button>
+            {msg && <span className={`text-xs ${msg.type === 'ok' ? 'text-emerald-500' : 'text-rose-500'}`}>{msg.text}</span>}
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
