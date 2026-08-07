@@ -90,7 +90,7 @@ async function loadData() {
     supabase.from('divisions').select('id, name').eq('is_active', true).order('sort_order'),
   ])
   const defs = (results[0]?.data ?? []) as Array<{ id: string; code: string | null; name: string | null; level: string; unit: string | null; division_id: string | null }>
-  const rollups = (results[1]?.data ?? []) as Array<PeriodRollup & { id: string }>
+  const rollups = (results[1]?.data ?? []) as unknown as Array<PeriodRollup & { id: string }>
   const divs = (results[2]?.data ?? []) as Array<{ id: string; name: string }>
 
   // group rollups by KPI id
