@@ -47,7 +47,7 @@ export function ApprovalDecisionActions({ id }: Props) {
           onClick={() => decide('approve')}
           disabled={busy !== null}
           aria-label="Approve"
-          className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25 transition-colors disabled:opacity-50"
+          className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-[var(--color-verdigris-500)]/15 text-[var(--color-verdigris-500)] hover:bg-[var(--color-verdigris-500)]/25 transition-colors disabled:opacity-50"
         >
           {busy === 'approve' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
         </button>
@@ -56,12 +56,12 @@ export function ApprovalDecisionActions({ id }: Props) {
           onClick={() => decide('reject')}
           disabled={busy !== null}
           aria-label="Reject"
-          className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-rose-500/15 text-rose-500 hover:bg-rose-500/25 transition-colors disabled:opacity-50"
+          className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-[var(--color-danger)]/15 text-[var(--color-danger)] hover:bg-[var(--color-danger)]/25 transition-colors disabled:opacity-50"
         >
           {busy === 'reject' ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
         </button>
       </div>
-      {err && <p className="text-[10px] text-rose-500 max-w-[8rem] truncate" title={err}>{err}</p>}
+      {err && <p className="text-[10px] text-[var(--color-danger)] max-w-[8rem] truncate" title={err}>{err}</p>}
     </div>
   )
 }

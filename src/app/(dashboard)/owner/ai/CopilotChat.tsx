@@ -188,10 +188,10 @@ export function CopilotChat() {
                         {m.steps.map((s, j) => (
                           <div key={j} className="flex items-start gap-2">
                             <span className={`flex-shrink-0 inline-block px-1.5 rounded ${
-                              s.kind === 'tool' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300' :
-                              s.kind === 'final' || s.kind === 'synth' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' :
+                              s.kind === 'tool' ? 'bg-[var(--color-warning)]/15 text-[var(--color-warning)] dark:text-[var(--color-warning)]' :
+                              s.kind === 'final' || s.kind === 'synth' ? 'bg-[var(--color-verdigris-500)]/15 text-[var(--color-verdigris-700)] dark:text-[var(--color-verdigris-300)]' :
                               s.kind === 'fallback' ? 'bg-zinc-500/15 text-zinc-700 dark:text-zinc-300' :
-                              s.kind === 'critique' ? 'bg-purple-500/15 text-purple-700 dark:text-purple-300' :
+                              s.kind === 'critique' ? 'bg-[var(--color-brand-500)]/15 text-[var(--color-brand-700)] dark:text-[var(--color-brand-300)]' :
                               'bg-blue-500/15 text-blue-700 dark:text-blue-300'
                             }`}>{s.kind}</span>
                             {s.kind === 'tool' && (

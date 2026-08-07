@@ -64,7 +64,7 @@ export function OfflineStatusBanner() {
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92vw] rounded-lg border bg-zinc-950/90 backdrop-blur px-4 py-3 text-white shadow-lg flex items-center gap-3"
+      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92vw] rounded-lg border bg-[text-primary]/90 backdrop-blur px-4 py-3 text-white shadow-lg flex items-center gap-3"
     >
       {online ? <Wifi className="h-5 w-5 text-emerald-400" /> : <WifiOff className="h-5 w-5 text-rose-400" />}
       <div className="flex-1 text-xs leading-tight">
@@ -72,22 +72,22 @@ export function OfflineStatusBanner() {
           <>
             <div className="font-semibold">Online — syncing queued operations</div>
             {queueDepth > 0 ? (
-              <div className="text-zinc-300">
+              <div className="text-text-primary">
                 {queueDepth} pending. {lastResult && `${lastResult.applied} applied, ${lastResult.failed} failed, ${lastResult.duplicates} duplicates`}
               </div>
             ) : lastResult ? (
-              <div className="text-zinc-300">Last sync: {lastResult.applied} applied, {lastResult.failed} failed</div>
+              <div className="text-text-primary">Last sync: {lastResult.applied} applied, {lastResult.failed} failed</div>
             ) : null}
           </>
         ) : (
           <>
             <div className="font-semibold">Offline — mutations saved locally</div>
             {queueDepth > 0 ? (
-              <div className="text-zinc-300">
+              <div className="text-text-primary">
                 {queueDepth} queued. Will sync automatically when you're back online.
               </div>
             ) : (
-              <div className="text-zinc-300">You can still browse cached pages.</div>
+              <div className="text-text-primary">You can still browse cached pages.</div>
             )}
           </>
         )}

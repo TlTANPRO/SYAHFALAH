@@ -5,14 +5,14 @@
 import { User } from 'lucide-react'
 
 const PALETTE = [
-  ['bg-rose-500', 'text-white'],
-  ['bg-amber-500', 'text-white'],
-  ['bg-emerald-500', 'text-white'],
-  ['bg-sky-500', 'text-white'],
-  ['bg-violet-500', 'text-white'],
-  ['bg-fuchsia-500', 'text-white'],
-  ['bg-lime-500', 'text-stone-900'],
-  ['bg-cyan-500', 'text-white'],
+  ['bg-[var(--color-danger)]', 'text-white'],
+  ['bg-[var(--color-warning)]', 'text-white'],
+  ['bg-[var(--color-verdigris-500)]', 'text-white'],
+  ['bg-[var(--color-info)]', 'text-white'],
+  ['bg-[var(--color-brand-500)]', 'text-white'],
+  ['bg-[var(--color-aurum-500)]', 'text-white'],
+  ['bg-[var(--color-verdigris-500)]', 'text-[text-primary]'],
+  ['bg-[var(--color-info)]', 'text-white'],
 ] as const
 
 function hashCode(s: string): number {
@@ -55,7 +55,7 @@ export function Avatar({ name, photoUrl, src, size = 32, className = '' }: Avata
           {initials}
         </div>
       ) : (
-        <div className="h-full w-full flex items-center justify-center bg-stone-200 text-stone-500">
+        <div className="h-full w-full flex items-center justify-center bg-[surface-4] text-[text-tertiary]">
           <User style={{ width: size * 0.55, height: size * 0.55 }} />
         </div>
       )}

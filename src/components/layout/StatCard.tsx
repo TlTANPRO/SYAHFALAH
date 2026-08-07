@@ -5,19 +5,19 @@ type Accent = 'brand' | 'success' | 'warning' | 'danger' | 'info' | 'neutral'
 
 const ACCENT_BG: Record<Accent, string> = {
   brand: 'bg-[var(--color-brand-500)]/10',
-  success: 'bg-emerald-500/10',
-  warning: 'bg-amber-500/10',
-  danger: 'bg-rose-500/10',
-  info: 'bg-sky-500/10',
+  success: 'bg-[var(--color-verdigris-500)]/10',
+  warning: 'bg-[var(--color-warning)]/10',
+  danger: 'bg-[var(--color-danger)]/10',
+  info: 'bg-[var(--color-info)]/10',
   neutral: 'bg-[var(--color-surface-2)]',
 }
 
 const ACCENT_TEXT: Record<Accent, string> = {
   brand: 'text-[var(--color-brand-500)]',
-  success: 'text-emerald-500',
-  warning: 'text-amber-500',
-  danger: 'text-rose-500',
-  info: 'text-sky-500',
+  success: 'text-[var(--color-verdigris-500)]',
+  warning: 'text-[var(--color-warning)]',
+  danger: 'text-[var(--color-danger)]',
+  info: 'text-[var(--color-info)]',
   neutral: 'text-[var(--color-text-primary)]',
 }
 

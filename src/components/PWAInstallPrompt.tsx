@@ -72,29 +72,29 @@ export function PWAInstallPrompt() {
     <div
       role="dialog"
       aria-label="Install Syahfalah app"
-      className="fixed bottom-20 right-4 z-50 max-w-sm rounded-lg border border-zinc-200 bg-white p-4 shadow-xl dark:border-zinc-800 dark:bg-zinc-950"
+      className="fixed bottom-20 right-4 z-50 max-w-sm rounded-lg border border-[surface-4] bg-white p-4 shadow-xl dark:border-[border-strong] dark:bg-[text-primary]"
     >
       <div className="flex items-start gap-3">
-        <div className="rounded-lg bg-zinc-900 p-2 text-white dark:bg-zinc-100 dark:text-zinc-900">
+        <div className="rounded-lg bg-[text-primary] p-2 text-white dark:bg-[surface-3] dark:text-[text-primary]">
           <Download className="h-5 w-5" aria-hidden="true" />
         </div>
         <div className="flex-1">
           <h3 className="text-sm font-semibold">Pasang Syahfalah di HP</h3>
-          <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
+          <p className="text-xs text-[text-secondary] dark:text-text-secondary mt-0.5">
             Akses lebih cepat, bisa offline saat survey lapangan.
           </p>
           <div className="mt-3 flex gap-2">
             <button
               type="button"
               onClick={accept}
-              className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+              className="rounded-md bg-[text-primary] px-3 py-1.5 text-xs font-medium text-white hover:bg-[text-tertiary] dark:bg-[surface-3] dark:text-[text-primary] dark:hover:bg-[surface-4]"
             >
               Pasang
             </button>
             <button
               type="button"
               onClick={close}
-              className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs hover:bg-zinc-100 dark:border-zinc-800 dark:hover:bg-zinc-900"
+              className="rounded-md border border-[surface-4] px-3 py-1.5 text-xs hover:bg-[surface-3] dark:border-[border-strong] dark:hover:bg-[text-primary]"
               aria-label="Dismiss install prompt"
             >
               Nanti
@@ -104,7 +104,7 @@ export function PWAInstallPrompt() {
         <button
           type="button"
           onClick={close}
-          className="-m-1 rounded-md p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+          className="-m-1 rounded-md p-1 text-[text-tertiary] hover:bg-[surface-3] dark:hover:bg-[text-primary]"
           aria-label="Close install prompt"
         >
           <X className="h-4 w-4" />

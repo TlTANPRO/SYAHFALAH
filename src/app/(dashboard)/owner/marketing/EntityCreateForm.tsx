@@ -146,7 +146,7 @@ export function EntityCreateForm({ entity }: Props) {
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               Submit
             </button>
-            {msg && <span className={`text-xs ${msg.type === 'ok' ? 'text-emerald-500' : 'text-rose-500'}`}>{msg.text}</span>}
+            {msg && <span className={`text-xs ${msg.type === 'ok' ? 'text-[var(--color-verdigris-500)]' : 'text-[var(--color-danger)]'}`}>{msg.text}</span>}
           </div>
         </form>
       </CardContent>

@@ -123,7 +123,7 @@ export function ApprovalRequestForm() {
       )}
 
       {msg && (
-        <p className={`text-xs ${msg.type === 'ok' ? 'text-emerald-500' : 'text-rose-500'}`}>
+        <p className={`text-xs ${msg.type === 'ok' ? 'text-[var(--color-verdigris-500)]' : 'text-[var(--color-danger)]'}`}>
           {msg.text}
         </p>
       )}

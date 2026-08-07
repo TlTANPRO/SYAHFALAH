@@ -170,7 +170,7 @@ function NodeRow({ node, depth, expanded, toggle }: NodeRowProps) {
                         </span>
                         {t.auto_calculate ? (
                           <span title="Auto-calculate saat parent berubah" className="inline-flex">
-                            <Zap className="h-3.5 w-3.5 text-amber-500" />
+                            <Zap className="h-3.5 w-3.5 text-[var(--color-warning)]" />
                           </span>
                         ) : (
                           <ZapOff className="h-3.5 w-3.5 text-[var(--color-text-tertiary)] opacity-50" />
