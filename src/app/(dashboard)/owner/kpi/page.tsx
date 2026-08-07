@@ -9,13 +9,22 @@ import { KpiListClient, type KpiRow } from './KpiListClient'
 async function loadData() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) {
-    return { rows: [] as KpiRow[], divisions: [] as { id: string; name: string }[], periods: [] as string[], total: 0 }
+  const empty = {
+    rows: [] as KpiRow[],
+    divisions: [] as { id: string; name: string }[],
+    periods: [] as string[],
+    total: 0,
   }
-  const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+  if (!url || !key) return empty
+  let supabase
+  try {
+    supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+  } catch {
+    return empty
+  }
   const year = new Date().getFullYear()
 
-  const [{ data: kpis, count }, { data: divs }] = await Promise.all([
+  const [kpiRes, divRes] = await Promise.all([
     supabase
       .from('kpis')
       .select('id, code, name, level, unit, division_id, baseline_target_value, actual_value, progress, status, period', { count: 'exact' })
@@ -26,8 +35,7 @@ async function loadData() {
       .range(0, 24),
     supabase.from('divisions').select('id, name').eq('is_active', true).order('sort_order'),
   ])
-
-  const rows = (kpis ?? []) as KpiRow[]
+  const rows = (kpiRes.data ?? []) as KpiRow[]
   // Derive periods list from the rows (most recent first)
   const periodsSet = new Set<string>()
   for (const r of rows) {
@@ -37,9 +45,9 @@ async function loadData() {
 
   return {
     rows,
-    divisions: (divs ?? []) as { id: string; name: string }[],
+    divisions: (divRes.data ?? []) as { id: string; name: string }[],
     periods,
-    total: count ?? 0,
+    total: kpiRes.count ?? 0,
   }
 }
 

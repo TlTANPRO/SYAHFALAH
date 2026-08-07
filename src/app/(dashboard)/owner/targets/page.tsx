@@ -13,11 +13,18 @@ async function loadCascade(year: number) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return null
+  let supabase
+  try {
+    supabase = createClient(url, key, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+  } catch {
+    return null
+  }
 
-  const supabase = createClient(url, key, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
-
+  // Use .like() for year filter because period is text with 4 possible
+  // shapes ('YYYY', 'YYYY-MM', 'YYYY-Qn', 'YYYY-Wn'); string range
+  // 'YYYY-01'..'YYYY-12' misses 'YYYY-Qn'/'YYYY-Wn' (Q > '1', W > '9').
   const [defsRes, targetsRes] = await Promise.all([
     supabase
       .from('kpi_definitions')
@@ -28,8 +35,7 @@ async function loadCascade(year: number) {
     supabase
       .from('kpi_targets')
       .select('id, kpi_definition_id, period, target_value, parent_target_id, cascade_period, auto_calculate')
-      .gte('period', `${year}-01`)
-      .lte('period', `${year}-12`),
+      .or(`period.like.${year}-%,period.eq.${year}`),
   ])
 
   if (defsRes.error || targetsRes.error) return null

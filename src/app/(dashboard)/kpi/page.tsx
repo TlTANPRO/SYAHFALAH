@@ -66,10 +66,17 @@ const LEVEL_LABEL: Record<string, string> = {
 async function loadData() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) return { kpis: [] as AggregatedKpi[], divisions: [] as { id: string; name: string }[] }
-  const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+  // Defensive: always return arrays even on error so downstream .filter/.map never throw.
+  const empty = { kpis: [] as AggregatedKpi[], divisions: [] as { id: string; name: string }[] }
+  if (!url || !key) return empty
+  let supabase
+  try {
+    supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+  } catch {
+    return empty
+  }
 
-  const [{ data: defs }, { data: rollups }, { data: divs }] = await Promise.all([
+  const results = await Promise.all([
     supabase
       .from('kpis')
       .select('id, code, name, level, unit, division_id')
@@ -82,10 +89,13 @@ async function loadData() {
       .limit(2000),
     supabase.from('divisions').select('id, name').eq('is_active', true).order('sort_order'),
   ])
+  const defs = (results[0]?.data ?? []) as Array<{ id: string; code: string | null; name: string | null; level: string; unit: string | null; division_id: string | null }>
+  const rollups = (results[1]?.data ?? []) as Array<PeriodRollup & { id: string }>
+  const divs = (results[2]?.data ?? []) as Array<{ id: string; name: string }>
 
   // group rollups by KPI id
   const byId = new Map<string, AggregatedKpi>()
-  for (const d of defs ?? []) {
+  for (const d of defs) {
     byId.set(d.id, {
       code: d.code ?? '—',
       name: d.name ?? '—',
@@ -104,7 +114,7 @@ async function loadData() {
 
   // walk rollups to compute avg + latest
   const rollupByKpi = new Map<string, PeriodRollup[]>()
-  for (const r of rollups ?? []) {
+  for (const r of rollups) {
     if (!byId.has(r.id)) continue
     if (!rollupByKpi.has(r.id)) rollupByKpi.set(r.id, [])
     rollupByKpi.get(r.id)!.push({
@@ -137,7 +147,7 @@ async function loadData() {
 
   return {
     kpis: Array.from(byId.values()).filter(k => k.periods > 0),
-    divisions: (divs ?? []) as { id: string; name: string }[],
+    divisions: divs,
   }
 }
 
