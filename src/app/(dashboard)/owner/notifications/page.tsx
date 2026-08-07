@@ -5,6 +5,9 @@
 import { createClient } from '@supabase/supabase-js'
 import { Bell, Info, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ListFilters } from '@/components/ui/ListFilters'
+
+interface PageProps { searchParams: Promise<{ q?: string; unread?: string }> }
 
 interface Notif {
   id: string
@@ -18,16 +21,15 @@ interface Notif {
   created_at: string
 }
 
-async function loadAll() {
+async function loadAll(q: string | null = null, unread: string | null = null) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return [] as Notif[]
   const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
-  const { data } = await supabase
-    .from('notifications')
-    .select('id, user_id, title, body, link, is_read, read_at, payload, created_at')
-    .order('created_at', { ascending: false })
-    .limit(100)
+  let r = supabase.from('notifications').select('id, user_id, title, body, link, is_read, read_at, payload, created_at')
+  if (q) r = r.ilike('title', `%${q}%`)
+  if (unread === '1') r = r.eq('is_read', false)
+  const { data } = await r.order('created_at', { ascending: false }).limit(100)
   return (data ?? []) as Notif[]
 }
 
@@ -35,24 +37,46 @@ function fmtWhen(s: string): string {
   return new Date(s).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
-export default async function Page() {
-  const notifs = await loadAll()
-  const unread = notifs.filter(n => !n.is_read).length
+export default async function Page({ searchParams }: PageProps) {
+  const sp = await searchParams
+  const q = sp.q?.trim() || null
+  const unread = sp.unread || null
+  const notifs = await loadAll(q, unread)
+  const unread_count = unread === '1' ? notifs.length : notifs.filter(n => !n.is_read).length
+  // When filtering unread, the count IS the unread count of the filtered set.
+  const totalUnreadAll = unread === '1' ? notifs.length : notifs.filter(n => !n.is_read).length
+  const activeUnread = unread === '1'
+  const filtered = (q || unread) ? true : false
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="display-lg flex items-center gap-2">
-          <Bell className="h-6 w-6 text-[var(--color-brand-500)]" />
-          Notifikasi Org
-        </h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          {unread > 0 ? `${unread} belum dibaca.` : notifs.length > 0 ? `Semua terbaca, total ${notifs.length}.` : 'Belum ada notifikasi.'}
-        </p>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="display-lg flex items-center gap-2">
+            <Bell className="h-6 w-6 text-[var(--color-brand-500)]" />
+            Notifikasi Org
+          </h1>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+            {notifs.length > 0
+              ? `${notifs.length} notifikasi${activeUnread ? ' (filter unread only)' : ''}.`
+              : 'Belum ada notifikasi.'}
+          </p>
+        </div>
       </div>
 
+      <ListFilters
+        basePath="/owner/notifications"
+        searchPlaceholder="Cari notifikasi (judul)…"
+        searchValue={q ?? ''}
+        extraParams={{ unread: unread ?? '' }}
+        chips={[
+          { label: 'Semua',           value: '', active: !unread, param: 'unread' },
+          { label: 'Belum dibaca',   value: '1', active: unread === '1', param: 'unread', count: unread === '1' ? notifs.length : undefined },
+        ]}
+      />
+
       {notifs.length === 0 ? (
-        <EmptyState icon={Bell} title="Belum ada notifikasi" description="Broadcast/announcement akan muncul di sini." />
+        <EmptyState icon={Bell} title={filtered ? 'Tidak ada notifikasi sesuai filter' : 'Belum ada notifikasi'} description="Broadcast/announcement akan muncul di sini." />
       ) : (
         <div className="space-y-2">
           {notifs.map(n => {
@@ -72,6 +96,9 @@ export default async function Page() {
                     <p className="text-sm text-[var(--color-text-secondary)] whitespace-pre-wrap">{n.body}</p>
                     <p className="text-xs text-[var(--color-text-tertiary)] mt-1 font-mono">
                       {fmtWhen(n.created_at)} · user {n.user_id.slice(0, 8)}
+                      {n.link && (
+                        <> · <a href={n.link} className="text-[var(--color-brand-500)] hover:underline">{n.link}</a></>
+                      )}
                     </p>
                   </div>
                 </div>
