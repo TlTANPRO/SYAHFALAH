@@ -13,7 +13,7 @@ const SELECT_USER = `
   id, full_name, email, phone, role, position, is_active,
   avatar_url, hire_date, skills, photo_url, date_of_birth,
   reporting_to_user_id, created_at, updated_at,
-  division:divisions(id, name)
+  division:divisions!users_division_id_fkey(id, name)
 `
 
 export async function GET(
