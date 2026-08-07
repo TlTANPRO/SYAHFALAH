@@ -1,7 +1,7 @@
 // public/sw.js — Phase 4 PWA service worker.
 // Cache-first for static assets, network-first for /api/*. Cache is
 // per-content (immutable file names), key = full URL.
-const CACHE = 'syahfalah-v3'
+const CACHE = 'syahfalah-v4'
 const STATIC = [
   '/',
   '/manifest.json',
@@ -27,6 +27,17 @@ self.addEventListener('activate', function (e) {
 self.addEventListener('fetch', function (e) {
   const url = new URL(e.request.url)
   if (url.pathname.startsWith('/api/')) {
+    // The client-side IDB queue (src/lib/offline/sync-queue.ts) handles
+    // offline writes for /api/sync/process directly when the fetch
+    // fails. Here we just let the network handle it; if it fails,
+    // surface a 503 so callers can short-circuit and use the IDB queue.
+    // Special case: /api/sync/process must NEVER be intercepted by the
+    // SW — failures need to bubble back to the page so the queue logic
+    // knows to keep the mutation pending.
+    if (url.pathname === '/api/sync/process') {
+      e.respondWith(fetch(e.request))
+      return
+    }
     e.respondWith(
       fetch(e.request).catch(function () {
         return new Response(JSON.stringify({ offline: true }), { status: 503, headers: { 'Content-Type': 'application/json' } })

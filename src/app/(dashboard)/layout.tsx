@@ -11,6 +11,8 @@ import { useUIStore } from '@/stores/uiStore'
 import { CommandDialog } from '@/components/ui/command-palette'
 import { SessionExpiryBanner } from '@/components/auth/SessionExpiryBanner'
 import { ToastContainer } from '@/components/ui/toast-container'
+import { OfflineStatusBanner } from '@/components/OfflineStatusBanner'
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt'
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -105,6 +107,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Toast notifications (aria-live region inside) */}
       <ToastContainer />
+
+      {/* Offline PWA sync status — visible whenever the user is offline
+          or has queued mutations waiting to be replayed. */}
+      <OfflineStatusBanner />
+      <PWAInstallPrompt />
     </div>
   )
 }
