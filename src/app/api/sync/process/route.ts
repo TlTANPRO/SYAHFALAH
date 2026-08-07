@@ -26,6 +26,13 @@ const ALLOWED_TABLES: Record<string, 'insert' | 'update' | 'delete'> = {
   'maintenance_logs': 'insert',
 }
 
+// Tables where the column `user_id` exists and represents the row owner.
+// Server force-sets it on insert/update/delete-with-owner-filter to prevent
+// a tampered client from writing rows against another user.
+// maintenance_logs uses actor_id; leads uses assigned_to_id — those are
+// supplied by the client in the payload directly (not auto-filled).
+const TABLES_WITH_USER_ID = new Set(['tasks', 'attendance_logs'])
+
 const MAX_BATCH = 200
 
 type Mutation = {
@@ -158,11 +165,18 @@ async function replayOne(
     return { client_op_id: m.client_op_id, status: 'failed', error: `queue: ${queueErr?.message ?? 'unknown'}` }
   }
 
-  // Step 3: replay against target table. user_id is forced server-side.
+  // Step 3: replay against target table. user_id is forced server-side
+  // for tables that have it (tasks, attendance_logs). Tables without
+  // a user_id column (leads.assigned_to_id, maintenance_logs.actor_id)
+  // trust the client's payload, since they use alternative ownership
+  // columns — the caller's UI must include those.
   let applyErr: string | null = null
   let resultId: string | undefined
   if (m.operation === 'insert') {
-    const { data, error } = await sb.from(m.target_table).insert({ ...opPayload, user_id: userId }).select('id').single()
+    const payload = TABLES_WITH_USER_ID.has(m.target_table)
+      ? { ...opPayload, user_id: userId }
+      : { ...opPayload }
+    const { data, error } = await sb.from(m.target_table).insert(payload).select('id').single()
     applyErr = error?.message ?? null
     resultId = data?.id
   } else if (m.operation === 'update') {
@@ -172,7 +186,9 @@ async function replayOne(
       const rowId = String(opPayload.id)
       const rest = { ...opPayload } as Record<string, unknown>
       delete (rest as { id?: unknown }).id
-      const { data, error } = await sb.from(m.target_table).update(rest).eq('id', rowId).eq('user_id', userId).select('id').single()
+      let q = sb.from(m.target_table).update(rest).eq('id', rowId)
+      if (TABLES_WITH_USER_ID.has(m.target_table)) q = q.eq('user_id', userId)
+      const { data, error } = await q.select('id').single()
       applyErr = error?.message ?? null
       resultId = data?.id ?? rowId
     }
@@ -180,7 +196,9 @@ async function replayOne(
     if (!opPayload.id) {
       applyErr = 'delete requires payload.id'
     } else {
-      const { error } = await sb.from(m.target_table).delete().eq('id', String(opPayload.id)).eq('user_id', userId)
+      let q = sb.from(m.target_table).delete().eq('id', String(opPayload.id))
+      if (TABLES_WITH_USER_ID.has(m.target_table)) q = q.eq('user_id', userId)
+      const { error } = await q
       applyErr = error?.message ?? null
       resultId = String(opPayload.id)
     }
