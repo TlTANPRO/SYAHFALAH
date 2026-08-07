@@ -1,5 +1,7 @@
 // src/app/(dashboard)/personal/schedule/page.tsx
 // Jadwal harian + mingguan + task user minggu ini.
+// Migration 031: ritme data now lives in public.recurring_events
+// instead of hardcoded constants — admin can edit without redeploy.
 
 import { CalendarDays, Clock } from 'lucide-react'
 import { cookies } from 'next/headers'
@@ -16,25 +18,40 @@ async function getCurrentUser() {
   try {
     const secret = process.env.JWT_SECRET || FALLBACK_SECRET
     const { payload } = await jwtVerify(token, new TextEncoder().encode(secret))
-    return { id: payload.sub as string, name: (payload as any).name, role: (payload as any).role, position: (payload as any).position }
+    return { id: payload.sub as string, name: (payload as any).name, role: (payload as any).role }
   } catch {
     return null
   }
 }
 
-const RITME_HARIAN = [
-  { jam: '08.30', acara: 'Daily standup', tempat: 'Ruang meeting' },
-  { jam: '12.00', acara: 'ISHOMA', tempat: '-' },
-  { jam: '17.00', acara: 'Submit laporan harian', tempat: 'WA group' },
-]
+interface RecurringEvent {
+  id: string
+  cadence: 'daily' | 'weekly'
+  weekday: number | null
+  start_time: string | null
+  title: string
+  location: string | null
+  icon: string | null
+  sort_order: number | null
+}
 
-const RITME_MINGGUAN = [
-  { hari: 'Senin', acara: 'Weekly standup 09.00 (40 menit)', tempat: 'Ruang besar' },
-  { hari: 'Selasa', acara: 'Site visit', tempat: 'Cluster' },
-  { hari: 'Rabu', acara: 'Content review dengan tim media', tempat: 'Ruang media' },
-  { hari: 'Kamis', acara: 'Follow up SP3K', tempat: 'Kantor' },
-  { hari: 'Jumat', acara: 'Friday reflection 16.00', tempat: 'Ruang besar' },
-]
+async function loadRecurring(cadence: 'daily' | 'weekly'): Promise<RecurringEvent[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return []
+  const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+  try {
+    const { data } = await sb
+      .from('recurring_events')
+      .select('id, cadence, weekday, start_time, title, location, icon, sort_order')
+      .eq('cadence', cadence)
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+    return (data ?? []) as RecurringEvent[]
+  } catch {
+    return []
+  }
+}
 
 async function loadUserTasks(userId: string, weekStart: string, weekEnd: string) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -44,8 +61,9 @@ async function loadUserTasks(userId: string, weekStart: string, weekEnd: string)
   try {
     const { data } = await sb
       .from('tasks')
+      // .user_id is the canonical column (Round 2 audit confirmed; 'assignee_id' was wrong)
       .select('id, title, due_date, priority, status')
-      .eq('assignee_id', userId)
+      .eq('user_id', userId)
       .gte('due_date', weekStart)
       .lte('due_date', weekEnd)
       .order('due_date', { ascending: true })
@@ -70,10 +88,25 @@ function getWeekRange(): { start: string; end: string } {
   }
 }
 
+function fmtTime(t: string | null): string {
+  if (!t) return '—'
+  return t.slice(0, 5) // 'HH:MM'
+}
+
+function fmtWeekday(w: number | null): string {
+  const labels = ['', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
+  return labels[w ?? 0] ?? '—'
+}
+
 export default async function Page() {
   const user = await getCurrentUser()
   const { start, end } = getWeekRange()
-  const tasks = user ? await loadUserTasks(user.id, start, end) : []
+  const [daily, weekly, tasks] = await Promise.all([
+    loadRecurring('daily'),
+    loadRecurring('weekly'),
+    user ? loadUserTasks(user.id, start, end) : [],
+  ])
+
   const today = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   const taskByDate = new Map<string, any[]>()
   for (const t of tasks) {
@@ -99,7 +132,11 @@ export default async function Page() {
 
       <div>
         <h2 className="display-md">Ritme harian</h2>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">3 acara rutin yang harus konsisten tiap hari kerja.</p>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+          {daily.length > 0
+            ? `${daily.length} acara rutin yang harus konsisten tiap hari kerja.`
+            : 'Belum ada ritme harian — admin bisa tambah di Supabase recurring_events.'}
+        </p>
       </div>
       <div className="card overflow-hidden">
         <div className="overflow-x-auto"><table className="data-table">
@@ -111,11 +148,13 @@ export default async function Page() {
             </tr>
           </thead>
           <tbody>
-            {RITME_HARIAN.map((r, i) => (
-              <tr key={i}>
-                <td className="font-mono text-sm font-semibold">{r.jam}</td>
-                <td>{r.acara}</td>
-                <td className="text-sm text-[var(--color-text-secondary)]">{r.tempat}</td>
+            {daily.length === 0 ? (
+              <tr><td colSpan={3} className="text-center text-sm text-[var(--color-text-tertiary)] py-4">Tidak ada acara.</td></tr>
+            ) : daily.map((r) => (
+              <tr key={r.id}>
+                <td className="font-mono text-sm font-semibold">{fmtTime(r.start_time)}</td>
+                <td>{r.title}</td>
+                <td className="text-sm text-[var(--color-text-secondary)]">{r.location ?? '-'}</td>
               </tr>
             ))}
           </tbody>
@@ -124,23 +163,31 @@ export default async function Page() {
 
       <div>
         <h2 className="display-md">Ritme mingguan</h2>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">Acara tetap yang tampil di kalender tiap minggu.</p>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+          {weekly.length > 0
+            ? 'Acara tetap yang tampil di kalender tiap minggu.'
+            : 'Belum ada ritme mingguan.'}
+        </p>
       </div>
       <div className="card overflow-hidden">
         <div className="overflow-x-auto"><table className="data-table">
           <thead>
             <tr>
               <th className="w-24">Hari</th>
+              <th>Jam</th>
               <th>Acara</th>
               <th>Tempat</th>
             </tr>
           </thead>
           <tbody>
-            {RITME_MINGGUAN.map((r, i) => (
-              <tr key={i}>
-                <td className="font-mono text-sm font-semibold">{r.hari}</td>
-                <td>{r.acara}</td>
-                <td className="text-sm text-[var(--color-text-secondary)]">{r.tempat}</td>
+            {weekly.length === 0 ? (
+              <tr><td colSpan={4} className="text-center text-sm text-[var(--color-text-tertiary)] py-4">Tidak ada acara.</td></tr>
+            ) : weekly.map((r) => (
+              <tr key={r.id}>
+                <td className="font-mono text-sm font-semibold">{fmtWeekday(r.weekday)}</td>
+                <td className="font-mono text-sm">{fmtTime(r.start_time)}</td>
+                <td>{r.title}</td>
+                <td className="text-sm text-[var(--color-text-secondary)]">{r.location ?? '-'}</td>
               </tr>
             ))}
           </tbody>
@@ -155,9 +202,9 @@ export default async function Page() {
       </div>
       {tasks.length === 0 ? (
         <EmptyState
-        title="Tidak ada jadwal"
-        description="Tugas baru akan muncul di kalender berdasarkan plan tim Anda."
-      />
+          title="Tidak ada jadwal"
+          description="Tugas baru akan muncul di kalender berdasarkan plan tim Anda."
+        />
       ) : (
         <div className="space-y-3">
           {thisWeek.map((date) => {
