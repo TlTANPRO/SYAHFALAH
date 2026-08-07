@@ -102,10 +102,11 @@ export async function GET(req: NextRequest) {
       .filter((d) => d.parent_kpi_id == null)
       .map(buildNode)
 
-    // Derived aggregates per definition: cascade_period distribution + total.
+    // Derived aggregates: definition-level setup + target-level setup.
     const summary = {
       total_definitions: defs.length,
       cascade_setup_count: defs.filter((d) => d.cascade_level != null).length,
+      target_cascade_count: targets.filter((t) => t.cascade_period != null).length,
       target_rows: targets.length,
       auto_calc_targets: targets.filter((t) => t.auto_calculate).length,
       year,
