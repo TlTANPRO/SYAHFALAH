@@ -8,6 +8,7 @@ import { CheckCircle, Clock, AlertTriangle, Plus, Filter, ChevronDown, Calendar,
 import { formatDate, formatRelativeTime, getKPIStatus } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -38,9 +39,18 @@ export default function PersonalTasksPage() {
     queryKey: ['tasks', 'today'],
     queryFn: async () => {
       const today = new Date().toISOString().split('T')[0]
-      const res = await fetch(`/api/tasks?scheduled_date=${today}`, { credentials: 'include' })
-      if (!res.ok) return []
-      return (await res.json()) as Task[]
+      try {
+        const res = await fetch(`/api/tasks?scheduled_date=${today}`, { credentials: 'include' })
+        if (!res.ok) return []
+        const body = await res.json()
+        // /api/tasks returns { data: Task[], total, page, pageSize }.
+        // Defensive: if shape is unexpected, fall back to [] so downstream
+        // .filter / .map calls never throw "x.filter is not a function".
+        const list = Array.isArray(body) ? body : Array.isArray(body?.data) ? body.data : []
+        return list as Task[]
+      } catch {
+        return []
+      }
     },
   })
 
@@ -61,25 +71,30 @@ export default function PersonalTasksPage() {
     },
   })
 
-  // Filter tasks by tab
-  const filteredTasks = tasks?.filter(task => {
+  // Safe getter — derive counts defensively in case any task shape is
+  // missing required keys (real /api/tasks payloads don't always include
+  // the synthetic `type` field expected by tab filters).
+  const safeTasks = Array.isArray(tasks) ? tasks : []
+  const filteredTasks = safeTasks.filter(task => {
     if (activeTab === 'all') return true
     if (activeTab === 'routine') return task.type === 'daily_routine'
-    if (activeTab === 'carry_over') return task.is_carry_over
+    if (activeTab === 'carry_over') return Boolean(task.is_carry_over)
     if (activeTab === 'ad_hoc') return task.type === 'ad_hoc'
     if (activeTab === 'overdue') return task.status === 'overdue'
     return true
-  }).filter(task => 
-    task.title.toLowerCase().includes(searchQuery.toLowerCase())
+  }).filter(task =>
+    (task.title ?? '').toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const tabs: { id: TaskTab; label: string; icon: React.ReactNode; count: number }[] = [
-    { id: 'all', label: 'Semua', icon: <CheckCircle className="h-4 w-4" />, count: tasks?.length || 0 },
-    { id: 'routine', label: 'Rutin', icon: <RotateCcw className="h-4 w-4" />, count: tasks?.filter(t => t.type === 'daily_routine').length || 0 },
-    { id: 'carry_over', label: 'Carry-over', icon: <Flag className="h-4 w-4" />, count: tasks?.filter(t => t.is_carry_over).length || 0 },
-    { id: 'ad_hoc', label: 'Tambahan', icon: <Plus className="h-4 w-4" />, count: tasks?.filter(t => t.type === 'ad_hoc').length || 0 },
-    { id: 'overdue', label: 'Overdue', icon: <AlertTriangle className="h-4 w-4" />, count: tasks?.filter(t => t.status === 'overdue').length || 0 },
+    { id: 'all', label: 'Semua', icon: <CheckCircle className="h-4 w-4" />, count: safeTasks.length },
+    { id: 'routine', label: 'Rutin', icon: <RotateCcw className="h-4 w-4" />, count: safeTasks.filter(t => t.type === 'daily_routine').length },
+    { id: 'carry_over', label: 'Carry-over', icon: <Flag className="h-4 w-4" />, count: safeTasks.filter(t => t.is_carry_over).length },
+    { id: 'ad_hoc', label: 'Tambahan', icon: <Plus className="h-4 w-4" />, count: safeTasks.filter(t => t.type === 'ad_hoc').length },
+    { id: 'overdue', label: 'Overdue', icon: <AlertTriangle className="h-4 w-4" />, count: safeTasks.filter(t => t.status === 'overdue').length },
   ]
+
+
 
   const getStatusBadge = (status: Task['status']) => {
     const variants = {
@@ -143,6 +158,9 @@ export default function PersonalTasksPage() {
         </div>
         <div className="flex gap-2">
           <div className="relative">
+            <Label htmlFor="tasks-search" className="sr-only">
+              Cari tugas
+            </Label>
             <Input
               id="tasks-search"
               name="tasks-search"
@@ -150,10 +168,11 @@ export default function PersonalTasksPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-64 pl-10"
+              aria-label="Cari tugas"
             />
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-secondary)]" />
           </div>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" aria-label="Buat tugas baru">
             <Plus className="h-4 w-4 mr-2" />
             Tugas Baru
           </Button>
@@ -189,20 +208,20 @@ export default function PersonalTasksPage() {
 
       {/* Task List */}
       <div className="space-y-3">
-        {filteredTasks?.length === 0 ? (
+        {filteredTasks.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <CheckCircle className="h-12 w-12 text-[var(--color-text-secondary)]/50 mx-auto mb-4" />
               <h3 className="font-medium text-[var(--color-text-primary)] mb-1">Tidak ada tugas</h3>
               <p className="text-sm text-[var(--color-text-secondary)]">
-                {activeTab === 'overdue' 
-                  ? 'Tidak ada tugas overdue. Bagus!' 
+                {activeTab === 'overdue'
+                  ? 'Tidak ada tugas overdue. Bagus!'
                   : 'Semua tugas telah diselesaikan atau tidak ada jadwal hari ini.'}
               </p>
             </CardContent>
           </Card>
         ) : (
-          filteredTasks?.map((task) => (
+          filteredTasks.map((task) => (
             <Card key={task.id} className={task.status === 'overdue' ? 'border-[var(--color-danger)]/30 bg-[var(--color-danger)]/5' : ''}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
@@ -317,25 +336,25 @@ export default function PersonalTasksPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="font-heading text-3xl font-bold text-[var(--color-success)]">{tasks?.filter(t => t.status === 'completed').length || 0}</p>
+            <p className="font-heading text-3xl font-bold text-[var(--color-success)]">{safeTasks.filter(t => t.status === 'completed').length}</p>
             <p className="text-sm text-[var(--color-text-secondary)]">Selesai</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="font-heading text-3xl font-bold text-[var(--color-info)]">{tasks?.filter(t => t.status === 'in_progress').length || 0}</p>
+            <p className="font-heading text-3xl font-bold text-[var(--color-info)]">{safeTasks.filter(t => t.status === 'in_progress').length}</p>
             <p className="text-sm text-[var(--color-text-secondary)]">Sedang Dikerjakan</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="font-heading text-3xl font-bold text-[var(--color-warning)]">{tasks?.filter(t => t.is_carry_over).length || 0}</p>
+            <p className="font-heading text-3xl font-bold text-[var(--color-warning)]">{safeTasks.filter(t => t.is_carry_over).length}</p>
             <p className="text-sm text-[var(--color-text-secondary)]">Carry-over</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="font-heading text-3xl font-bold text-[var(--color-danger)]">{tasks?.filter(t => t.status === 'overdue').length || 0}</p>
+            <p className="font-heading text-3xl font-bold text-[var(--color-danger)]">{safeTasks.filter(t => t.status === 'overdue').length}</p>
             <p className="text-sm text-[var(--color-text-secondary)]">Overdue</p>
           </CardContent>
         </Card>
