@@ -33,6 +33,7 @@ import {
   Users,
   UserCog,
   Building2,
+  Bell,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
@@ -60,7 +61,7 @@ const ownerNav: NavItem[] = [
   { name: 'Maintenance', href: '/owner/maintenance?tab=tickets', icon: Wrench, roles: ['owner'] },
   { name: 'Performance', href: '/owner/performance', icon: TrendingUp, roles: ['owner'] },
   { name: 'AI Copilot', href: '/owner/ai', icon: Brain, roles: ['owner'] },
-  { name: 'Org Notifikasi', href: '/owner/notifications', icon: Megaphone, roles: ['owner'] },
+  { name: 'Org Notifikasi', href: '/owner/notifications', icon: Bell, roles: ['owner'] },
   { name: 'Cabangs', href: '/owner/cabangs', icon: Building, roles: ['owner'] },
   { name: 'Digital Twin', href: '/owner/twin', icon: Link2, roles: ['owner'] },
   { name: 'Audit Log', href: '/owner/audit', icon: Activity, roles: ['owner'] },
