@@ -59,6 +59,10 @@ export async function GET(req: NextRequest) {
     const year = Number(url.searchParams.get('year')) || new Date().getFullYear()
 
     // Fetch definitions + targets for the requested year in parallel.
+    // Period column is text and stores shapes like 'YYYY', 'YYYY-MM',
+    // 'YYYY-Qn', 'YYYY-Wn'. Filter via string range 'YYYY-01'..'YYYY-12'
+    // which catches 'YYYY-MM' but misses 'YYYY' (whole year). Include
+    // 'YYYY' separately so whole-year targets also show up.
     const [defsRes, targetsRes] = await Promise.all([
       serviceClient
         .from('kpi_definitions')
@@ -69,8 +73,8 @@ export async function GET(req: NextRequest) {
       serviceClient
         .from('kpi_targets')
         .select('id, kpi_definition_id, period, target_value, parent_target_id, cascade_period, auto_calculate')
-        .gte('period', `${year}-01`)
-        .lte('period', `${year}-12`)
+        .or(`period.gte.${year}-01,period.eq.${year}`)
+        .or(`period.lte.${year}-12,period.eq.${year}`)
         .order('period'),
     ])
 
