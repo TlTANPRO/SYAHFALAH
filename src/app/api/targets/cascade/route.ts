@@ -59,12 +59,11 @@ export async function GET(req: NextRequest) {
     const year = Number(url.searchParams.get('year')) || new Date().getFullYear()
 
     // Fetch definitions + targets for the requested year in parallel.
-    // Period column is text and stores shapes like 'YYYY', 'YYYY-MM',
-    // 'YYYY-Qn', 'YYYY-Wn'. Lex string range 'YYYY-01'..'YYYY-12' misses
-    // 'YYYY-Qn' and 'YYYY-Wn' (Q > 1, W > 9). Use prefix range:
-    //   gte  {year}-00 (matches all 4-char YYYY and YYYY-*)
-    //   lt   {year+1}-00 (excludes next year)
-    const nextYear = year + 1
+    // Period column is text and stores shapes: 'YYYY', 'YYYY-MM',
+    // 'YYYY-Qn', 'YYYY-Wn'. Use a single .or() to match either the
+    // exact 4-char 'YYYY' (whole year) OR any 'YYYY-*' prefix.
+    //   like='YYYY%' alone misses 4-char 'YYYY' (no leading dash yet)
+    //   gte='YYYY-00' alone fails for 4-char 'YYYY' (end-of-string < '-')
     const [defsRes, targetsRes] = await Promise.all([
       serviceClient
         .from('kpi_definitions')
@@ -75,8 +74,7 @@ export async function GET(req: NextRequest) {
       serviceClient
         .from('kpi_targets')
         .select('id, kpi_definition_id, period, target_value, parent_target_id, cascade_period, auto_calculate')
-        .gte('period', `${year}-00`)
-        .lt('period', `${nextYear}-00`)
+        .or(`period.like.${year}-%,period.eq.${year}`)
         .order('period'),
     ])
 
