@@ -60,9 +60,11 @@ export async function GET(req: NextRequest) {
 
     // Fetch definitions + targets for the requested year in parallel.
     // Period column is text and stores shapes like 'YYYY', 'YYYY-MM',
-    // 'YYYY-Qn', 'YYYY-Wn'. Filter via string range 'YYYY-01'..'YYYY-12'
-    // which catches 'YYYY-MM' but misses 'YYYY' (whole year). Combine
-    // both predicates in a single .or() so they don't overwrite each other.
+    // 'YYYY-Qn', 'YYYY-Wn'. Lex string range 'YYYY-01'..'YYYY-12' misses
+    // 'YYYY-Qn' and 'YYYY-Wn' (Q > 1, W > 9). Use prefix range:
+    //   gte  {year}-00 (matches all 4-char YYYY and YYYY-*)
+    //   lt   {year+1}-00 (excludes next year)
+    const nextYear = year + 1
     const [defsRes, targetsRes] = await Promise.all([
       serviceClient
         .from('kpi_definitions')
@@ -73,9 +75,8 @@ export async function GET(req: NextRequest) {
       serviceClient
         .from('kpi_targets')
         .select('id, kpi_definition_id, period, target_value, parent_target_id, cascade_period, auto_calculate')
-        .or(
-          `and(period.gte.${year}-01,period.lte.${year}-12),period.eq.${year}`
-        )
+        .gte('period', `${year}-00`)
+        .lt('period', `${nextYear}-00`)
         .order('period'),
     ])
 
