@@ -178,7 +178,7 @@ export default async function PerformancePage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-amber-500" /> Top 3 bulan ini
+              <Trophy className="h-4 w-4 text-[var(--color-warning)]" /> Top 3 bulan ini
             </CardTitle>
           </CardHeader>
           <CardContent>

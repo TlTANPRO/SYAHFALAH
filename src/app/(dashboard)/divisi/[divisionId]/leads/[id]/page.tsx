@@ -16,9 +16,9 @@ const CLUSTER_JOIN = `id, code, customer_name, customer_phone, cluster_id, sourc
 const STAGE_COLORS: Record<string, string> = {
   new: 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]',
   contacted: 'bg-blue-500/15 text-blue-700 dark:text-blue-300',
-  surveyed: 'bg-purple-500/15 text-purple-700 dark:text-purple-300',
-  booked: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
-  closing: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+  surveyed: 'bg-[var(--color-brand-500)]/15 text-[var(--color-brand-700)] dark:text-[var(--color-brand-300)]',
+  booked: 'bg-[var(--color-warning)]/15 text-[var(--color-warning)] dark:text-[var(--color-warning)]',
+  closing: 'bg-[var(--color-verdigris-500)]/15 text-[var(--color-verdigris-700)] dark:text-[var(--color-verdigris-300)]',
   batal: 'bg-red-500/15 text-red-700 dark:text-red-300',
 }
 

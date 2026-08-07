@@ -103,7 +103,7 @@ export default async function Page({ params }: { params: Promise<{ divisionId: s
                 <CheckCircle className="h-3.5 w-3.5" />
                 <span className="text-xs uppercase tracking-wide">Achieved</span>
               </div>
-              <div className="mt-2 text-3xl font-heading font-bold tabular-nums text-emerald-500">{summary.achieved_count}</div>
+              <div className="mt-2 text-3xl font-heading font-bold tabular-nums text-[var(--color-verdigris-500)]">{summary.achieved_count}</div>
             </CardContent>
           </Card>
           <Card>
@@ -120,7 +120,7 @@ export default async function Page({ params }: { params: Promise<{ divisionId: s
               <div className="flex items-center gap-2 text-[var(--color-text-secondary)] mb-1">
                 <span className="text-xs uppercase tracking-wide">At Risk / Off Track</span>
               </div>
-              <div className="mt-2 text-3xl font-heading font-bold tabular-nums text-rose-500">
+              <div className="mt-2 text-3xl font-heading font-bold tabular-nums text-[var(--color-danger)]">
                 {summary.at_risk_count + summary.off_track_count}
               </div>
             </CardContent>

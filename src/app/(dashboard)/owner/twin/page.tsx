@@ -227,18 +227,18 @@ export default async function DigitalTwinPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-500" />
+              <AlertCircle className="h-4 w-4 text-[var(--color-warning)]" />
               Alerts
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <div className="flex items-center justify-between rounded-md bg-amber-500/10 px-3 py-2">
+              <div className="flex items-center justify-between rounded-md bg-[var(--color-warning)]/10 px-3 py-2">
                 <div>
                   <p className="text-sm font-medium">Tasks overdue</p>
                   <p className="text-xs text-[var(--color-text-tertiary)]">Lewat due date dan belum selesai</p>
                 </div>
-                <span className="text-2xl font-heading font-bold tabular-nums text-amber-500">
+                <span className="text-2xl font-heading font-bold tabular-nums text-[var(--color-warning)]">
                   {counts.tasks_overdue}
                 </span>
               </div>
@@ -335,8 +335,8 @@ export default async function DigitalTwinPage() {
 }
 
 function priorityColor(p: string | null): string {
-  if (p === 'urgent' || p === 'high') return 'bg-rose-500'
-  if (p === 'medium') return 'bg-amber-500'
+  if (p === 'urgent' || p === 'high') return 'bg-[var(--color-danger)]'
+  if (p === 'medium') return 'bg-[var(--color-warning)]'
   return 'bg-[var(--color-surface-3)]'
 }
 

@@ -80,7 +80,7 @@ export default async function CabangsPage() {
         <div className="card">
           <div className="card-body">
             <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">Cabangs aktif</p>
-            <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-emerald-500">{active}</p>
+            <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-[var(--color-verdigris-500)]">{active}</p>
           </div>
         </div>
         <div className="card">

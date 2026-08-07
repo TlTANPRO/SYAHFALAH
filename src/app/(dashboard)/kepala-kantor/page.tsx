@@ -147,7 +147,7 @@ export default function KepalaKantorDashboard() {
                   </div>
 
                   <div className="flex items-baseline gap-2">
-                    <p className={`text-3xl font-heading font-bold tabular-nums ${accent === 'success' ? 'text-emerald-500' : accent === 'info' ? 'text-sky-500' : accent === 'warning' ? 'text-amber-500' : 'text-rose-500'}`}>{progress.toFixed(0)}%</p>
+                    <p className={`text-3xl font-heading font-bold tabular-nums ${accent === 'success' ? 'text-[var(--color-verdigris-500)]' : accent === 'info' ? 'text-[var(--color-info)]' : accent === 'warning' ? 'text-[var(--color-warning)]' : 'text-[var(--color-danger)]'}`}>{progress.toFixed(0)}%</p>
                     <p className="text-xs text-[var(--color-text-tertiary)]">{div.kpi_count} KPI</p>
                   </div>
 
@@ -204,19 +204,19 @@ export default function KepalaKantorDashboard() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-center">
                     <div>
-                      <p className="text-2xl font-heading font-bold tabular-nums text-emerald-500">{t.completed_count}</p>
+                      <p className="text-2xl font-heading font-bold tabular-nums text-[var(--color-verdigris-500)]">{t.completed_count}</p>
                       <p className="text-xs text-[var(--color-text-tertiary)]">Selesai</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-heading font-bold tabular-nums text-sky-500">{t.in_progress_count}</p>
+                      <p className="text-2xl font-heading font-bold tabular-nums text-[var(--color-info)]">{t.in_progress_count}</p>
                       <p className="text-xs text-[var(--color-text-tertiary)]">Berjalan</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-heading font-bold tabular-nums text-amber-500">{t.pending_count}</p>
+                      <p className="text-2xl font-heading font-bold tabular-nums text-[var(--color-warning)]">{t.pending_count}</p>
                       <p className="text-xs text-[var(--color-text-tertiary)]">Tertunda</p>
                     </div>
                     <div>
-                      <p className={`text-2xl font-heading font-bold tabular-nums ${t.overdue_count > 0 ? 'text-rose-500' : 'text-[var(--color-text-tertiary)]'}`}>{t.overdue_count}</p>
+                      <p className={`text-2xl font-heading font-bold tabular-nums ${t.overdue_count > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-tertiary)]'}`}>{t.overdue_count}</p>
                       <p className="text-xs text-[var(--color-text-tertiary)]">Lewat tempo</p>
                     </div>
                   </div>

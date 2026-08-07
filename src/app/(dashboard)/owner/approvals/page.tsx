@@ -120,19 +120,19 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
           <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">Total</p>
           <p className="mt-2 text-3xl font-heading font-bold tabular-nums">{approvals.length}</p>
         </div></div>
-        <div className="card bg-amber-500/10"><div className="card-body">
+        <div className="card bg-[var(--color-warning)]/10"><div className="card-body">
           <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">Pending</p>
-          <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-amber-500">{pending.length}</p>
+          <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-[var(--color-warning)]">{pending.length}</p>
         </div></div>
-        <div className="card bg-emerald-500/10"><div className="card-body">
+        <div className="card bg-[var(--color-verdigris-500)]/10"><div className="card-body">
           <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">Disetujui</p>
-          <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-emerald-500">
+          <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-[var(--color-verdigris-500)]">
             {approvals.filter(a => a.status === 'approved').length}
           </p>
         </div></div>
-        <div className="card bg-rose-500/10"><div className="card-body">
+        <div className="card bg-[var(--color-danger)]/10"><div className="card-body">
           <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">Ditolak</p>
-          <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-rose-500">
+          <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-[var(--color-danger)]">
             {approvals.filter(a => a.status === 'rejected').length}
           </p>
         </div></div>
@@ -220,8 +220,8 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
               {decided.map(a => (
                 <li key={a.id} className="flex items-start gap-3 px-4 py-3">
                   <div className={`mt-1 h-6 w-6 inline-flex items-center justify-center rounded-full flex-shrink-0 ${
-                    a.status === 'approved' ? 'bg-emerald-500/15 text-emerald-500'
-                      : a.status === 'rejected' ? 'bg-rose-500/15 text-rose-500'
+                    a.status === 'approved' ? 'bg-[var(--color-verdigris-500)]/15 text-[var(--color-verdigris-500)]'
+                      : a.status === 'rejected' ? 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'
                       : 'bg-[var(--color-info)]/15 text-[var(--color-info)]'
                   }`}>
                     {a.status === 'approved' ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}

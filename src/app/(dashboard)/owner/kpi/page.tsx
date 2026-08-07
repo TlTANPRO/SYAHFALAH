@@ -79,22 +79,22 @@ export default async function Page() {
             <p className="mt-2 text-3xl font-heading font-bold tabular-nums">{total}</p>
           </div>
         </div>
-        <div className="card bg-emerald-500/10">
+        <div className="card bg-[var(--color-verdigris-500)]/10">
           <div className="card-body">
             <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">Tercapai</p>
-            <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-emerald-500">{achieved}</p>
+            <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-[var(--color-verdigris-500)]">{achieved}</p>
           </div>
         </div>
-        <div className="card bg-sky-500/10">
+        <div className="card bg-[var(--color-info)]/10">
           <div className="card-body">
             <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">On track</p>
-            <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-sky-500">{onTrack}</p>
+            <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-[var(--color-info)]">{onTrack}</p>
           </div>
         </div>
-        <div className="card bg-amber-500/10">
+        <div className="card bg-[var(--color-warning)]/10">
           <div className="card-body">
             <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">Perlu perhatian</p>
-            <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-amber-500">{atRisk}</p>
+            <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-[var(--color-warning)]">{atRisk}</p>
           </div>
         </div>
       </div>

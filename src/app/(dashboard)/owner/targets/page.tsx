@@ -152,32 +152,32 @@ export default async function TargetCascadePage({ searchParams }: PageProps) {
             </p>
           </div>
         </div>
-        <div className="card bg-emerald-500/10">
+        <div className="card bg-[var(--color-verdigris-500)]/10">
           <div className="card-body">
             <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">
               Cascade siap
             </p>
-            <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-emerald-500">
+            <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-[var(--color-verdigris-500)]">
               {summary.cascade_setup_count}
             </p>
           </div>
         </div>
-        <div className="card bg-sky-500/10">
+        <div className="card bg-[var(--color-info)]/10">
           <div className="card-body">
             <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">
               Target rows
             </p>
-            <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-sky-500">
+            <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-[var(--color-info)]">
               {summary.target_rows}
             </p>
           </div>
         </div>
-        <div className="card bg-amber-500/10">
+        <div className="card bg-[var(--color-warning)]/10">
           <div className="card-body">
             <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">
               Auto-calculate
             </p>
-            <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-amber-500">
+            <p className="mt-2 text-3xl font-heading font-bold tabular-nums text-[var(--color-warning)]">
               {summary.auto_calc_targets}
             </p>
           </div>
