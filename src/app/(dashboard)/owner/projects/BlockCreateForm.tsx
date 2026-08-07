@@ -59,34 +59,34 @@ export function BlockCreateForm({ projects }: { projects: Project[] }) {
         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <label htmlFor="block-project" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Project</label>
-            <select id="block-project" name="project_id" value={form.project_id} onChange={(e) => set('project_id', e.target.value)}
+            <select id="block-project" name="project_id" autoComplete="off" value={form.project_id} onChange={(e) => set('project_id', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20">
               {projects.map(p => <option key={p.id} value={p.id}>{p.code ?? p.id.slice(0,8)} — {p.name}</option>)}
             </select>
           </div>
           <div>
             <label htmlFor="block-name" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Name</label>
-            <input id="block-name" name="name" type="text" value={form.name} onChange={(e) => set('name', e.target.value)} required
+            <input id="block-name" name="name" autoComplete="off" type="text" value={form.name} onChange={(e) => set('name', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="block-code" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Code (opsional)</label>
-            <input id="block-code" name="code" type="text" value={form.code} onChange={(e) => set('code', e.target.value)}
+            <input id="block-code" name="code" autoComplete="off" type="text" value={form.code} onChange={(e) => set('code', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="block-total-units" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Total units</label>
-            <input id="block-total-units" name="total_units" type="number" min="0" value={form.total_units} onChange={(e) => set('total_units', e.target.value)}
+            <input id="block-total-units" name="total_units" autoComplete="off" type="number" min="0" value={form.total_units} onChange={(e) => set('total_units', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="block-sort-order" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Sort order</label>
-            <input id="block-sort-order" name="sort_order" type="number" value={form.sort_order} onChange={(e) => set('sort_order', e.target.value)}
+            <input id="block-sort-order" name="sort_order" autoComplete="off" type="number" value={form.sort_order} onChange={(e) => set('sort_order', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-3">
             <label htmlFor="block-description" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Description</label>
-            <input id="block-description" name="description" type="text" value={form.description} onChange={(e) => set('description', e.target.value)}
+            <input id="block-description" name="description" autoComplete="off" type="text" value={form.description} onChange={(e) => set('description', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-3 flex items-center gap-3">

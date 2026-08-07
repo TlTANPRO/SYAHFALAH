@@ -55,34 +55,34 @@ export function TicketCreateForm() {
         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="md:col-span-2">
             <label htmlFor="ticket-title" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Title *</label>
-            <input id="ticket-title" name="title" type="text" value={form.title} onChange={(e) => set('title', e.target.value)} required
+            <input id="ticket-title" name="title" type="text" autoComplete="off" value={form.title} onChange={(e) => set('title', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="ticket-priority" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Priority</label>
-            <select id="ticket-priority" name="priority" value={form.priority} onChange={(e) => set('priority', e.target.value)}
+            <select id="ticket-priority" name="priority" autoComplete="off" value={form.priority} onChange={(e) => set('priority', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20">
               {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
           <div className="md:col-span-2">
             <label htmlFor="ticket-description" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Description</label>
-            <input id="ticket-description" name="description" type="text" value={form.description} onChange={(e) => set('description', e.target.value)}
+            <input id="ticket-description" name="description" type="text" autoComplete="off" value={form.description} onChange={(e) => set('description', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="ticket-category" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Category</label>
-            <input id="ticket-category" name="category" type="text" value={form.category} onChange={(e) => set('category', e.target.value)} placeholder="plumbing/electrical/etc"
+            <input id="ticket-category" name="category" type="text" autoComplete="off" value={form.category} onChange={(e) => set('category', e.target.value)} placeholder="plumbing/electrical/etc"
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="ticket-customer-id" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Customer ID (UUID, opsional)</label>
-            <input id="ticket-customer-id" name="customer_id" type="text" value={form.customer_id} onChange={(e) => set('customer_id', e.target.value)}
+            <input id="ticket-customer-id" name="customer_id" type="text" autoComplete="off" value={form.customer_id} onChange={(e) => set('customer_id', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-xs font-mono focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="ticket-house-unit-id" className="block text-xs text-[var(--color-text-tertiary)] mb-1">House Unit ID (UUID, opsional)</label>
-            <input id="ticket-house-unit-id" name="house_unit_id" type="text" value={form.house_unit_id} onChange={(e) => set('house_unit_id', e.target.value)}
+            <input id="ticket-house-unit-id" name="house_unit_id" type="text" autoComplete="off" value={form.house_unit_id} onChange={(e) => set('house_unit_id', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-xs font-mono focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-3 flex items-center gap-3">

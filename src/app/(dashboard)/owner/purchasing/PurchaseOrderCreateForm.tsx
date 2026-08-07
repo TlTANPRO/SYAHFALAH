@@ -51,27 +51,27 @@ export function PurchaseOrderCreateForm() {
         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <label htmlFor="po-supplier" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Supplier (UUID) *</label>
-            <input id="po-supplier" name="supplier_id" type="text" value={form.supplier_id} onChange={(e) => set('supplier_id', e.target.value)} required
+            <input id="po-supplier" name="supplier_id" autoComplete="off" type="text" value={form.supplier_id} onChange={(e) => set('supplier_id', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-xs font-mono focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="po-request" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Request ID (UUID, opsional)</label>
-            <input id="po-request" name="request_id" type="text" value={form.request_id} onChange={(e) => set('request_id', e.target.value)}
+            <input id="po-request" name="request_id" autoComplete="off" type="text" value={form.request_id} onChange={(e) => set('request_id', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-xs font-mono focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="po-total" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Total (IDR) *</label>
-            <input id="po-total" name="total_rupiah" type="number" min="0" value={form.total_rupiah} onChange={(e) => set('total_rupiah', e.target.value)} required
+            <input id="po-total" name="total_rupiah" autoComplete="off" type="number" min="0" value={form.total_rupiah} onChange={(e) => set('total_rupiah', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="po-order-date" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Order date</label>
-            <input id="po-order-date" name="order_date" type="date" value={form.order_date} onChange={(e) => set('order_date', e.target.value)}
+            <input id="po-order-date" name="order_date" autoComplete="off" type="date" value={form.order_date} onChange={(e) => set('order_date', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="po-expected-date" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Expected delivery</label>
-            <input id="po-expected-date" name="expected_date" type="date" value={form.expected_date} onChange={(e) => set('expected_date', e.target.value)}
+            <input id="po-expected-date" name="expected_date" autoComplete="off" type="date" value={form.expected_date} onChange={(e) => set('expected_date', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-3 flex items-center gap-3">

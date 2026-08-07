@@ -96,7 +96,7 @@ export function AuditLogClient({ initialRows, initialTotal, knownActions, knownT
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-tertiary)] pointer-events-none" aria-hidden="true" />
           <input
             id="audit-search"
-            name="q"
+            name="q" autoComplete="off"
             type="text"
             value={q}
             onChange={(e) => { setQ(e.target.value); setPage(1) }}
@@ -297,6 +297,7 @@ function FilterSelect({ label, value, onChange, options }: FilterSelectProps) {
       <select
         id={fieldId}
         name={`audit_${label.toLowerCase().replace(/\s+/g, '_')}`}
+        autoComplete="off"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="h-11 pl-10 pr-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20"
@@ -319,7 +320,11 @@ interface UserSelectProps {
 function UserSelect({ value, onChange, users }: UserSelectProps) {
   return (
     <div className="relative">
+      <label htmlFor="audit-filter-user" className="sr-only">Filter user</label>
       <select
+        id="audit-filter-user"
+        name="audit_user"
+        autoComplete="off"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-label="Filter user"

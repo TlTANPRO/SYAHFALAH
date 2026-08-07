@@ -68,39 +68,39 @@ export function ProjectCreateForm({ clusters }: { clusters: Cluster[] }) {
         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <label htmlFor="proj-cluster" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Cluster</label>
-            <select id="proj-cluster" name="cluster_id" value={form.cluster_id} onChange={(e) => set('cluster_id', e.target.value)}
+            <select id="proj-cluster" name="cluster_id" autoComplete="off" value={form.cluster_id} onChange={(e) => set('cluster_id', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20">
               {clusters.map(c => <option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}
             </select>
           </div>
           <div>
             <label htmlFor="proj-code" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Code (auto-generated jika kosong)</label>
-            <input id="proj-code" name="code" type="text" value={form.code} onChange={(e) => set('code', e.target.value)} placeholder="PRJ-BSA-01"
+            <input id="proj-code" name="code" autoComplete="off" type="text" value={form.code} onChange={(e) => set('code', e.target.value)} placeholder="PRJ-BSA-01"
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="proj-name" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Name</label>
-            <input id="proj-name" name="name" type="text" value={form.name} onChange={(e) => set('name', e.target.value)} required
+            <input id="proj-name" name="name" autoComplete="off" type="text" value={form.name} onChange={(e) => set('name', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="proj-total-units" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Total units</label>
-            <input id="proj-total-units" name="total_units" type="number" min="1" value={form.total_units} onChange={(e) => set('total_units', e.target.value)}
+            <input id="proj-total-units" name="total_units" autoComplete="off" type="number" min="1" value={form.total_units} onChange={(e) => set('total_units', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="proj-start-date" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Start date</label>
-            <input id="proj-start-date" name="start_date" type="date" value={form.start_date} onChange={(e) => set('start_date', e.target.value)} required
+            <input id="proj-start-date" name="start_date" autoComplete="off" type="date" value={form.start_date} onChange={(e) => set('start_date', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="proj-target-completion" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Target completion</label>
-            <input id="proj-target-completion" name="target_completion_date" type="date" value={form.target_completion_date} onChange={(e) => set('target_completion_date', e.target.value)}
+            <input id="proj-target-completion" name="target_completion_date" autoComplete="off" type="date" value={form.target_completion_date} onChange={(e) => set('target_completion_date', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="proj-budget" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Budget (IDR)</label>
-            <input id="proj-budget" name="budget_rupiah" type="number" min="0" value={form.budget_rupiah} onChange={(e) => set('budget_rupiah', e.target.value)}
+            <input id="proj-budget" name="budget_rupiah" autoComplete="off" type="number" min="0" value={form.budget_rupiah} onChange={(e) => set('budget_rupiah', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-3 flex items-center gap-3">

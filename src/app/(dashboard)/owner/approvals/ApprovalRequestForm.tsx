@@ -70,7 +70,9 @@ export function ApprovalRequestForm() {
           <label htmlFor="approval-title" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Title</label>
           <input
             id="approval-title"
+            name="title"
             type="text"
+            autoComplete="off"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Cuti 3 hari, Pembelian server, dll."
@@ -81,6 +83,8 @@ export function ApprovalRequestForm() {
           <label htmlFor="approval-kind" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Jenis</label>
           <select
             id="approval-kind"
+            name="kind"
+            autoComplete="off"
             value={kind}
             onChange={(e) => setKind(e.target.value as any)}
             className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20"
@@ -93,6 +97,8 @@ export function ApprovalRequestForm() {
         <label htmlFor="approval-desc" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Deskripsi (opsional)</label>
         <textarea
           id="approval-desc"
+          name="description"
+          autoComplete="off"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
@@ -104,7 +110,9 @@ export function ApprovalRequestForm() {
           <label htmlFor="approval-amount" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Nominal (IDR, opsional)</label>
           <input
             id="approval-amount"
+            name="amount"
             type="number"
+            autoComplete="off"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="5000000"

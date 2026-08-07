@@ -63,26 +63,26 @@ export function CustomerCreateForm() {
         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
             <label htmlFor="cust-name" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Nama</label>
-            <input id="cust-name" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
+            <input id="cust-name" name="full_name" type="text" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="cust-phone" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Phone</label>
-            <input id="cust-phone" type="text" value={phone} onChange={(e) => setPhone(e.target.value)}
+            <input id="cust-phone" name="phone" type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="cust-email" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Email</label>
-            <input id="cust-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+            <input id="cust-email" name="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="cust-ktp" className="block text-xs text-[var(--color-text-tertiary)] mb-1">KTP</label>
-            <input id="cust-ktp" type="text" value={ktpNumber} onChange={(e) => setKtpNumber(e.target.value)}
+            <input id="cust-ktp" name="ktp_number" type="text" autoComplete="off" value={ktpNumber} onChange={(e) => setKtpNumber(e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-4 flex items-center gap-3">
-            <button type="submit" disabled={busy}
+            <button type="submit" disabled={busy} aria-label="Buat customer baru"
               className="inline-flex items-center gap-2 h-10 px-4 rounded-md bg-[var(--color-brand-500)] text-white text-sm font-medium hover:bg-[var(--color-brand-600)] transition-colors disabled:opacity-50">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               Submit

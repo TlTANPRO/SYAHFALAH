@@ -220,7 +220,7 @@ export function CopilotChat() {
           <label htmlFor="copilot-question" className="sr-only">
             Pertanyaan untuk AI Copilot
           </label>
-          <input id="copilot-question" name="question" type="text" value={question} onChange={(e) => setQuestion(e.target.value)}
+          <input id="copilot-question" name="question" autoComplete="off" type="text" value={question} onChange={(e) => setQuestion(e.target.value)}
             disabled={busy}
             placeholder="Ketik pertanyaan…"
             aria-label="Pertanyaan untuk AI Copilot"

@@ -116,7 +116,7 @@ export function KpiListClient({ divisions, periods, initialData, total: initialT
           <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-tertiary)] pointer-events-none" aria-hidden="true" />
           <select
             id="kpi-division-filter"
-            name="division"
+            name="division" autoComplete="off"
             value={division}
             onChange={e => { setDivision(e.target.value); setPage(1) }}
             aria-label="Filter divisi"
@@ -129,7 +129,7 @@ export function KpiListClient({ divisions, periods, initialData, total: initialT
         <div className="relative">
           <select
             id="kpi-period-filter"
-            name="period"
+            name="period" autoComplete="off"
             value={period}
             onChange={e => { setPeriod(e.target.value); setPage(1) }}
             aria-label="Filter periode"

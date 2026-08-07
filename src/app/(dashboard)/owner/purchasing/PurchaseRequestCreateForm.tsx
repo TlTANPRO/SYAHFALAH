@@ -54,22 +54,22 @@ export function PurchaseRequestCreateForm() {
         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="md:col-span-2">
             <label htmlFor="pr-title" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Title *</label>
-            <input id="pr-title" name="title" type="text" value={form.title} onChange={(e) => set('title', e.target.value)} required
+            <input id="pr-title" name="title" autoComplete="off" type="text" value={form.title} onChange={(e) => set('title', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="pr-requester" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Requester (UUID) *</label>
-            <input id="pr-requester" name="requester_id" type="text" value={form.requester_id} onChange={(e) => set('requester_id', e.target.value)} required
+            <input id="pr-requester" name="requester_id" autoComplete="off" type="text" value={form.requester_id} onChange={(e) => set('requester_id', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-xs font-mono focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-2">
             <label htmlFor="pr-description" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Description</label>
-            <input id="pr-description" name="description" type="text" value={form.description} onChange={(e) => set('description', e.target.value)}
+            <input id="pr-description" name="description" autoComplete="off" type="text" value={form.description} onChange={(e) => set('description', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor="pr-needed-by" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Needed by</label>
-            <input id="pr-needed-by" name="needed_by" type="date" value={form.needed_by} onChange={(e) => set('needed_by', e.target.value)}
+            <input id="pr-needed-by" name="needed_by" autoComplete="off" type="date" value={form.needed_by} onChange={(e) => set('needed_by', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-3 flex items-center gap-3">

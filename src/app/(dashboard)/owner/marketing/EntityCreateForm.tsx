@@ -115,29 +115,29 @@ export function EntityCreateForm({ entity }: Props) {
         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
             <label htmlFor={`${idPrefix}-primary`} className="block text-xs text-[var(--color-text-tertiary)] mb-1">{req.label} (UUID)</label>
-            <input id={`${idPrefix}-primary`} name="primary" type="text" value={primary} onChange={(e) => setPrimary(e.target.value)} required
+            <input id={`${idPrefix}-primary`} name="primary" autoComplete="off" type="text" value={primary} onChange={(e) => setPrimary(e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-xs font-mono focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor={`${idPrefix}-secondary`} className="block text-xs text-[var(--color-text-tertiary)] mb-1">Customer ID (UUID, opsional)</label>
-            <input id={`${idPrefix}-secondary`} name="secondary" type="text" value={secondary} onChange={(e) => setSecondary(e.target.value)}
+            <input id={`${idPrefix}-secondary`} name="secondary" autoComplete="off" type="text" value={secondary} onChange={(e) => setSecondary(e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-xs font-mono focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
             <label htmlFor={`${idPrefix}-status`} className="block text-xs text-[var(--color-text-tertiary)] mb-1">Status</label>
-            <select id={`${idPrefix}-status`} name="status" value={status} onChange={(e) => setStatus(e.target.value)}
+            <select id={`${idPrefix}-status`} name="status" autoComplete="off" value={status} onChange={(e) => setStatus(e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20">
               {statuses.map(s => <option key={s.v} value={s.v}>{s.l}</option>)}
             </select>
           </div>
           <div>
             <label htmlFor={`${idPrefix}-date`} className="block text-xs text-[var(--color-text-tertiary)] mb-1">Tanggal</label>
-            <input id={`${idPrefix}-date`} name="date" type="date" value={date} onChange={(e) => setDate(e.target.value)}
+            <input id={`${idPrefix}-date`} name="date" autoComplete="off" type="date" value={date} onChange={(e) => setDate(e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-4">
             <label htmlFor={`${idPrefix}-notes`} className="block text-xs text-[var(--color-text-tertiary)] mb-1">Notes</label>
-            <input id={`${idPrefix}-notes`} name="notes" type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
+            <input id={`${idPrefix}-notes`} name="notes" autoComplete="off" type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-4 flex items-center gap-3">

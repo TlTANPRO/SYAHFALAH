@@ -104,7 +104,7 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
           <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-tertiary)] pointer-events-none" aria-hidden="true" />
           <select
             id="user-role-filter"
-            name="role"
+            name="role" autoComplete="off"
             value={role}
             onChange={e => { setRole(e.target.value); setPage(1) }}
             aria-label="Filter role"
@@ -120,7 +120,7 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
         <div className="relative">
           <select
             id="user-division-filter"
-            name="division"
+            name="division" autoComplete="off"
             value={division}
             onChange={e => { setDivision(e.target.value); setPage(1) }}
             aria-label="Filter divisi"
