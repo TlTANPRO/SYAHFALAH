@@ -33,6 +33,12 @@ export async function GET(
     if (payload.userId !== id && payload.role !== 'owner') {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
     }
+    // Validate UUID shape before hitting the DB so we return 400 (not 500)
+    // on malformed input.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!UUID_RE.test(id)) {
+      return NextResponse.json({ error: 'invalid id: not a valid uuid' }, { status: 400 })
+    }
 
     const serviceClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
