@@ -228,8 +228,25 @@ SELECT
           ('cascade_level','parent_kpi_id'))
         OR (table_name = 'leads' AND column_name = 'score')
       )
-  ) AS new_columns_present
-  || '/' || 12 AS status;  -- total expected new columns = 12
+  )::text AS new_columns_present,
+  concat(
+    (
+      SELECT COUNT(*)::text FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND (
+          (table_name = 'users' AND column_name IN
+            ('reporting_to_user_id','hire_date','skills','photo_url','date_of_birth'))
+          OR (table_name = 'divisions' AND column_name = 'level')
+          OR (table_name = 'kpi_targets' AND column_name IN
+            ('parent_target_id','cascade_period','auto_calculate'))
+          OR (table_name = 'kpi_definitions' AND column_name IN
+            ('cascade_level','parent_kpi_id'))
+          OR (table_name = 'leads' AND column_name = 'score')
+        )
+    ),
+    '/',
+    '12'
+  ) AS status;  -- total expected new columns = 12
 
 -- ===========================================================================
 -- Post-run action: paste result grid back to user for review.
