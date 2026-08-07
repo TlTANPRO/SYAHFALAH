@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { Search, Filter, X, ChevronRight, Target } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Pagination } from '@/components/ui/Pagination'
+import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
 import { formatValue } from '@/lib/format'
 
 export interface KpiRow {
@@ -138,6 +139,22 @@ export function KpiListClient({ divisions, periods, initialData, total: initialT
             {periods.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
+        <ExportCsvButton
+          rows={rows.map(r => ({
+            Code: r.code ?? '',
+            Name: r.name ?? '',
+            Level: r.level,
+            Division: r.division_id ? divName.get(r.division_id) ?? '' : '',
+            Period: r.period ?? '',
+            Progress: r.progress != null ? `${r.progress.toFixed(0)}%` : '',
+            Target: r.baseline_target_value ?? '',
+            Actual: r.actual_value ?? '',
+            Unit: r.unit ?? '',
+            Status: r.status ?? '',
+          }))}
+          prefix="kpi"
+          label="Export CSV"
+        />
       </div>
 
       <div className="text-xs text-[var(--color-text-tertiary)]" aria-live="polite">
