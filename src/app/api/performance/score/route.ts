@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
 
     // Pull all 13 org members + recent operational rows
     const [users, tasks, att] = await Promise.all([
-      sb.from('users').select('id, full_name, division_id, divisions(name)').eq('is_active', true).order('full_name'),
+      sb.from('users').select('id, full_name, division_id, divisions!users_division_id_fkey(name)').eq('is_active', true).order('full_name'),
       sb.from('tasks').select('user_id, is_overdue, status').limit(5000),
       sb.from('attendance_logs').select('user_id, status').gte('log_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)),
     ])
