@@ -1,43 +1,85 @@
 // app/(dashboard)/admin/page.tsx
-// Admin hub — only Owner role can access. Lists the management pages
-// they have: User Management, Divisions, SOW Editor.
+// Admin hub — only Owner role can access. Curated management pages
+// with a single guardrail "Akses Owner" badge instead of "Hanya Owner"
+// sentence so the role is visible at a glance.
 
 import Link from 'next/link'
-import { ChevronRight, Users, Building2, FileText } from 'lucide-react'
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import {
+  Users,
+  Building2,
+  FileText,
+  ArrowRight,
+  Shield,
+} from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
-const links = [
-  { href: '/admin/users',     icon: Users,     title: 'User Management', desc: 'Kelola akun, role, dan PIN' },
-  { href: '/admin/divisions', icon: Building2, title: 'Divisions',       desc: 'Kelola divisi & PIC' },
-  { href: '/admin/sow',       icon: FileText,  title: 'SOW Editor',      desc: 'Edit Scope of Work' },
-]
+const tiles = [
+  { href: '/admin/users', icon: Users, title: 'User management', desc: 'Kelola akun, role, dan PIN' },
+  { href: '/admin/divisions', icon: Building2, title: 'Divisions', desc: 'Kelola divisi & PIC' },
+  { href: '/admin/sow', icon: FileText, title: 'SOW editor', desc: 'Edit Scope of Work' },
+] as const
 
 export default function AdminHubPage() {
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="space-y-8">
       <Breadcrumbs crumbs={[{ label: 'Admin' }]} />
-      <div>
-        <h1 className="text-2xl font-heading font-bold">Admin</h1>
-        <p className="text-[var(--color-text-secondary)]">Hanya Owner. Pilih menu untuk mengelola</p>
-      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {links.map((l) => (
-          <Link key={l.href} href={l.href}>
-            <Card className="h-full hover:border-primary/40 hover:bg-[var(--color-surface-2)]/30 transition-colors">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <l.icon className="h-6 w-6 text-primary" />
-                  <ChevronRight className="h-4 w-4 text-[var(--color-text-secondary)]" />
+      <section className="hero">
+        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-2">
+            <p className="eyebrow eyebrow-aurum">
+              <Shield className="inline h-3 w-3 mr-1" aria-hidden /> Akses Owner
+            </p>
+            <h1 className="display-lg">Admin</h1>
+            <p className="text-sm text-[var(--color-text-secondary)] max-w-md">
+              Halaman pengaturan. Perubahan di sini akan langsung berlaku
+              untuk seluruh organisasi.
+            </p>
+          </div>
+          <span className="pill" data-variant="aurum">
+            <span
+              className="h-1.5 w-1.5 rounded-full bg-[var(--color-aurum-500)]"
+              aria-hidden
+            />
+            Mode Owner
+          </span>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <p className="eyebrow">Pengaturan</p>
+          <h2 className="display-sm mt-1">Pilih menu</h2>
+        </div>
+        <ul className="hub-grid stagger-item list-none p-0" role="list">
+          {tiles.map(({ href, icon: Icon, title, desc }) => (
+            <li key={href}>
+              <Link
+                href={href}
+                className="hub-card group flex items-start gap-3"
+                aria-label={`${title} — ${desc}`}
+              >
+                <Icon
+                  className="h-4 w-4 text-[var(--color-text-tertiary)] mt-0.5 transition-colors group-hover:text-[var(--color-aurum-500)]"
+                  aria-hidden
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                    {title}
+                  </p>
+                  <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+                    {desc}
+                  </p>
                 </div>
-                <CardTitle className="mt-3">{l.title}</CardTitle>
-                <CardDescription>{l.desc}</CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
-        ))}
-      </div>
+                <ArrowRight
+                  className="h-3.5 w-3.5 text-[var(--color-text-tertiary)] mt-1 transition-transform group-hover:translate-x-0.5"
+                  aria-hidden
+                />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   )
 }

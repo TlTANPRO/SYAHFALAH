@@ -1,8 +1,6 @@
 // app/owner/page.tsx
-// Halaman ringkasan untuk Owner. Menampilkan progres cluster, pipeline
-// leads, konstruksi, berkas konsumen SP3K, dan tim — semuanya dibaca
-// dari Supabase. Kalau tabel belum ada (migration 011 belum jalan),
-// tampil pesan ringkas, bukan placeholder kosong.
+// Owner executive overview. Hero + 4 KPI ribbon + 4 sections.
+// All data fetched from Supabase; safe fallbacks when tables aren't ready.
 
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
@@ -13,6 +11,8 @@ import {
   DollarSign,
   Hammer,
   Home,
+  TrendingUp,
+  Sparkles,
 } from 'lucide-react'
 import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
 import { KpiTrendChart } from '@/components/charts/KpiTrendChart'
@@ -38,7 +38,6 @@ async function loadData() {
     }
   }
 
-  // ambil KPI trend: avg progress per divisi per bulan
   const trendQuery = sb
     .from('kpis')
     .select('division_id, period_start, progress')
@@ -56,19 +55,6 @@ async function loadData() {
     safe<any[]>(sb.from('team_personal_kpis').select('user_id, name, position, division_id, division_name, kpi_count, avg_progress, achieved_count, on_track_count, at_risk_count, off_track_count').order('avg_progress', { ascending: false }).limit(12)),
     safe<any[]>(sb.from('divisions').select('id, name').eq('is_active', true).order('sort_order')),
   ])
-  // group kpiTrend by division_id + period_start
-  const trendMap = new Map<string, { sum: number; count: number }>()
-  for (const r of kpiTrend as any[]) {
-    if (r.progress == null) continue
-    const ps = r.period_start
-    if (typeof ps !== 'string') continue
-    const period = ps.slice(0, 7) // YYYY-MM
-    const key = `${r.division_id}::${period}`
-    const cur = trendMap.get(key) ?? { sum: 0, count: 0 }
-    cur.sum += r.progress
-    cur.count += 1
-    trendMap.set(key, cur)
-  }
 
   return { clusters, leads, projects, consumerCases, teamKPIs, divisions: divs, kpiTrend, dbReady: true }
 }
@@ -78,6 +64,16 @@ function shortNumber(n: number): string {
   if (n >= 1e6) return `${(n / 1e6).toFixed(1)}jt`
   if (n >= 1e3) return `${(n / 1e3).toFixed(0)}rb`
   return String(n)
+}
+
+// NumericOrDash — clean replacement for repeated ternary
+function NumericOrDash({ value, format }: { value: number; format?: 'currency' | 'percent' }) {
+  if (!value || value === 0) {
+    return <span className="text-[var(--color-text-muted)]">—</span>
+  }
+  if (format === 'currency') return <>{`Rp ${shortNumber(value)}`}</>
+  if (format === 'percent') return <>{`${value.toFixed(1)}%`}</>
+  return <>{value}</>
 }
 
 export default async function Page() {
@@ -106,7 +102,6 @@ export default async function Page() {
     cur.count += 1
     m.set(period, cur)
   }
-  // collect all periods
   const periodSet = new Set<string>()
   for (const r of kpiTrend as any[]) {
     if (r.progress == null) continue
@@ -115,7 +110,6 @@ export default async function Page() {
     periodSet.add(ps.slice(0, 7))
   }
   const periods = Array.from(periodSet).sort()
-  // pick top 5 divisions by data density
   const divDataCount = new Map<string, number>()
   for (const [divId, m] of trendByDiv) {
     let total = 0
@@ -125,15 +119,13 @@ export default async function Page() {
   const topDivs = Array.from(divDataCount.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
-    .map(([id]) => id)
+    .map(([id]) => id ?? '')
+    .filter(Boolean)
   const divName = new Map((divisions as any[]).map(d => [d.id, d.name]))
-  const kpiTrendSeries = topDivs.map(id => {
-    const safe = id ?? ''
-    return {
-      code: `D${safe.slice(0, 4)}`,
-      name: divName.get(id) ?? safe.slice(0, 6),
-    }
-  })
+  const kpiTrendSeries = topDivs.map(id => ({
+    code: `D${id.slice(0, 4)}`,
+    name: divName.get(id) ?? id.slice(0, 6),
+  }))
   const kpiTrendData = periods.map(period => {
     const row: any = { label: period }
     for (const divId of topDivs) {
@@ -144,7 +136,7 @@ export default async function Page() {
     return row
   })
 
-  // Hitung metrik pipeline
+  // Pipeline metrics
   const leadsByStage = (leads as any[]).reduce((acc: any, l: any) => {
     acc[l.stage] = (acc[l.stage] || 0) + 1
     return acc
@@ -154,195 +146,255 @@ export default async function Page() {
   const closedCount = (leadsByStage.closed || 0) + (leadsByStage.closing || 0)
   const conversionRate = totalLeads > 0 ? (closedCount / totalLeads) * 100 : 0
 
-  // Hitung metrik konstruksi
+  // Construction metrics
   const totalUnits = (projects as any[]).reduce((s, p) => s + (p.total_units || 0), 0)
   const completedUnits = (projects as any[]).reduce((s, p) => s + (p.units_completed || 0), 0)
   const totalBudget = (projects as any[]).reduce((s, p) => s + (p.budget_rupiah || 0), 0)
   const totalSpent = (projects as any[]).reduce((s, p) => s + (p.spent_rupiah || 0), 0)
   const budgetVariance = totalBudget > 0 ? ((totalSpent - totalBudget) / totalBudget) * 100 : 0
 
-  // Hitung metrik cluster
+  // Cluster metrics
   const clusterUnits = (clusters as any[]).reduce((s, c) => s + (c.total_units || 0), 0)
   const clusterSold = (clusters as any[]).reduce((s, c) => s + (c.units_sold || 0), 0)
   const sellThrough = clusterUnits > 0 ? Math.round((clusterSold / clusterUnits) * 100) : 0
 
-  // Berkas konsumen
+  // Consumer cases
   const overdueConsumer = (consumerCases as any[]).filter((c: any) => c.is_overdue).length
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-      <Breadcrumbs crumbs={ [{ label: 'Executive Overview' }] } />
-        
-          <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-mono mb-1">
-            Ringkasan Owner
-          </p>
-          <h1 className="display-lg">Syahfalah</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            Makassar · {new Date().toLocaleDateString('id-ID', { dateStyle: 'long' })}
-          </p>
-        </div>
-        <div className="flex gap-6">
-          <div>
-            <p className="text-xs text-[var(--color-text-tertiary)]">Leads masuk</p>
-            <p className="font-heading text-2xl font-bold tabular-nums text-[var(--color-text-primary)]">
-              {totalLeads > 0 ? totalLeads : '—'}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-[var(--color-text-tertiary)]">Closing minggu ini</p>
-            <p className="font-heading text-2xl font-bold tabular-nums text-[var(--color-brand-500)]">
-              {closedCount > 0 ? closedCount : '—'}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-[var(--color-text-tertiary)]">Closing awal bulan</p>
-            <p className="font-heading text-2xl font-bold tabular-nums text-[var(--color-text-primary)]">
-              {conversionRate > 0 ? `${conversionRate.toFixed(1)}%` : '—'}
-            </p>
-          </div>
-        </div>
-      </div>
+  const today = new Date().toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
 
-      {/* 4 ringkasan utama */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="kpi-tile">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)]">Unit rumah</span>
-            <Building2 className="h-4 w-4 text-[var(--color-brand-500)]" />
+  return (
+    <div className="space-y-8">
+      <Breadcrumbs crumbs={[{ label: 'Executive overview' }]} />
+
+      {/* ==================== HERO ==================== */}
+      <section className="hero">
+        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="space-y-3">
+            <p className="eyebrow eyebrow-brand">
+              <Sparkles className="inline h-3 w-3 mr-1" aria-hidden />
+              Ringkasan Owner · {today}
+            </p>
+            <h1 className="display-xl">
+              Syahfalah<span className="aurum-text">.</span>
+            </h1>
+            <p className="text-sm text-[var(--color-text-secondary)] max-w-xl">
+              Makassar · Operasional harian tim, pipeline calon buyer,
+              konstruksi, dan berkas konsumen.
+            </p>
           </div>
-          <p className="font-heading text-3xl font-bold tabular-nums">{clusterUnits > 0 ? clusterUnits : '—'}</p>
-          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-            {clusterSold > 0 ? `${clusterSold} laku` : 'Belum ada'} · {clusterUnits > 0 ? `sell-through ${sellThrough}%` : '—'}
-          </p>
+          <div className="flex flex-wrap gap-2">
+            <span className="pill" data-variant="brand">
+              <span
+                className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-500)]"
+                aria-hidden
+              />
+              Live · realtime
+            </span>
+            <span className="pill" data-variant="aurum">
+              <TrendingUp className="h-3 w-3" aria-hidden />
+              {totalLeads > 0 ? `${totalLeads} leads aktif` : 'Menunggu data'}
+            </span>
+          </div>
         </div>
-        <div className="kpi-tile kpi-tile-info">
+      </section>
+
+      {/* ==================== KPI RIBBON (4 tiles) ==================== */}
+      <section
+        aria-label="Ringkasan utama"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-item"
+      >
+        <article className="kpi-tile">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)]">Proyek berjalan</span>
-            <Hammer className="h-4 w-4 text-[var(--color-info)]" />
+            <span className="eyebrow">Unit rumah</span>
+            <Building2 className="h-4 w-4 text-[var(--color-brand-500)]" aria-hidden />
           </div>
-          <p className="font-heading text-3xl font-bold tabular-nums">{projects.length > 0 ? projects.length : '—'}</p>
+          <p className="font-heading text-3xl font-bold numeric">
+            <NumericOrDash value={clusterUnits} />
+          </p>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+            {clusterSold > 0 ? `${clusterSold} laku` : 'Belum ada'}
+            {clusterUnits > 0 && ` · sell-through ${sellThrough}%`}
+          </p>
+        </article>
+
+        <article className="kpi-tile kpi-tile-verdigris">
+          <div className="flex items-center justify-between mb-2">
+            <span className="eyebrow">Proyek berjalan</span>
+            <Hammer className="h-4 w-4 text-[var(--color-verdigris-500)]" aria-hidden />
+          </div>
+          <p className="font-heading text-3xl font-bold numeric">
+            <NumericOrDash value={projects.length} />
+          </p>
           <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
             {projects.length > 0 ? `${completedUnits} unit selesai` : 'Belum ada'}
           </p>
-        </div>
-        <div className="kpi-tile kpi-tile-warning">
+        </article>
+
+        <article className="kpi-tile kpi-tile-aurum">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)]">Nilai pipeline</span>
-            <DollarSign className="h-4 w-4 text-[var(--color-warning)]" />
+            <span className="eyebrow">Nilai pipeline</span>
+            <DollarSign className="h-4 w-4 text-[var(--color-aurum-500)]" aria-hidden />
           </div>
-          <p className="font-heading text-3xl font-bold tabular-nums">
-            {totalLeadValue > 0 ? `Rp ${shortNumber(totalLeadValue)}` : '—'}
+          <p className="font-heading text-3xl font-bold numeric">
+            <NumericOrDash value={totalLeadValue} format="currency" />
           </p>
           <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
             {totalLeads > 0 ? `${totalLeads} calon buyer` : 'Belum ada leads'}
           </p>
-        </div>
-        <div className="kpi-tile kpi-tile-danger">
+        </article>
+
+        <article className="kpi-tile kpi-tile-danger">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)]">SP3K lewat tempo</span>
-            <Clock className="h-4 w-4 text-[var(--color-danger)]" />
+            <span className="eyebrow">SP3K lewat tempo</span>
+            <Clock className="h-4 w-4 text-[var(--color-danger)]" aria-hidden />
           </div>
-          <p className="font-heading text-3xl font-bold tabular-nums">{overdueConsumer}</p>
+          <p className="font-heading text-3xl font-bold numeric">
+            <NumericOrDash value={overdueConsumer} />
+          </p>
           <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
             dari {consumerCases.length} berkas
           </p>
-        </div>
-      </div>
+        </article>
+      </section>
 
-      {/* Section: Cluster */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="display-md">Performa cluster</h2>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            {clusters.length > 0
+      {/* ==================== CLUSTER ==================== */}
+      <section className="space-y-4">
+        <SectionHeader
+          eyebrow="Inventaris"
+          title="Performa cluster"
+          subtitle={
+            clusters.length > 0
               ? `${clusters.length} cluster aktif · ${clusterSold} dari ${clusterUnits} unit laku`
-              : 'Belum ada data cluster'}
-          </p>
-        </div>
-        <Link
+              : 'Belum ada data cluster'
+          }
           href="/admin/divisions"
-          className="text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] flex items-center gap-1"
-        >
-          Detail <ArrowUpRight className="h-3 w-3" />
-        </Link>
-      </div>
-      <ClusterGrid clusters={clusters} />
+          hrefLabel="Detail"
+        />
+        <ClusterGrid clusters={clusters} />
+      </section>
 
-      {/* Section: Pipeline */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="display-md">Pipeline calon buyer</h2>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            {totalLeads > 0
-              ? `${totalLeads} calon buyer aktif · Rp ${shortNumber(totalLeadValue)} nilai · ${conversionRate.toFixed(1)}% jadi closing`
-              : 'Belum ada leads'}
-          </p>
-        </div>
-      </div>
-      <PipelineFunnel leadsByStage={leadsByStage} totalLeads={totalLeads} leads={leads} />
+      {/* ==================== PIPELINE ==================== */}
+      <section className="space-y-4">
+        <SectionHeader
+          eyebrow="Pipeline"
+          title="Calon buyer"
+          subtitle={
+            totalLeads > 0
+              ? `${totalLeads} aktif · ${conversionRate.toFixed(1)}% jadi closing`
+              : 'Belum ada leads'
+          }
+        />
+        <PipelineFunnel leadsByStage={leadsByStage} totalLeads={totalLeads} leads={leads} />
+      </section>
 
-      {/* Section: Construction */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="display-md">Progress pembangunan</h2>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            {projects.length > 0
+      {/* ==================== CONSTRUCTION ==================== */}
+      <section className="space-y-4">
+        <SectionHeader
+          eyebrow="Konstruksi"
+          title="Progress pembangunan"
+          subtitle={
+            projects.length > 0
               ? `${projects.length} proyek · ${completedUnits}/${totalUnits} unit selesai`
-              : 'Belum ada data proyek'}
-          </p>
-        </div>
-      </div>
-      <ProjectTracker projects={projects} totalBudget={totalBudget} totalSpent={totalSpent} budgetVariance={budgetVariance} />
+              : 'Belum ada data proyek'
+          }
+        />
+        <ProjectTracker
+          projects={projects}
+          totalBudget={totalBudget}
+          totalSpent={totalSpent}
+          budgetVariance={budgetVariance}
+        />
+      </section>
 
-      {/* Section: SP3K */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="display-md">Berkas konsumen</h2>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            {consumerCases.length > 0
-              ? `${consumerCases.length} berkas berjalan · ${overdueConsumer} lewat tempo · di-handle Novita`
-              : 'Belum ada berkas konsumen'}
-          </p>
-        </div>
-      </div>
-      <ConsumerCasesTable cases={consumerCases} clusters={clusters} />
+      {/* ==================== SP3K ==================== */}
+      <section className="space-y-4">
+        <SectionHeader
+          eyebrow="Berkas konsumen"
+          title="SP3K & akad"
+          subtitle={
+            consumerCases.length > 0
+              ? `${consumerCases.length} berkas${overdueConsumer > 0 ? ` · ${overdueConsumer} lewat tempo` : ''}`
+              : 'Belum ada berkas konsumen'
+          }
+        />
+        <ConsumerCasesTable cases={consumerCases} clusters={clusters} />
+      </section>
 
-      {/* Section: Tren KPI 12 bulan */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="display-md">Performa tim</h2>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            {teamKPIs.length > 0
+      {/* ==================== TIM PERFORMANCE ==================== */}
+      <section className="space-y-4">
+        <SectionHeader
+          eyebrow="Tim"
+          title="Performa anggota"
+          subtitle={
+            teamKPIs.length > 0
               ? `${teamKPIs.length} anggota dengan KPI jalan`
-              : 'Belum ada data anggota'}
-          </p>
-        </div>
-        <Link
+              : 'Belum ada data anggota'
+          }
           href="/kepala-kantor/team"
-          className="text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] flex items-center gap-1"
-        >
-          Lihat semua <ArrowUpRight className="h-3 w-3" />
-        </Link>
-      </div>
-      <PersonalKpiTable members={teamKPIs} />
+          hrefLabel="Lihat semua"
+        />
+        <PersonalKpiTable members={teamKPIs} />
+      </section>
 
-      {/* Pesan ringkas kalau migration 011 belum jalan */}
+      {/* ==================== EMPTY STATE (when no data) ==================== */}
       {clusters.length === 0 && projects.length === 0 && (
-        <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-6 text-center">
-          <Home className="h-10 w-10 text-[var(--color-text-tertiary)] mx-auto mb-3" />
-          <h3 className="font-heading text-lg font-semibold mb-1">
-            Data cluster, leads, dan proyek belum aktif
-          </h3>
+        <section className="rounded-xl border border-dashed border-[var(--color-border-default)] p-8 text-center">
+          <Home
+            className="h-10 w-10 text-[var(--color-text-tertiary)] mx-auto mb-3"
+            aria-hidden
+          />
+          <h3 className="display-sm mb-1">Data cluster, leads, dan proyek belum aktif</h3>
           <p className="text-sm text-[var(--color-text-secondary)] max-w-md mx-auto mb-3">
-            Jalankan migration <code className="text-xs bg-[var(--color-surface-2)] px-1.5 py-0.5 rounded font-mono">011_clusters.sql</code> di Supabase Dashboard SQL Editor. Setelah itu, kosong di atas akan terisi otomatis.
+            Jalankan migration{' '}
+            <code className="text-xs bg-[var(--color-surface-2)] px-1.5 py-0.5 rounded font-mono">
+              011_clusters.sql
+            </code>{' '}
+            di Supabase Dashboard SQL Editor. Setelah itu, kosong di atas
+            akan terisi otomatis.
           </p>
-          <p className="text-xs text-[var(--color-text-tertiary)]">
-            File ada di <code className="font-mono">supabase/migrations/011_clusters.sql</code>
+          <p className="text-xs text-[var(--color-text-tertiary)] font-mono">
+            supabase/migrations/011_clusters.sql
           </p>
-        </div>
+        </section>
+      )}
+    </div>
+  )
+}
+
+// Local helper — repeated section header with eyebrow + title + subtitle + optional link
+function SectionHeader({
+  eyebrow,
+  title,
+  subtitle,
+  href,
+  hrefLabel,
+}: {
+  eyebrow: string
+  title: string
+  subtitle: string
+  href?: string
+  hrefLabel?: string
+}) {
+  return (
+    <div className="flex items-end justify-between gap-4">
+      <div>
+        <p className="eyebrow">{eyebrow}</p>
+        <h2 className="display-md mt-1">{title}</h2>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">{subtitle}</p>
+      </div>
+      {href && (
+        <Link
+          href={href}
+          className="text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] flex items-center gap-1 shrink-0 transition-colors"
+        >
+          {hrefLabel} <ArrowUpRight className="h-3 w-3" aria-hidden />
+        </Link>
       )}
     </div>
   )

@@ -8,7 +8,6 @@ import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import {
   Search,
-  LogOut,
   ChevronLeft,
   ChevronRight,
   Sparkles,
@@ -17,32 +16,9 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
+import { useTheme } from '@/providers/ThemeProvider'
 import { NotificationBell } from '@/components/notification/NotificationBell'
 import { UserMenu } from '@/components/auth/UserMenu'
-
-function useTheme() {
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    if (typeof window === 'undefined') return 'dark'
-    return (localStorage.getItem('syahfalah-theme') as 'dark' | 'light') || 'dark'
-  })
-
-  const apply = (next: 'dark' | 'light') => {
-    const root = document.documentElement
-    if (next === 'dark') {
-      root.classList.add('dark')
-    } else {
-      root.classList.remove('dark')
-    }
-    localStorage.setItem('syahfalah-theme', next)
-    setTheme(next)
-  }
-
-  const toggle = () => {
-    apply(theme === 'dark' ? 'light' : 'dark')
-  }
-
-  return { theme, toggle: () => apply(theme === 'dark' ? 'light' : 'dark') }
-}
 
 function formatPath(pathname: string): string {
   if (pathname === '/') return 'Beranda'
