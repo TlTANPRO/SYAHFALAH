@@ -16,7 +16,7 @@ type Tab = 'projects' | 'blocks' | 'house_units'
 const TABS: readonly Tab[] = ['projects', 'blocks', 'house_units'] as const
 const TAB_LABEL: Record<Tab, string> = { projects: 'Projects', blocks: 'Blocks', house_units: 'House Units' }
 
-interface PageProps { searchParams: Promise<{ tab?: string }> }
+interface PageProps { searchParams: Promise<{ tab?: string; cabang?: string }> }
 
 async function loadCounts() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -31,24 +31,40 @@ async function loadCounts() {
   return { projects: p.count ?? 0, blocks: b.count ?? 0, house_units: h.count ?? 0 }
 }
 
-async function loadTab(tab: Tab) {
+async function loadTab(tab: Tab, cabangId: string | null = null) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return []
   const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
 
   if (tab === 'projects') {
-    const { data } = await supabase
-      .from('projects')
-      .select('id, code, name, cluster_id, total_units, units_completed, start_date, target_completion_date, budget_rupiah, spent_rupiah, status, project_manager_id, created_at')
-      .order('created_at', { ascending: false }).limit(50)
+    let q = supabase.from('projects').select('id, code, name, cluster_id, cabang_id, total_units, units_completed, start_date, target_completion_date, budget_rupiah, spent_rupiah, status, project_manager_id, created_at')
+    if (cabangId) q = q.eq('cabang_id', cabangId)
+    const { data } = await q.order('created_at', { ascending: false }).limit(50)
     return data ?? []
   }
   if (tab === 'blocks') {
-    const { data } = await supabase
-      .from('blocks')
-      .select('id, project_id, name, code, total_units, description, sort_order, created_at')
-      .order('sort_order', { ascending: true }).limit(50)
+    // For blocks, filter via project.cabang_id — pull project ids in this cabang first.
+    let projectIds: string[] | null = null
+    if (cabangId) {
+      const { data: projs } = await supabase.from('projects').select('id').eq('cabang_id', cabangId)
+      projectIds = (projs ?? []).map(p => p.id)
+      if (projectIds.length === 0) return []
+    }
+    let q = supabase.from('blocks').select('id, project_id, name, code, total_units, description, sort_order, created_at')
+    if (projectIds) q = q.in('project_id', projectIds)
+    const { data } = await q.order('sort_order', { ascending: true }).limit(50)
+    return data ?? []
+  }
+  // house_units — filter via blocks of projects in this cabang
+  if (cabangId) {
+    const { data: projs } = await supabase.from('projects').select('id').eq('cabang_id', cabangId)
+    const projectIds = (projs ?? []).map(p => p.id)
+    if (projectIds.length === 0) return []
+    const { data: blks } = await supabase.from('blocks').select('id').in('project_id', projectIds)
+    const blockIds = (blks ?? []).map(b => b.id)
+    if (blockIds.length === 0) return []
+    const { data } = await supabase.from('house_units').select('id, block_id, unit_number, type, size_m2, price_rupiah, status, customer_id, notes, created_at, updated_at').in('block_id', blockIds).order('created_at', { ascending: false }).limit(50)
     return data ?? []
   }
   const { data } = await supabase
@@ -61,18 +77,36 @@ async function loadTab(tab: Tab) {
 async function loadAux() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) return { clusters: [], projects: [], blocks: [] }
+  if (!url || !key) return { clusters: [], projects: [], blocks: [], cabangs: [] }
   const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
-  const [c, p, b] = await Promise.all([
+  const [c, p, b, cg] = await Promise.all([
     supabase.from('clusters').select('id, code, name').eq('is_active', true).order('code'),
     supabase.from('projects').select('id, code, name').order('code'),
     supabase.from('blocks').select('id, name, project_id').order('name'),
+    supabase.from('cabangs').select('id, code, name').eq('is_active', true).order('code'),
   ])
   return {
     clusters: c.data ?? [],
     projects: p.data ?? [],
     blocks: b.data ?? [],
+    cabangs: cg.data ?? [],
   }
+}
+
+async function loadCabangCounts() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return new Map<string, number>()
+  const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+  // Group by cabang via HEAD count is expensive; use a single select of (cabang_id) and
+  // count in-memory. With 15 projects this is fine.
+  const { data } = await supabase.from('projects').select('cabang_id')
+  const m = new Map<string, number>()
+  for (const r of data ?? []) {
+    const k = (r as any).cabang_id ?? ''
+    if (k) m.set(k, (m.get(k) ?? 0) + 1)
+  }
+  return m
 }
 
 function fmtRp(n: number | null | undefined): string {
@@ -88,7 +122,13 @@ function fmtPct(a: number | null, b: number | null): string {
 export default async function ProjectsPage({ searchParams }: PageProps) {
   const sp = await searchParams
   const activeTab: Tab = (TABS as readonly string[]).includes(sp.tab ?? '') ? (sp.tab as Tab) : 'projects'
-  const [counts, rows, aux] = await Promise.all([loadCounts(), loadTab(activeTab), loadAux()])
+  // Validate UUID-ish (cabang is uuid).
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const cabangId: string | null = sp.cabang && UUID_RE.test(sp.cabang) ? sp.cabang : null
+  const [counts, rows, aux, cabangCounts] = await Promise.all([
+    loadCounts(), loadTab(activeTab, cabangId), loadAux(), loadCabangCounts(),
+  ])
+  const activeCabang = aux.cabangs.find(c => c.id === cabangId)
 
   return (
     <div className="space-y-6">
@@ -122,13 +162,49 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
       <Tabs>
         <TabsList>
           {TABS.map(t => (
-            <TabsTrigger key={t} value={t} active={activeTab === t} href={`/owner/projects?tab=${t}`}>
+            <TabsTrigger key={t} value={t} active={activeTab === t} href={`/owner/projects?tab=${t}${cabangId ? `&cabang=${cabangId}` : ''}`}>
               {TAB_LABEL[t]}
             </TabsTrigger>
           ))}
         </TabsList>
 
         <TabsContent active>
+          {/* Cabang filter — Plan C Phase 4 stub finish. Pill-shaped chips with counts.
+              Selecting "Semua cabang" clears the filter; selecting a specific cabang
+              scopes projects/blocks/house_units to that branch. */}
+          {aux.cabangs.length > 0 && (
+            <div className="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label="Filter cabang">
+              <span className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium mr-1">Cabang:</span>
+              <a
+                href={`/owner/projects?tab=${activeTab}`}
+                className={`pill ${cabangId ? '' : 'bg-[var(--color-brand-500)] text-white'}`}
+                data-variant={cabangId ? 'outline' : 'brand'}
+                aria-pressed={!cabangId}
+              >
+                Semua ({cabangCounts ? Array.from(cabangCounts.values()).reduce((a, b) => a + b, 0) : counts?.projects ?? 0})
+              </a>
+              {aux.cabangs.map(c => {
+                const isActive = c.id === cabangId
+                return (
+                  <a
+                    key={c.id}
+                    href={`/owner/projects?tab=${activeTab}&cabang=${c.id}`}
+                    className={`pill ${isActive ? 'bg-[var(--color-brand-500)] text-white' : ''}`}
+                    data-variant={isActive ? 'brand' : 'outline'}
+                    aria-pressed={isActive}
+                  >
+                    {c.code} ({cabangCounts.get(c.id) ?? 0})
+                  </a>
+                )
+              })}
+              {activeCabang && (
+                <span className="text-xs text-[var(--color-text-tertiary)] ml-2">
+                  Filter aktif: <strong>{activeCabang.name}</strong>
+                </span>
+              )}
+            </div>
+          )}
+
           {activeTab === 'projects' && <ProjectCreateForm clusters={aux.clusters} />}
           {activeTab === 'blocks' && <BlockCreateForm projects={aux.projects} />}
           {activeTab === 'house_units' && <HouseUnitCreateForm blocks={aux.blocks} />}
@@ -162,11 +238,19 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
 }
 
 function ProjectRow({ r }: { r: any }) {
+  // Find the cabang name from the lookup provided by parent scope (closure not available
+  // in this fn; render code if we have it, else just a hint). The list isn't aware of
+  // the aux lookup here, so just show a generic placeholder if the backend didn't join it.
   return (
     <>
       <div className="flex items-center gap-2 flex-wrap">
         <p className="font-medium">{r.name}</p>
         {r.code && <Badge variant="outline">{r.code}</Badge>}
+        {r.cabang_id && (
+          <Badge variant="info" className="text-xs" title="Cabang proyek">
+            CBG
+          </Badge>
+        )}
         <Badge variant={r.status === 'completed' ? 'success' : r.status === 'in_progress' ? 'info' : 'warning'}>
           {r.status}
         </Badge>
