@@ -10,6 +10,7 @@ import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ListFilters } from '@/components/ui/ListFilters'
 import { CustomerCreateForm } from './CustomerCreateForm'
 import { EntityCreateForm } from './EntityCreateForm'
 
@@ -24,8 +25,23 @@ const TAB_LABEL: Record<Tab, string> = {
   akad: 'Akad',
 }
 
+const SURVEY_RESULT_CHIPS = [
+  { value: 'interested', label: 'Interested' },
+  { value: 'not_interested', label: 'Not Interested' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'revisit', label: 'Revisit' },
+] as const
+
+const SURVEY_RESULT_PLACEHOLDER: Record<Tab, string> = {
+  customers: 'Cari customer (nama/kode)…',
+  surveys: 'Cari survey (ID)…',
+  bookings: 'Cari booking (ID)…',
+  sp3k: 'Cari SP3K (ID)…',
+  akad: 'Cari Akad (ID)…',
+}
+
 interface PageProps {
-  searchParams: Promise<{ tab?: string }>
+  searchParams: Promise<{ tab?: string; q?: string; result?: string; status?: string }>
 }
 
 async function loadCounts() {
@@ -49,52 +65,63 @@ async function loadCounts() {
   }
 }
 
-async function loadTab(tab: Tab) {
+async function loadTab(tab: Tab, q: string | null = null, result: string | null = null, status: string | null = null) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return []
   const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
 
   if (tab === 'customers') {
-    const { data } = await supabase
-      .from('customers')
-      .select('id, code, full_name, phone, email, ktp_number, notes, created_at')
-      .order('created_at', { ascending: false })
-      .limit(50)
+    let r = supabase.from('customers').select('id, code, full_name, phone, email, ktp_number, notes, created_at')
+    if (q) r = r.or(`full_name.ilike.%${q}%,code.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`)
+    const { data } = await r.order('created_at', { ascending: false }).limit(50)
     return data ?? []
   }
   if (tab === 'surveys') {
-    const { data } = await supabase
-      .from('surveys')
-      .select('id, lead_id, customer_id, surveyor_id, cluster_id, scheduled_date, completed_date, result, created_at')
-      .order('created_at', { ascending: false })
-      .limit(50)
+    let r = supabase.from('surveys').select('id, lead_id, customer_id, surveyor_id, cluster_id, scheduled_date, completed_date, result, created_at')
+    if (result) r = r.eq('result', result)
+    const { data } = await r.order('created_at', { ascending: false }).limit(50)
     return data ?? []
   }
   if (tab === 'bookings') {
-    const { data } = await supabase
-      .from('bookings')
-      .select('id, lead_id, customer_id, cluster_id, booking_date, booking_fee, status, created_at')
-      .order('created_at', { ascending: false })
-      .limit(50)
+    let r = supabase.from('bookings').select('id, lead_id, customer_id, cluster_id, booking_date, booking_fee, status, created_at')
+    if (status) r = r.eq('status', status)
+    const { data } = await r.order('created_at', { ascending: false }).limit(50)
     return data ?? []
   }
   if (tab === 'sp3k') {
-    const { data } = await supabase
-      .from('sp3k')
-      .select('id, booking_id, customer_id, status, sla_deadline, reviewer_id, reviewed_at, created_at')
-      .order('created_at', { ascending: false })
-      .limit(50)
+    let r = supabase.from('sp3k').select('id, booking_id, customer_id, status, sla_deadline, reviewer_id, reviewed_at, created_at')
+    if (status) r = r.eq('status', status)
+    const { data } = await r.order('created_at', { ascending: false }).limit(50)
     return data ?? []
   }
   // akad
-  const { data } = await supabase
-    .from('akad')
-    .select('id, sp3k_id, customer_id, notaris_id, scheduled_date, signed_date, notary_name, notary_fee, status, created_at')
-    .order('created_at', { ascending: false })
-    .limit(50)
+  let r = supabase.from('akad').select('id, sp3k_id, customer_id, notaris_id, scheduled_date, signed_date, notary_name, notary_fee, status, created_at')
+  if (status) r = r.eq('status', status)
+  const { data } = await r.order('created_at', { ascending: false }).limit(50)
   return data ?? []
 }
+
+const BOOKING_STATUS_CHIPS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'cancelled', label: 'Cancelled' },
+  { value: 'expired', label: 'Expired' },
+] as const
+
+const SP3K_STATUS_CHIPS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'rejected', label: 'Rejected' },
+  { value: 'cancelled', label: 'Cancelled' },
+] as const
+
+const AKAD_STATUS_CHIPS = [
+  { value: 'scheduled', label: 'Scheduled' },
+  { value: 'signed', label: 'Signed' },
+  { value: 'cancelled', label: 'Cancelled' },
+  { value: 'rescheduled', label: 'Rescheduled' },
+] as const
 
 function fmtTs(s: string | null): string {
   if (!s) return '—'
@@ -104,7 +131,43 @@ function fmtTs(s: string | null): string {
 export default async function MarketingPage({ searchParams }: PageProps) {
   const sp = await searchParams
   const activeTab: Tab = (TABS as readonly string[]).includes(sp.tab ?? '') ? (sp.tab as Tab) : 'customers'
-  const [counts, rows] = await Promise.all([loadCounts(), loadTab(activeTab)])
+  const q = sp.q?.trim() || null
+  const resultFilter = sp.result || null
+  const statusFilter = sp.status || null
+  const [counts, rows] = await Promise.all([
+    loadCounts(),
+    loadTab(activeTab, q, resultFilter, statusFilter),
+  ])
+  const filtered = Boolean(q || resultFilter || statusFilter)
+
+  // Determine which chips to show for the current tab.
+  function chipsForActive(): Array<{ label: string; value: string; active: boolean; param: string }> {
+    if (activeTab === 'surveys') {
+      return [
+        { label: 'Semua', value: '', active: !resultFilter, param: 'result' },
+        ...SURVEY_RESULT_CHIPS.map(c => ({ ...c, active: resultFilter === c.value, param: 'result' as const })),
+      ]
+    }
+    if (activeTab === 'bookings') {
+      return [
+        { label: 'Semua status', value: '', active: !statusFilter, param: 'status' },
+        ...BOOKING_STATUS_CHIPS.map(c => ({ ...c, active: statusFilter === c.value, param: 'status' as const })),
+      ]
+    }
+    if (activeTab === 'sp3k') {
+      return [
+        { label: 'Semua status', value: '', active: !statusFilter, param: 'status' },
+        ...SP3K_STATUS_CHIPS.map(c => ({ ...c, active: statusFilter === c.value, param: 'status' as const })),
+      ]
+    }
+    if (activeTab === 'akad') {
+      return [
+        { label: 'Semua status', value: '', active: !statusFilter, param: 'status' },
+        ...AKAD_STATUS_CHIPS.map(c => ({ ...c, active: statusFilter === c.value, param: 'status' as const })),
+      ]
+    }
+    return []
+  }
 
   return (
     <div className="space-y-6">
@@ -146,6 +209,20 @@ export default async function MarketingPage({ searchParams }: PageProps) {
         </TabsList>
 
         <TabsContent active>
+          <div className="mt-4">
+            <ListFilters
+              basePath="/owner/marketing"
+              searchPlaceholder={SURVEY_RESULT_PLACEHOLDER[activeTab]}
+              searchValue={q ?? ''}
+              extraParams={{
+                tab: activeTab,
+                result: resultFilter ?? '',
+                status: statusFilter ?? '',
+              }}
+              chips={chipsForActive() as any}
+            />
+          </div>
+
           {activeTab === 'customers' ? (
             <CustomerCreateForm />
           ) : (
@@ -154,12 +231,15 @@ export default async function MarketingPage({ searchParams }: PageProps) {
 
           <Card className="mt-4">
             <CardHeader>
-              <CardTitle className="text-base">{TAB_LABEL[activeTab]} ({rows.length})</CardTitle>
+              <CardTitle className="text-base">
+                {TAB_LABEL[activeTab]} ({rows.length})
+                {filtered && <span className="ml-2 text-xs text-[var(--color-text-tertiary)]">— terfilter</span>}
+              </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {rows.length === 0 ? (
                 <p className="p-6 text-center text-sm text-[var(--color-text-muted)]">
-                  Belum ada data. Buat entri pertama Anda dengan form di atas.
+                  {filtered ? 'Tidak ada data sesuai filter.' : 'Belum ada data. Buat entri pertama Anda dengan form di atas.'}
                 </p>
               ) : (
                 <ul className="divide-y divide-[var(--color-border-subtle)]">
