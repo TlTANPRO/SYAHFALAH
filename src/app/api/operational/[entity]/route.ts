@@ -25,8 +25,8 @@ const ENTITY_CONFIG: Record<Entity, { select: string; required: string[] }> = {
     required: ['user_id', 'log_date'],
   },
   utility_readings: {
-    select: 'id, utility_type, reading_value, unit, recorded_at, recorded_by, notes, created_at',
-    required: ['utility_type', 'reading_value'],
+    select: 'id, utility_type, cluster_id, reading_date, value, unit, amount_rupiah, notes, created_at',
+    required: ['utility_type', 'value'],
   },
 }
 
@@ -65,9 +65,11 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ entity: str
     const userId = url.searchParams.get('user_id')?.trim()
     const logDate = url.searchParams.get('log_date')?.trim()
     const utilityType = url.searchParams.get('utility_type')?.trim()
+    const clusterId = url.searchParams.get('cluster_id')?.trim()
     if (userId) query = query.eq('user_id', userId)
     if (logDate) query = query.eq('log_date', logDate)
     if (utilityType) query = query.eq('utility_type', utilityType)
+    if (clusterId) query = query.eq('cluster_id', clusterId)
 
     const { data, error, count } = await query
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
