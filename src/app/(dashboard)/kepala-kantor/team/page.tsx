@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
 import { TeamClient } from './TeamClient'
 import { Users } from 'lucide-react'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface Member {
   user_id: string
@@ -63,6 +64,7 @@ export default async function Page() {
   const { members, divisions, total } = await load()
   return (
     <div className="space-y-6">
+      <Breadcrumbs crumbs={[{ label: "Kepala Kantor", href: "/kepala-kantor" }, { label: "Team" }]} />
       <div>
         <h1 className="font-heading text-2xl font-bold">Team KPIs</h1>
         <p className="text-[var(--color-text-secondary)]">Overview KPI seluruh tim perusahaan</p>

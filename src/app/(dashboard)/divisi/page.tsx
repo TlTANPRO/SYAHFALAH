@@ -9,6 +9,7 @@ import { ChevronRight, Building2 } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/server'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 type Division = { id: string; name: string; description: string | null }
 
@@ -22,6 +23,7 @@ export default async function DivisiHubPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
+      <Breadcrumbs crumbs={[{ label: 'Divisi' }]} />
       <div>
         <h1 className="text-2xl font-heading font-bold">Divisi</h1>
         <p className="text-[var(--color-text-secondary)]">Pilih divisi untuk melihat KPI, tim, dan tasks</p>

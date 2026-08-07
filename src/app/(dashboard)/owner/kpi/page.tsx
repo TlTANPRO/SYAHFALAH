@@ -5,6 +5,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { KpiListClient, type KpiRow } from './KpiListClient'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 async function loadData() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -62,6 +63,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs crumbs={[{ label: "Owner", href: "/owner" }, { label: "KPI" }]} />
       <div>
         <h1 className="display-lg">KPI Strategis</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">

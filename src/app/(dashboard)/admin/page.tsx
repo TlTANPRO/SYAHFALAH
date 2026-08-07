@@ -5,6 +5,7 @@
 import Link from 'next/link'
 import { ChevronRight, Users, Building2, FileText } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 const links = [
   { href: '/admin/users',     icon: Users,     title: 'User Management', desc: 'Kelola akun, role, dan PIN' },
@@ -15,6 +16,7 @@ const links = [
 export default function AdminHubPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
+      <Breadcrumbs crumbs={[{ label: 'Admin' }]} />
       <div>
         <h1 className="text-2xl font-heading font-bold">Admin</h1>
         <p className="text-[var(--color-text-secondary)]">Hanya Owner. Pilih menu untuk mengelola</p>

@@ -6,6 +6,7 @@
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { MessageCircle, AlertCircle, CheckCircle2, Clock, ChevronRight, Database } from 'lucide-react'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface CoachingEntry {
   id: string
@@ -77,6 +78,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs crumbs={[{ label: "Kepala Kantor", href: "/kepala-kantor" }, { label: "Coaching" }]} />
       <div>
         <h1 className="display-lg">Coaching Log</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">

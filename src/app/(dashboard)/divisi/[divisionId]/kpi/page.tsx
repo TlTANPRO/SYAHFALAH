@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Target, TrendingUp, CheckCircle } from 'lucide-react'
 import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface Member {
   user_id: string
@@ -74,6 +75,7 @@ export default async function Page({ params }: { params: Promise<{ divisionId: s
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs crumbs={[{ label: "Divisi", href: `/divisi/${divisionId}` }, { label: "KPI" }]} />
       <div>
         <h1 className="display-lg">{division.name}</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">

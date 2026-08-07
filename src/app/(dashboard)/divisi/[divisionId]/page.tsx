@@ -15,6 +15,7 @@ import { StatCard } from '@/components/layout/StatCard'
 import { KpiTile } from '@/components/layout/KpiTile'
 import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 export default function DivisionDashboard() {
   const params = useParams()
@@ -106,6 +107,7 @@ export default function DivisionDashboard() {
   if (divLoading) {
     return (
       <div className="space-y-6">
+      <Breadcrumbs crumbs={[{ label: "Divisi" }, { label: "Overview" }]} />
         <div className="h-24 rounded-lg bg-[var(--color-surface-2)] animate-pulse" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1,2,3,4].map(i => <div key={i} className="h-24 rounded-lg bg-[var(--color-surface-2)] animate-pulse" />)}

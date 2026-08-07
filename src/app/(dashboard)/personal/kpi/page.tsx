@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Target, TrendingUp, CheckCircle, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface KpiRow {
   id: string
@@ -70,6 +71,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs crumbs={[{ label: "Personal", href: "/personal" }, { label: "KPI" }]} />
       <div>
         <h1 className="font-heading text-2xl font-bold">KPI Saya</h1>
         <p className="text-[var(--color-text-secondary)]">

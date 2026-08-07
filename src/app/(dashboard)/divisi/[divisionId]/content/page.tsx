@@ -3,6 +3,7 @@
 // belum ada, pakai data statis jadwal rutin media team.
 
 import { Calendar, Clock, User } from 'lucide-react'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface ContentPlan {
   minggu: string
@@ -39,6 +40,7 @@ export default function Page() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs crumbs={[{ label: "Divisi" }, { label: "Content" }]} />
       <div>
         <h1 className="display-lg">Content Calendar</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">

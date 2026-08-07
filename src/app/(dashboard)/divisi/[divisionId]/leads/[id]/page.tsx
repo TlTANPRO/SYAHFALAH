@@ -9,6 +9,7 @@ import { ArrowLeft, Phone, User, Building, Calendar, Tag, TrendingUp, FileText, 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/utils'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 const CLUSTER_JOIN = `id, code, customer_name, customer_phone, cluster_id, source, stage, estimated_value_rupiah, assigned_to_id, contacted_at, surveyed_at, booked_at, closing_at, batal_at, batal_reason, created_at, score, cluster:clusters(name, code), assignee:users!leads_assigned_to_id_fkey(id, full_name, email)`
 
@@ -100,6 +101,7 @@ export default async function LeadDetailPage({
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs crumbs={[{ label: "Divisi", href: `/divisi/${divisionId}` }, { label: "Detail" }]} />
       <div className="flex items-center gap-3">
         <Link href={`/divisi/${divisionId}/leads`} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]" aria-label="Kembali ke daftar leads">
           <ArrowLeft className="h-5 w-5" />

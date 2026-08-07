@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface Member {
   user_id: string
@@ -51,6 +52,7 @@ export default async function Page({ params }: { params: Promise<{ divisionId: s
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs crumbs={[{ label: "Divisi", href: `/divisi/${divisionId}` }, { label: "Team" }]} />
       <div>
         <h1 className="font-heading text-2xl font-bold">Team KPIs · {division.name}</h1>
         <p className="text-[var(--color-text-secondary)]">

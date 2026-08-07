@@ -10,6 +10,7 @@ import { verifyAccessToken } from '@/lib/auth/jwt'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { FileText, Clock, ChevronRight } from 'lucide-react'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface SowTask {
   id: string
@@ -66,6 +67,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs crumbs={[{ label: "Personal", href: "/personal" }, { label: "SOW" }]} />
       <div>
         <h1 className="font-heading text-2xl font-bold">My SOW</h1>
         <p className="text-[var(--color-text-secondary)]">{sow.length} SOW relevan untuk posisi Anda</p>

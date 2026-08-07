@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { Phone, Calendar, MapPin, User } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface Lead {
   id: string
@@ -78,6 +79,7 @@ export default async function Page({
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs crumbs={[{ label: "Divisi", href: `/divisi/${divisionId}` }, { label: "Leads" }]} />
       <div>
         <h1 className="display-lg">Pipeline Marketing</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
