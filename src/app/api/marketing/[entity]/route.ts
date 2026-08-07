@@ -9,7 +9,7 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { verifyAccessToken } from '@/lib/auth/jwt'
 
-type Entity = 'surveys' | 'bookings' | 'sp3k' | 'akad'
+type Entity = 'surveys' | 'bookings' | 'sp3k' | 'akad' | 'leads'
 
 const ENTITY_CONFIG: Record<Entity, { select: string; allowedStatus: string[]; required: string[] }> = {
   surveys: {
@@ -31,6 +31,11 @@ const ENTITY_CONFIG: Record<Entity, { select: string; allowedStatus: string[]; r
     select: 'id, sp3k_id, customer_id, notaris_id, scheduled_date, signed_date, notary_name, notary_fee, status, notes, created_at',
     allowedStatus: ['scheduled', 'signed', 'cancelled', 'rescheduled'],
     required: ['sp3k_id'],
+  },
+  leads: {
+    select: 'id, code, customer_name, customer_phone, cluster_id, source, stage, estimated_value_rupiah, score, assigned_to_id, contacted_at, closing_at, batal_at, created_at',
+    allowedStatus: ['new', 'contacted', 'surveyed', 'booked', 'closing', 'closed', 'batal'],
+    required: ['customer_name'],
   },
 }
 
