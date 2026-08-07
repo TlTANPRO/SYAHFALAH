@@ -47,13 +47,13 @@ export function SupplierCreateForm() {
             { k: 'address' as const, l: 'Address', t: 'text' },
           ].map(f => (
             <div key={f.k}>
-              <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">{f.l}{f.req && ' *'}</label>
-              <input name="input" type={f.t} value={form[f.k]} onChange={(e) => set(f.k, e.target.value)} required={f.req}
+              <label htmlFor={`supplier-${f.k}`} className="block text-xs text-[var(--color-text-tertiary)] mb-1">{f.l}{f.req && ' *'}</label>
+              <input id={`supplier-${f.k}`} name={f.k} type={f.t} value={form[f.k]} onChange={(e) => set(f.k, e.target.value)} required={f.req}
                 className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
             </div>
           ))}
           <div className="md:col-span-3 flex items-center gap-3">
-            <button type="submit" disabled={busy}
+            <button type="submit" disabled={busy} aria-label="Buat supplier baru"
               className="inline-flex items-center gap-2 h-10 px-4 rounded-md bg-[var(--color-brand-500)] text-white text-sm font-medium hover:bg-[var(--color-brand-600)] disabled:opacity-50">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               Submit

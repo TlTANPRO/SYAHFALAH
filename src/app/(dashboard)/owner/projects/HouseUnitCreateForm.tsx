@@ -61,41 +61,41 @@ export function HouseUnitCreateForm({ blocks }: { blocks: Block[] }) {
       <CardContent>
         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Block</label>
-            <select value={form.block_id} onChange={(e) => set('block_id', e.target.value)}
+            <label htmlFor="unit-block" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Block</label>
+            <select id="unit-block" name="block_id" value={form.block_id} onChange={(e) => set('block_id', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20">
               {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Unit number</label>
-            <input name="input" type="text" value={form.unit_number} onChange={(e) => set('unit_number', e.target.value)} required
+            <label htmlFor="unit-number" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Unit number</label>
+            <input id="unit-number" name="unit_number" type="text" value={form.unit_number} onChange={(e) => set('unit_number', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
-            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Type (mis. 36/72)</label>
-            <input name="input" type="text" value={form.type} onChange={(e) => set('type', e.target.value)}
+            <label htmlFor="unit-type" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Type (mis. 36/72)</label>
+            <input id="unit-type" name="type" type="text" value={form.type} onChange={(e) => set('type', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
-            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Size (m²)</label>
-            <input name="input" type="number" min="0" step="0.01" value={form.size_m2} onChange={(e) => set('size_m2', e.target.value)}
+            <label htmlFor="unit-size" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Size (m²)</label>
+            <input id="unit-size" name="size_m2" type="number" min="0" step="0.01" value={form.size_m2} onChange={(e) => set('size_m2', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
-            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Price (IDR)</label>
-            <input name="input" type="number" min="0" value={form.price_rupiah} onChange={(e) => set('price_rupiah', e.target.value)}
+            <label htmlFor="unit-price" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Price (IDR)</label>
+            <input id="unit-price" name="price_rupiah" type="number" min="0" value={form.price_rupiah} onChange={(e) => set('price_rupiah', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
-            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Status</label>
-            <select value={form.status} onChange={(e) => set('status', e.target.value)}
+            <label htmlFor="unit-status" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Status</label>
+            <select id="unit-status" name="status" value={form.status} onChange={(e) => set('status', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20">
               {STATUS_OPTS.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div className="md:col-span-3 flex items-center gap-3">
-            <button type="submit" disabled={busy}
+            <button type="submit" disabled={busy} aria-label="Buat house unit baru"
               className="inline-flex items-center gap-2 h-10 px-4 rounded-md bg-[var(--color-brand-500)] text-white text-sm font-medium hover:bg-[var(--color-brand-600)] transition-colors disabled:opacity-50">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               Submit

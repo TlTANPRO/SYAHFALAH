@@ -217,17 +217,21 @@ export function CopilotChat() {
           ))}
         </div>
         <form onSubmit={(e) => { e.preventDefault(); ask(question) }} className="border-t border-[var(--color-border-subtle)] p-3 flex gap-2">
-          <input name="input" type="text" value={question} onChange={(e) => setQuestion(e.target.value)}
+          <label htmlFor="copilot-question" className="sr-only">
+            Pertanyaan untuk AI Copilot
+          </label>
+          <input id="copilot-question" name="question" type="text" value={question} onChange={(e) => setQuestion(e.target.value)}
             disabled={busy}
             placeholder="Ketik pertanyaan…"
+            aria-label="Pertanyaan untuk AI Copilot"
             className="flex-1 h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           {busy ? (
-            <button type="button" onClick={stop}
+            <button type="button" onClick={stop} aria-label="Hentikan streaming jawaban AI"
               className="inline-flex items-center gap-2 h-10 px-4 rounded-md bg-zinc-500 text-white text-sm font-medium hover:bg-zinc-600">
               <Square className="h-4 w-4" /> Stop
             </button>
           ) : (
-            <button type="submit" disabled={!question.trim()}
+            <button type="submit" disabled={!question.trim()} aria-label="Kirim pertanyaan ke AI Copilot"
               className="inline-flex items-center gap-2 h-10 px-4 rounded-md bg-[var(--color-brand-500)] text-white text-sm font-medium hover:bg-[var(--color-brand-600)] disabled:opacity-50">
               <Send className="h-4 w-4" />
               Tanya

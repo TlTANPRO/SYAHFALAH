@@ -46,27 +46,27 @@ export function MaterialCreateForm() {
       <CardContent>
         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Name *</label>
-            <input name="input" type="text" value={form.name} onChange={(e) => set('name', e.target.value)} required
+            <label htmlFor="material-name" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Name *</label>
+            <input id="material-name" name="name" type="text" value={form.name} onChange={(e) => set('name', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
-            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Category</label>
-            <input name="input" type="text" value={form.category} onChange={(e) => set('category', e.target.value)} placeholder="semen/besi/kayu/etc"
+            <label htmlFor="material-category" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Category</label>
+            <input id="material-category" name="category" type="text" value={form.category} onChange={(e) => set('category', e.target.value)} placeholder="semen/besi/kayu/etc"
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
-            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Unit</label>
-            <input name="input" type="text" value={form.unit} onChange={(e) => set('unit', e.target.value)}
+            <label htmlFor="material-unit" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Unit</label>
+            <input id="material-unit" name="unit" type="text" value={form.unit} onChange={(e) => set('unit', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
-            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Standard price (IDR)</label>
-            <input name="input" type="number" min="0" value={form.standard_price_rupiah} onChange={(e) => set('standard_price_rupiah', e.target.value)}
+            <label htmlFor="material-price" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Standard price (IDR)</label>
+            <input id="material-price" name="standard_price_rupiah" type="number" min="0" value={form.standard_price_rupiah} onChange={(e) => set('standard_price_rupiah', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-3 flex items-center gap-3">
-            <button type="submit" disabled={busy}
+            <button type="submit" disabled={busy} aria-label="Buat material baru"
               className="inline-flex items-center gap-2 h-10 px-4 rounded-md bg-[var(--color-brand-500)] text-white text-sm font-medium hover:bg-[var(--color-brand-600)] disabled:opacity-50">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               Submit

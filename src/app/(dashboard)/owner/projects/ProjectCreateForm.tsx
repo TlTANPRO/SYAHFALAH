@@ -53,9 +53,8 @@ export function ProjectCreateForm({ clusters }: { clusters: Cluster[] }) {
       setMsg({ type: 'ok', text: 'Project dibuat.' })
       setForm({ ...form, name: '', code: '' })
       router.refresh()
-    } catch (e: any) {
-      setMsg({ type: 'err', text: e?.message ?? 'Network error' })
-    } finally { setBusy(false) }
+    } catch (e: any) { setMsg({ type: 'err', text: e?.message ?? 'Network error' }) }
+    finally { setBusy(false) }
   }
 
   return (
@@ -68,44 +67,44 @@ export function ProjectCreateForm({ clusters }: { clusters: Cluster[] }) {
       <CardContent>
         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Cluster</label>
-            <select value={form.cluster_id} onChange={(e) => set('cluster_id', e.target.value)}
+            <label htmlFor="proj-cluster" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Cluster</label>
+            <select id="proj-cluster" name="cluster_id" value={form.cluster_id} onChange={(e) => set('cluster_id', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20">
               {clusters.map(c => <option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Code (auto-generated jika kosong)</label>
-            <input name="input" type="text" value={form.code} onChange={(e) => set('code', e.target.value)} placeholder="PRJ-BSA-01"
+            <label htmlFor="proj-code" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Code (auto-generated jika kosong)</label>
+            <input id="proj-code" name="code" type="text" value={form.code} onChange={(e) => set('code', e.target.value)} placeholder="PRJ-BSA-01"
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
-            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Name</label>
-            <input name="input" type="text" value={form.name} onChange={(e) => set('name', e.target.value)} required
+            <label htmlFor="proj-name" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Name</label>
+            <input id="proj-name" name="name" type="text" value={form.name} onChange={(e) => set('name', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
-            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Total units</label>
-            <input name="input" type="number" min="1" value={form.total_units} onChange={(e) => set('total_units', e.target.value)}
+            <label htmlFor="proj-total-units" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Total units</label>
+            <input id="proj-total-units" name="total_units" type="number" min="1" value={form.total_units} onChange={(e) => set('total_units', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
-            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Start date</label>
-            <input name="input" type="date" value={form.start_date} onChange={(e) => set('start_date', e.target.value)} required
+            <label htmlFor="proj-start-date" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Start date</label>
+            <input id="proj-start-date" name="start_date" type="date" value={form.start_date} onChange={(e) => set('start_date', e.target.value)} required
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
-            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Target completion</label>
-            <input name="input" type="date" value={form.target_completion_date} onChange={(e) => set('target_completion_date', e.target.value)}
+            <label htmlFor="proj-target-completion" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Target completion</label>
+            <input id="proj-target-completion" name="target_completion_date" type="date" value={form.target_completion_date} onChange={(e) => set('target_completion_date', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div>
-            <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Budget (IDR)</label>
-            <input name="input" type="number" min="0" value={form.budget_rupiah} onChange={(e) => set('budget_rupiah', e.target.value)}
+            <label htmlFor="proj-budget" className="block text-xs text-[var(--color-text-tertiary)] mb-1">Budget (IDR)</label>
+            <input id="proj-budget" name="budget_rupiah" type="number" min="0" value={form.budget_rupiah} onChange={(e) => set('budget_rupiah', e.target.value)}
               className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
           </div>
           <div className="md:col-span-3 flex items-center gap-3">
-            <button type="submit" disabled={busy}
+            <button type="submit" disabled={busy} aria-label="Buat project baru"
               className="inline-flex items-center gap-2 h-10 px-4 rounded-md bg-[var(--color-brand-500)] text-white text-sm font-medium hover:bg-[var(--color-brand-600)] transition-colors disabled:opacity-50">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               Submit

@@ -95,6 +95,8 @@ export function AuditLogClient({ initialRows, initialTotal, knownActions, knownT
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-tertiary)] pointer-events-none" aria-hidden="true" />
           <input
+            id="audit-search"
+            name="q"
             type="text"
             value={q}
             onChange={(e) => { setQ(e.target.value); setPage(1) }}
@@ -284,13 +286,19 @@ interface FilterSelectProps {
 }
 
 function FilterSelect({ label, value, onChange, options }: FilterSelectProps) {
+  // Stable id for aria-labelledby association + autocomplete-friendly name.
+  const fieldId = `audit-filter-${label.toLowerCase().replace(/\s+/g, '-')}`
   return (
     <div className="relative">
       <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-tertiary)] pointer-events-none" aria-hidden="true" />
+      <label htmlFor={fieldId} className="sr-only">
+        Filter {label}
+      </label>
       <select
+        id={fieldId}
+        name={`audit_${label.toLowerCase().replace(/\s+/g, '_')}`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        aria-label={`Filter ${label}`}
         className="h-11 pl-10 pr-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20"
       >
         <option value="all">Semua {label.toLowerCase()}</option>

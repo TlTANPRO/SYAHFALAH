@@ -48,13 +48,13 @@ export function CabangCreateForm() {
             ['phone', 'Phone', 'text', false],
           ] as const).map(([k, l, t, req]) => (
             <div key={k}>
-              <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">{l}{req && ' *'}</label>
-              <input name="input" type={t} value={form[k]} onChange={(e) => set(k, e.target.value)} required={req}
+              <label htmlFor={`cabang-${k}`} className="block text-xs text-[var(--color-text-tertiary)] mb-1">{l}{req && ' *'}</label>
+              <input id={`cabang-${k}`} name={k} type={t} value={form[k]} onChange={(e) => set(k, e.target.value)} required={req}
                 className="w-full h-10 px-3 rounded-md bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-sm focus:outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20" />
             </div>
           ))}
           <div className="md:col-span-3 flex items-center gap-3">
-            <button type="submit" disabled={busy}
+            <button type="submit" disabled={busy} aria-label="Buat cabang baru"
               className="inline-flex items-center gap-2 h-10 px-4 rounded-md bg-[var(--color-brand-500)] text-white text-sm font-medium hover:bg-[var(--color-brand-600)] disabled:opacity-50">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               Submit
