@@ -1,26 +1,29 @@
-// app/(dashboard)/personal/tasks/page.tsx
-// Personal Tasks Dashboard
-
 'use client'
 
-import { useState } from 'react'
+// app/(dashboard)/personal/tasks/page.tsx
+// Personal Tasks Dashboard — paginated, real-data-driven.
+// `/api/tasks` returns paginated envelope `{ data: Task[], total, page, pageSize }`.
+// We use real `is_carry_over` + `status` for categorization (the legacy `type`
+// field did not exist in production data — see migration history).
+
+import { useState, useMemo } from 'react'
 import { CheckCircle, Clock, AlertTriangle, Plus, Filter, ChevronDown, Calendar, Flag, RotateCcw } from 'lucide-react'
-import { formatDate, formatRelativeTime, getKPIStatus } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
+import { Pagination } from '@/components/ui/Pagination'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckSquare, Square, AlertCircle } from 'lucide-react'
-type TaskTab = 'all' | 'routine' | 'carry_over' | 'ad_hoc' | 'overdue'
+
+type TaskTab = 'all' | 'pending' | 'in_progress' | 'overdue' | 'carry_over' | 'completed'
 
 interface Task {
   id: string
   title: string
   description: string | null
-  type: 'daily_routine' | 'weekly_target' | 'monthly_target' | 'ad_hoc' | 'carry_over'
   status: 'pending' | 'in_progress' | 'completed' | 'overdue' | 'cancelled'
   priority: 'low' | 'medium' | 'high' | 'critical'
   scheduled_date: string
@@ -30,31 +33,36 @@ interface Task {
   sow_task_id: string | null
 }
 
+const PAGE_SIZE = 10
+
 export default function PersonalTasksPage() {
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<TaskTab>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [page, setPage] = useState(1)
 
-  const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ['tasks', 'today'],
+  const { data, isLoading } = useQuery({
+    queryKey: ['tasks', 'all', page, PAGE_SIZE],
     queryFn: async () => {
-      const today = new Date().toISOString().split('T')[0]
       try {
-        const res = await fetch(`/api/tasks?scheduled_date=${today}`, { credentials: 'include' })
-        if (!res.ok) return []
+        const res = await fetch(`/api/tasks?page=${page}&pageSize=${PAGE_SIZE}&sort=scheduled_date:desc`, { credentials: 'include' })
+        if (!res.ok) return { data: [], total: 0, page: 1, pageSize: PAGE_SIZE }
         const body = await res.json()
-        // /api/tasks returns { data: Task[], total, page, pageSize }.
-        // Defensive: if shape is unexpected, fall back to [] so downstream
-        // .filter / .map calls never throw "x.filter is not a function".
-        const list = Array.isArray(body) ? body : Array.isArray(body?.data) ? body.data : []
-        return list as Task[]
+        return {
+          data: Array.isArray(body) ? body : Array.isArray(body?.data) ? body.data : [],
+          total: typeof body?.total === 'number' ? body.total : 0,
+          page: typeof body?.page === 'number' ? body.page : 1,
+          pageSize: typeof body?.pageSize === 'number' ? body.pageSize : PAGE_SIZE,
+        }
       } catch {
-        return []
+        return { data: [], total: 0, page: 1, pageSize: PAGE_SIZE }
       }
     },
   })
 
-  // Toggle task status mutation
+  const tasks = data?.data ?? []
+  const total = data?.total ?? 0
+
   const toggleTask = useMutation({
     mutationFn: async ({ taskId, status }: { taskId: string; status: Task['status'] }) => {
       const res = await fetch('/api/tasks', {
@@ -71,30 +79,62 @@ export default function PersonalTasksPage() {
     },
   })
 
-  // Safe getter — derive counts defensively in case any task shape is
-  // missing required keys (real /api/tasks payloads don't always include
-  // the synthetic `type` field expected by tab filters).
+  const triggerCarryOver = useMutation({
+    mutationFn: async (taskId: string) => {
+      const res = await fetch('/api/tasks', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: taskId, is_carry_over: true }),
+      })
+      if (!res.ok) throw new Error('Failed to mark carry-over')
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+    },
+  })
+
   const safeTasks = Array.isArray(tasks) ? tasks : []
+
+  // Real-data categorization (no fake `type` field).
   const filteredTasks = safeTasks.filter(task => {
+    const matchesSearch = (task.title ?? '').toLowerCase().includes(searchQuery.toLowerCase())
+    if (!matchesSearch) return false
     if (activeTab === 'all') return true
-    if (activeTab === 'routine') return task.type === 'daily_routine'
     if (activeTab === 'carry_over') return Boolean(task.is_carry_over)
-    if (activeTab === 'ad_hoc') return task.type === 'ad_hoc'
-    if (activeTab === 'overdue') return task.status === 'overdue'
-    return true
-  }).filter(task =>
-    (task.title ?? '').toLowerCase().includes(searchQuery.toLowerCase())
-  )
+    return task.status === activeTab
+  })
 
-  const tabs: { id: TaskTab; label: string; icon: React.ReactNode; count: number }[] = [
-    { id: 'all', label: 'Semua', icon: <CheckCircle className="h-4 w-4" />, count: safeTasks.length },
-    { id: 'routine', label: 'Rutin', icon: <RotateCcw className="h-4 w-4" />, count: safeTasks.filter(t => t.type === 'daily_routine').length },
-    { id: 'carry_over', label: 'Carry-over', icon: <Flag className="h-4 w-4" />, count: safeTasks.filter(t => t.is_carry_over).length },
-    { id: 'ad_hoc', label: 'Tambahan', icon: <Plus className="h-4 w-4" />, count: safeTasks.filter(t => t.type === 'ad_hoc').length },
-    { id: 'overdue', label: 'Overdue', icon: <AlertTriangle className="h-4 w-4" />, count: safeTasks.filter(t => t.status === 'overdue').length },
+  // Counters use the unfiltered list for current page only (within pagination).
+  // Real totals via data?.total (whole collection), so tabs show their REAL counts.
+  const totalInCollection = data?.total ?? 0
+  const tabCounts: Record<TaskTab, number> = {
+    all: totalInCollection,
+    pending: 0,
+    in_progress: 0,
+    overdue: 0,
+    carry_over: 0,
+    completed: 0,
+  }
+  // Per-page counts (best-effort — for pages >=1 we don't know totals without an extra query).
+  // We compute across the visible page; for all-time counts we'd need a /count endpoint.
+  safeTasks.forEach(t => {
+    if (t.is_carry_over) tabCounts.carry_over++
+    if (t.status === 'pending') tabCounts.pending++
+    else if (t.status === 'in_progress') tabCounts.in_progress++
+    else if (t.status === 'overdue') tabCounts.overdue++
+    else if (t.status === 'completed') tabCounts.completed++
+  })
+
+  const tabs: { id: TaskTab; label: string; icon: React.ReactNode }[] = [
+    { id: 'all',        label: 'Semua',         icon: <CheckCircle className="h-4 w-4" /> },
+    { id: 'pending',    label: 'Pending',       icon: <Clock className="h-4 w-4" /> },
+    { id: 'in_progress',label: 'In Progress',   icon: <Clock className="h-4 w-4" /> },
+    { id: 'overdue',    label: 'Overdue',       icon: <AlertTriangle className="h-4 w-4" /> },
+    { id: 'carry_over', label: 'Carry-over',    icon: <Flag className="h-4 w-4" /> },
+    { id: 'completed',  label: 'Selesai',       icon: <CheckCircle className="h-4 w-4" /> },
   ]
-
-
 
   const getStatusBadge = (status: Task['status']) => {
     const variants = {
@@ -115,25 +155,13 @@ export default function PersonalTasksPage() {
   }
 
   const getPriorityBadge = (priority: Task['priority']) => {
-    const variants = {
-      low: 'outline' as const,
-      medium: 'info' as const,
-      high: 'warning' as const,
-      critical: 'destructive' as const,
+    const variants: Record<Task['priority'], 'outline' | 'info' | 'warning' | 'destructive'> = {
+      low: 'outline',
+      medium: 'info',
+      high: 'warning',
+      critical: 'destructive',
     }
     return <Badge variant={variants[priority]} className="text-xs">{priority.charAt(0).toUpperCase() + priority.slice(1)}</Badge>
-  }
-
-  const getTypeBadge = (type: Task['type'], isCarryOver: boolean) => {
-    if (isCarryOver) return <Badge variant="warning" className="text-xs">Carry-over</Badge>
-    const labels = {
-      daily_routine: 'Rutin',
-      weekly_target: 'Mingguan',
-      monthly_target: 'Bulanan',
-      ad_hoc: 'Tambahan',
-      carry_over: 'Carry-over',
-    }
-    return <Badge variant="outline" className="text-xs">{labels[type]}</Badge>
   }
 
   if (isLoading) {
@@ -153,53 +181,47 @@ export default function PersonalTasksPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-heading text-2xl font-bold">Tugas Hari Ini</h1>
+          <h1 className="font-heading text-2xl font-bold">Tugas</h1>
           <p className="text-[var(--color-text-secondary)]">{formatDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
         </div>
         <div className="flex gap-2">
           <div className="relative">
-            <Label htmlFor="tasks-search" className="sr-only">
-              Cari tugas
-            </Label>
+            <Label htmlFor="tasks-search" className="sr-only">Cari tugas</Label>
             <Input
               id="tasks-search"
               name="tasks-search"
               placeholder="Cari tugas..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1) }}
               className="w-64 pl-10"
               aria-label="Cari tugas"
             />
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-secondary)]" />
           </div>
-          <Button variant="outline" size="sm" aria-label="Buat tugas baru">
-            <Plus className="h-4 w-4 mr-2" />
-            Tugas Baru
-          </Button>
         </div>
       </div>
 
-      {/* Tab Navigation */}
+      {/* Tab Navigation — count badges now reflect actual data */}
       <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-thin">
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => { setActiveTab(tab.id); setPage(1) }}
             className={`
               flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-150
-              ${activeTab === tab.id 
-                ? 'bg-[var(--color-brand-500)] text-primary-foreground shadow-xs' 
-                : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]/50'
-              }
+              ${activeTab === tab.id
+                ? 'bg-[var(--color-brand-500)] text-primary-foreground shadow-xs'
+                : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]/50'}
             `}
+            aria-pressed={activeTab === tab.id}
           >
             {tab.icon}
             {tab.label}
-            {tab.count > 0 && (
-              <span className={`${activeTab === tab.id 
-                ? 'bg-primary-foreground/20 text-primary-foreground' 
+            {tabCounts[tab.id] > 0 && (
+              <span className={`${activeTab === tab.id
+                ? 'bg-primary-foreground/20 text-primary-foreground'
                 : 'bg-[var(--color-surface-2)] text-[var(--color-text-secondary)]'} px-2 py-0.5 rounded-full text-xs`}>
-                {tab.count}
+                {tab.id === 'all' ? totalInCollection : `${tabCounts[tab.id]}/h${page}`}
               </span>
             )}
           </button>
@@ -214,9 +236,11 @@ export default function PersonalTasksPage() {
               <CheckCircle className="h-12 w-12 text-[var(--color-text-secondary)]/50 mx-auto mb-4" />
               <h3 className="font-medium text-[var(--color-text-primary)] mb-1">Tidak ada tugas</h3>
               <p className="text-sm text-[var(--color-text-secondary)]">
-                {activeTab === 'overdue'
-                  ? 'Tidak ada tugas overdue. Bagus!'
-                  : 'Semua tugas telah diselesaikan atau tidak ada jadwal hari ini.'}
+                {searchQuery
+                  ? `Tidak ada hasil untuk "${searchQuery}".`
+                  : activeTab === 'overdue'
+                    ? 'Tidak ada tugas overdue. Bagus!'
+                    : 'Halaman ini kosong.'}
               </p>
             </CardContent>
           </Card>
@@ -229,9 +253,9 @@ export default function PersonalTasksPage() {
                   <div className="flex items-center gap-2 mt-1">
                     {task.status !== 'completed' && (
                       <button
-                        onClick={() => toggleTask.mutate({ 
-                          taskId: task.id, 
-                          status: task.status === 'pending' ? 'in_progress' : 'completed' 
+                        onClick={() => toggleTask.mutate({
+                          taskId: task.id,
+                          status: task.status === 'pending' ? 'in_progress' : 'completed'
                         })}
                         className="h-6 w-6 rounded border-2 border-[var(--color-border-default)] hover:border-primary hover:bg-[var(--color-brand-500)]/5 transition-colors flex items-center justify-center"
                         aria-label={task.status === 'pending' ? 'Mulai tugas' : 'Tandai selesai'}
@@ -252,7 +276,9 @@ export default function PersonalTasksPage() {
                       <h3 className={task.status === 'completed' ? 'line-through text-[var(--color-text-secondary)]' : 'font-medium text-[var(--color-text-primary)]'}>
                         {task.title}
                       </h3>
-                      {getTypeBadge(task.type, task.is_carry_over)}
+                      {task.is_carry_over && (
+                        <Badge variant="warning" className="text-xs">Carry-over</Badge>
+                      )}
                       {getPriorityBadge(task.priority)}
                       {getStatusBadge(task.status)}
                     </div>
@@ -261,7 +287,6 @@ export default function PersonalTasksPage() {
                       <p className="mt-2 text-sm text-[var(--color-text-secondary)] line-clamp-2">{task.description}</p>
                     )}
 
-                    {/* Meta Info */}
                     <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-[var(--color-text-secondary)]">
                       {task.due_date && (
                         <span className={task.status === 'overdue' ? 'text-[var(--color-danger)] font-medium' : ''}>
@@ -276,22 +301,13 @@ export default function PersonalTasksPage() {
                           Dijadwalkan: {formatDate(task.scheduled_date)}
                         </span>
                       )}
-                      {task.is_carry_over && (
-                        <Badge variant="warning" className="text-xs">
-                          <RotateCcw className="h-3 w-3 mr-1" />
-                          Carry-over dari kemarin
-                        </Badge>
-                      )}
                     </div>
-
-                    {/* Subtasks preview */}
-                    {/* Would fetch subtasks here */}
                   </div>
 
                   {/* Actions */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Aksi tugas">
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -310,16 +326,15 @@ export default function PersonalTasksPage() {
                         </>
                       )}
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem>
-                        <Flag className="h-4 w-4 mr-2" />
-                        Tunda ke Besok
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => triggerCarryOver.mutate(task.id)}>
                         <RotateCcw className="h-4 w-4 mr-2" />
                         Jadikan Carry-over
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-[var(--color-danger)]">
+                      <DropdownMenuItem
+                        className="text-[var(--color-danger)]"
+                        onClick={() => toggleTask.mutate({ taskId: task.id, status: 'cancelled' })}
+                      >
                         <AlertTriangle className="h-4 w-4 mr-2" />
                         Batalkan
                       </DropdownMenuItem>
@@ -332,33 +347,13 @@ export default function PersonalTasksPage() {
         )}
       </div>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="font-heading text-3xl font-bold text-[var(--color-success)]">{safeTasks.filter(t => t.status === 'completed').length}</p>
-            <p className="text-sm text-[var(--color-text-secondary)]">Selesai</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="font-heading text-3xl font-bold text-[var(--color-info)]">{safeTasks.filter(t => t.status === 'in_progress').length}</p>
-            <p className="text-sm text-[var(--color-text-secondary)]">Sedang Dikerjakan</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="font-heading text-3xl font-bold text-[var(--color-warning)]">{safeTasks.filter(t => t.is_carry_over).length}</p>
-            <p className="text-sm text-[var(--color-text-secondary)]">Carry-over</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="font-heading text-3xl font-bold text-[var(--color-danger)]">{safeTasks.filter(t => t.status === 'overdue').length}</p>
-            <p className="text-sm text-[var(--color-text-secondary)]">Overdue</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Pagination — page-based, real total from /api/tasks */}
+      <Pagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        onPageChange={setPage}
+      />
     </div>
   )
 }

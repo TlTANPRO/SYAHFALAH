@@ -3,6 +3,7 @@
 // ada setelah migration 011). Kalau belum, tampil pesan singkat.
 
 import { createClient } from '@supabase/supabase-js'
+import Link from 'next/link'
 import { Phone, Calendar, MapPin, User } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 
@@ -62,7 +63,12 @@ async function load() {
   }
 }
 
-export default async function Page() {
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ divisionId: string }>
+}) {
+  const { divisionId } = await params
   const leads = await load()
   const byStage = leads.reduce<Record<string, Lead[]>>((acc, l) => {
     (acc[l.stage] = acc[l.stage] || []).push(l)
@@ -99,7 +105,13 @@ export default async function Page() {
                 </div>
                 <div className="space-y-2">
                   {items.map(lead => (
-                    <div key={lead.id} className="pipeline-stage" data-color={stage}>
+                    <Link
+                      key={lead.id}
+                      href={`/divisi/${divisionId}/leads/${lead.id}`}
+                      className="block pipeline-stage hover:ring-1 hover:ring-[var(--color-brand-500)] transition"
+                      data-color={stage}
+                      aria-label={`Buka detail lead ${lead.customer_name}`}
+                    >
                       <p className="font-medium text-sm truncate">{lead.customer_name}</p>
                       <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-tertiary)] mt-1">
                         <Phone className="h-3 w-3" />
@@ -113,7 +125,7 @@ export default async function Page() {
                         <span className="text-xs text-[var(--color-text-tertiary)]">Nilai</span>
                         <span className="font-mono text-xs font-semibold">Rp {formatRp(lead.estimated_value_rupiah)}</span>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                   {items.length === 0 && (
                     <div className="rounded-md border border-dashed border-[var(--color-border-subtle)] p-3 text-center">
