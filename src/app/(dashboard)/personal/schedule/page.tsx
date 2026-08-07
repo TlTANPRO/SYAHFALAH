@@ -8,6 +8,7 @@ import { cookies } from 'next/headers'
 import { jwtVerify } from 'jose'
 import { createClient } from '@supabase/supabase-js'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 const FALLBACK_SECRET = 'dev-only-fallback-key-for-local-development-min-32-chars'
 
@@ -123,6 +124,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs crumbs={[{ label: 'Personal', href: '/personal' }, { label: 'Jadwal' }]} />
       <div>
         <h1 className="display-lg">My Schedule</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">

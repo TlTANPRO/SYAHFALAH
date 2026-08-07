@@ -4,6 +4,7 @@
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { TrendingUp, Users, CheckCircle2, AlertCircle, ChevronRight } from 'lucide-react'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { ReportsClient } from './ReportsClient'
 
 interface DivisionTaskSummary {
@@ -62,6 +63,7 @@ export default async function Page() {
 
   return (
     <div className="space-y-6 print:space-y-4">
+      <Breadcrumbs crumbs={[{ label: 'Owner', href: '/owner' }, { label: 'Laporan Eksekutif' }]} />
       <div>
         <h1 className="display-lg">Laporan Eksekutif</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">

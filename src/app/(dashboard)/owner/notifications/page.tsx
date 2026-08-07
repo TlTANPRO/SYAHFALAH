@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js'
 import { Bell, Info, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ListFilters } from '@/components/ui/ListFilters'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface PageProps { searchParams: Promise<{ q?: string; unread?: string }> }
 
@@ -50,6 +51,7 @@ export default async function Page({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs crumbs={[{ label: 'Owner', href: '/owner' }, { label: 'Notifikasi Org' }]} />
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="display-lg flex items-center gap-2">

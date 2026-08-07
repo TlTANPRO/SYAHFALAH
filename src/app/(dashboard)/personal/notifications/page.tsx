@@ -7,6 +7,7 @@ import { createClient } from '@supabase/supabase-js'
 import { Bell, Info, AlertTriangle, CheckCircle2, MailOpen } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ListFilters } from '@/components/ui/ListFilters'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { MarkReadActions } from './MarkReadActions'
 
 interface Notif {
@@ -61,6 +62,7 @@ export default async function Page({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs crumbs={[{ label: 'Personal', href: '/personal' }, { label: 'Notifikasi' }]} />
       <div>
         <h1 className="display-lg flex items-center gap-2">
           <Bell className="h-6 w-6 text-[var(--color-brand-500)]" />
@@ -131,6 +133,16 @@ export default async function Page({ searchParams }: PageProps) {
                         <> · <a href={n.link} className="text-[var(--color-brand-500)] hover:underline">{n.link}</a></>
                       )}
                     </p>
+                    {/* Cross-link to /owner/approvals for approval-related notifications. */}
+                    {(() => {
+                      const isApproval = (kind.includes('approval') || /approval|persetujuan|approve/i.test(n.title))
+                      if (!isApproval) return null
+                      return (
+                        <a href="/owner/approvals" className="mt-2 inline-flex items-center gap-1 text-xs text-[var(--color-brand-500)] hover:underline">
+                          Buka Persetujuan →
+                        </a>
+                      )
+                    })()}
                   </div>
                 </div>
               </div>

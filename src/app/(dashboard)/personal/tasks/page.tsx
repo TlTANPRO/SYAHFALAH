@@ -12,8 +12,9 @@ import { formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Pagination } from '@/components/ui/Pagination'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -179,6 +180,7 @@ export default function PersonalTasksPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
+      <Breadcrumbs crumbs={[{ label: 'Personal', href: '/personal' }, { label: 'Tugas' }]} />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="font-heading text-2xl font-bold">Tugas</h1>
