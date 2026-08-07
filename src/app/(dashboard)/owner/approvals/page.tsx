@@ -10,6 +10,7 @@ import { ClipboardCheck, Plus, Check, X } from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { ListFilters } from '@/components/ui/ListFilters'
 import { ApprovalRequestForm } from './ApprovalRequestForm'
 import { ApprovalDecisionActions } from './ApprovalDecisionActions'
 
@@ -27,25 +28,27 @@ export interface ApprovalRow {
   decision_note: string | null
   created_at: string
   updated_at: string
-  requester?: { id: string; full_name: string; email: string } | null
-  approver?: { id: string; full_name: string; email: string } | null
+  requester?: { id: string; full_name: string; email: string } | null | { id: string; full_name: string; email: string }[]
+  approver?: { id: string; full_name: string; email: string } | null | { id: string; full_name: string; email: string }[]
 }
 
-async function loadApprovals(): Promise<ApprovalRow[]> {
+interface PageProps { searchParams: Promise<{ q?: string; status?: string; kind?: string }> }
+
+async function loadApprovals(q: string | null = null, status: string | null = null, kind: string | null = null): Promise<ApprovalRow[]> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return []
   const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
-  const { data } = await supabase
-    .from('approvals')
-    .select(`
+  let r = supabase.from('approvals').select(`
       id, requester_id, approver_id, title, description, kind, status,
       amount, metadata, decided_at, decision_note, created_at, updated_at,
-      requester:requester_id(id, full_name, email),
-      approver:approver_id(id, full_name, email)
+      requester:users!approvals_requester_id_fkey(id, full_name, email),
+      approver:users!approvals_approver_id_fkey(id, full_name, email)
     `)
-    .order('created_at', { ascending: false })
-    .limit(50)
+  if (q) r = r.ilike('title', `%${q}%`)
+  if (status) r = r.eq('status', status)
+  if (kind) r = r.eq('kind', kind)
+  const { data } = await r.order('created_at', { ascending: false }).limit(50)
   return (data ?? []) as unknown as ApprovalRow[]
 }
 
@@ -72,10 +75,30 @@ function fmtTs(s: string | null): string {
   return new Date(s).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-export default async function ApprovalsPage() {
-  const approvals = await loadApprovals()
+export default async function ApprovalsPage({ searchParams }: PageProps) {
+  const sp = await searchParams
+  const q = sp.q?.trim() || null
+  const statusFilter = sp.status || null
+  const kindFilter = sp.kind || null
+  const approvals = await loadApprovals(q, statusFilter, kindFilter)
+  // If status is filtered, split into 'decision-needed' (pending) vs decided.
+  // Otherwise show global split.
   const pending = approvals.filter(a => a.status === 'pending')
   const decided = approvals.filter(a => a.status !== 'pending')
+
+  // Helper: normalize embedded users join (PostgREST returns either object or array).
+  const requesterName = (a: ApprovalRow): string => {
+    const r = a.requester as any
+    if (Array.isArray(r)) return r[0]?.full_name ?? a.requester_id.slice(0, 8)
+    return r?.full_name ?? a.requester_id.slice(0, 8)
+  }
+  const approverName = (a: ApprovalRow): string => {
+    const p = a.approver as any
+    if (!a.approver_id) return '—'
+    if (Array.isArray(p)) return p[0]?.full_name ?? a.approver_id.slice(0, 8)
+    return p?.full_name ?? a.approver_id.slice(0, 8)
+  }
+  const filtered = Boolean(q || statusFilter || kindFilter)
 
   return (
     <div className="space-y-6">
@@ -127,15 +150,32 @@ export default async function ApprovalsPage() {
         </CardContent>
       </Card>
 
+      <ListFilters
+        basePath="/owner/approvals"
+        searchPlaceholder="Cari approval (judul)…"
+        searchValue={q ?? ''}
+        extraParams={{ status: statusFilter ?? '', kind: kindFilter ?? '' }}
+        chips={[
+          { label: 'Semua',         value: '',  active: !statusFilter, param: 'status' },
+          { label: 'Menunggu',      value: 'pending',   active: statusFilter === 'pending',   param: 'status' },
+          { label: 'Disetujui',     value: 'approved',  active: statusFilter === 'approved',  param: 'status' },
+          { label: 'Ditolak',       value: 'rejected',  active: statusFilter === 'rejected',  param: 'status' },
+          { label: 'Dibatalkan',    value: 'cancelled', active: statusFilter === 'cancelled', param: 'status' },
+        ]}
+      />
+
       {/* Pending list */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Pending ({pending.length})</CardTitle>
+          <CardTitle className="text-base">
+            Pending ({pending.length})
+            {filtered && <span className="ml-2 text-xs text-[var(--color-text-tertiary)]">— terfilter</span>}
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {pending.length === 0 ? (
             <p className="p-6 text-center text-sm text-[var(--color-text-muted)]">
-              Tidak ada approval menunggu.
+              {filtered ? 'Tidak ada approval pending sesuai filter.' : 'Tidak ada approval menunggu.'}
             </p>
           ) : (
             <ul className="divide-y divide-[var(--color-border-subtle)]">
@@ -154,7 +194,7 @@ export default async function ApprovalsPage() {
                       </p>
                     )}
                     <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1 font-mono">
-                      oleh {a.requester?.full_name ?? a.requester_id.slice(0, 8)} · {fmtTs(a.created_at)}
+                      oleh {requesterName(a)} · {fmtTs(a.created_at)}
                     </p>
                   </div>
                   <ApprovalDecisionActions id={a.id} />
@@ -173,7 +213,7 @@ export default async function ApprovalsPage() {
         <CardContent className="p-0">
           {decided.length === 0 ? (
             <p className="p-6 text-center text-sm text-[var(--color-text-muted)]">
-              Belum ada approval yang diputuskan.
+              {filtered ? 'Tidak ada riwayat sesuai filter.' : 'Belum ada approval yang diputuskan.'}
             </p>
           ) : (
             <ul className="divide-y divide-[var(--color-border-subtle)]">
@@ -198,8 +238,8 @@ export default async function ApprovalsPage() {
                       </p>
                     )}
                     <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1 font-mono">
-                      oleh {a.requester?.full_name ?? '?'} · diputuskan {fmtTs(a.decided_at)}
-                      {a.approver && ` oleh ${a.approver.full_name}`}
+                      oleh {requesterName(a)} · diputuskan {fmtTs(a.decided_at)}
+                      {a.approver_id && ` oleh ${approverName(a)}`}
                     </p>
                   </div>
                 </li>

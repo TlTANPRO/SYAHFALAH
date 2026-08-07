@@ -6,6 +6,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { Bell, Info, AlertTriangle, CheckCircle2, MailOpen } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ListFilters } from '@/components/ui/ListFilters'
 import { MarkReadActions } from './MarkReadActions'
 
 interface Notif {
@@ -19,17 +20,17 @@ interface Notif {
   created_at: string
 }
 
-async function load(userId: string) {
+interface PageProps { searchParams: Promise<{ q?: string; unread?: string }> }
+
+async function load(userId: string, q: string | null = null, unread: string | null = null) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return []
   const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
-  const { data } = await supabase
-    .from('notifications')
-    .select('id, title, body, link, is_read, read_at, payload, created_at')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(100)
+  let r = supabase.from('notifications').select('id, title, body, link, is_read, read_at, payload, created_at').eq('user_id', userId)
+  if (q) r = r.ilike('title', `%${q}%`)
+  if (unread === '1') r = r.eq('is_read', false)
+  const { data } = await r.order('created_at', { ascending: false }).limit(100)
   return (data ?? []) as Notif[]
 }
 
@@ -37,7 +38,7 @@ function fmtWhen(s: string): string {
   return new Date(s).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
-export default async function Page() {
+export default async function Page({ searchParams }: PageProps) {
   let uid: string | null = null
   {
     const { cookies } = await import('next/headers')
@@ -50,8 +51,13 @@ export default async function Page() {
     }
   }
 
-  const notifs = uid ? await load(uid) : []
-  const unread = notifs.filter(n => !n.is_read).length
+  const sp = await searchParams
+  const q = sp.q?.trim() || null
+  const unread = sp.unread || null
+  const notifs = uid ? await load(uid, q, unread) : []
+  const unreadCount = notifs.filter(n => !n.is_read).length
+  const filtered = Boolean(q || unread)
+  const activeUnread = unread === '1'
 
   return (
     <div className="space-y-6">
@@ -61,22 +67,35 @@ export default async function Page() {
           Notifikasi
         </h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          {unread > 0
-            ? `${unread} belum dibaca dari total ${notifs.length}.`
-            : notifs.length > 0
-            ? `Semua sudah dibaca. Total ${notifs.length}.`
-            : 'Belum ada notifikasi.'}
+          {filtered
+            ? `${notifs.length} hasil${activeUnread ? ' (unread only)' : ''}.`
+            : unreadCount > 0
+              ? `${unreadCount} belum dibaca dari total ${notifs.length}.`
+              : notifs.length > 0
+                ? `Semua sudah dibaca. Total ${notifs.length}.`
+                : 'Belum ada notifikasi.'}
         </p>
       </div>
 
-      {notifs.length > 0 && <MarkReadActions totalUnread={unread} />}
+      <ListFilters
+        basePath="/personal/notifications"
+        searchPlaceholder="Cari notifikasi (judul)…"
+        searchValue={q ?? ''}
+        extraParams={{ unread: unread ?? '' }}
+        chips={[
+          { label: 'Semua',          value: '',  active: !unread, param: 'unread' },
+          { label: 'Belum dibaca',  value: '1', active: unread === '1', param: 'unread', count: unread === '1' ? notifs.length : undefined },
+        ]}
+      />
+
+      {notifs.length > 0 && <MarkReadActions totalUnread={unreadCount} />}
 
       <div className="space-y-2">
         {notifs.length === 0 ? (
           <EmptyState
             icon={Bell}
-            title="Belum ada notifikasi"
-            description="Update penting akan muncul di sini."
+            title={filtered ? 'Tidak ada notifikasi sesuai filter' : 'Belum ada notifikasi'}
+            description={filtered ? 'Coba ubah kata kunci atau pilih tab Semua.' : 'Update penting akan muncul di sini.'}
           />
         ) : (
           notifs.map(n => {
@@ -106,7 +125,12 @@ export default async function Page() {
                       )}
                     </div>
                     <p className="text-sm text-[var(--color-text-secondary)] whitespace-pre-wrap">{n.body}</p>
-                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1 font-mono">{fmtWhen(n.created_at)}</p>
+                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1 font-mono">
+                      {fmtWhen(n.created_at)}
+                      {n.link && (
+                        <> · <a href={n.link} className="text-[var(--color-brand-500)] hover:underline">{n.link}</a></>
+                      )}
+                    </p>
                   </div>
                 </div>
               </div>
