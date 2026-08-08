@@ -27,30 +27,39 @@ export const dynamic = "force-dynamic"
 async function loadData(userId: string, isAdmin: boolean) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) return { requests: [], pending: 0 }
+  if (!url || !key) return { requests: [], pending: 0, tableReady: false }
   const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
 
-  // Owner/KK see all; staff see own
-  const q = sb
-    .from("leave_requests")
-    .select("id, user_id, start_date, end_date, type, reason, status, approved_by, approved_at, rejection_reason, created_at, user:users!leave_requests_user_id_fkey(name, position)")
-    .order("start_date", { ascending: false })
-    .limit(50)
+  try {
+    // Owner/KK see all; staff see own
+    const q = sb
+      .from("leave_requests")
+      .select("id, user_id, start_date, end_date, type, reason, status, approved_by, approved_at, rejection_reason, created_at")
+      .order("start_date", { ascending: false })
+      .limit(50)
 
-  if (!isAdmin) {
-    q.eq("user_id", userId)
-  }
+    if (!isAdmin) {
+      q.eq("user_id", userId)
+    }
 
-  const { data: requests } = await q
+    const { data: requests, error } = await q
+    if (error) {
+      // Table doesn't exist or other error - graceful fallback
+      return { requests: [], pending: 0, tableReady: false, error: error.message }
+    }
 
-  const { count: pending } = await sb
-    .from("leave_requests")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "pending")
+    const { count: pending } = await sb
+      .from("leave_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
 
-  return {
-    requests: requests || [],
-    pending: pending || 0,
+    return {
+      requests: requests || [],
+      pending: pending || 0,
+      tableReady: true,
+    }
+  } catch (e: any) {
+    return { requests: [], pending: 0, tableReady: false, error: e.message }
   }
 }
 
@@ -59,16 +68,20 @@ async function approve(id: string) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return
-  const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
-  const session = await requireRole("kepala_kantor")
-  await sb
-    .from("leave_requests")
-    .update({
-      status: "approved",
-      approved_by: session.userId,
-      approved_at: new Date().toISOString(),
-    })
-    .eq("id", id)
+  try {
+    const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+    const session = await requireRole("kepala_kantor")
+    await sb
+      .from("leave_requests")
+      .update({
+        status: "approved",
+        approved_by: session.userId,
+        approved_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+  } catch (e) {
+    console.error("approve failed:", e)
+  }
   revalidatePath("/leave")
 }
 
@@ -77,17 +90,21 @@ async function reject(id: string, reason: string) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return
-  const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
-  const session = await requireRole("kepala_kantor")
-  await sb
-    .from("leave_requests")
-    .update({
-      status: "rejected",
-      approved_by: session.userId,
-      approved_at: new Date().toISOString(),
-      rejection_reason: reason || "Tidak disetujui",
-    })
-    .eq("id", id)
+  try {
+    const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+    const session = await requireRole("kepala_kantor")
+    await sb
+      .from("leave_requests")
+      .update({
+        status: "rejected",
+        approved_by: session.userId,
+        approved_at: new Date().toISOString(),
+        rejection_reason: reason || "Tidak disetujui",
+      })
+      .eq("id", id)
+  } catch (e) {
+    console.error("reject failed:", e)
+  }
   revalidatePath("/leave")
 }
 
@@ -110,7 +127,11 @@ const STATUS_META: Record<string, { label: string; variant: string }> = {
 export default async function LeavePage() {
   const session = await requireRole("staff")
   const isAdmin = session.role === "owner" || session.role === "kepala_kantor"
-  const { requests, pending } = await loadData(session.userId, isAdmin)
+  const data = await loadData(session.userId, isAdmin)
+  const requests = data.requests
+  const pending = data.pending
+  const tableReady = data.tableReady
+  const tableError = data.error
 
   return (
     <div className="space-y-8">
@@ -121,6 +142,7 @@ export default async function LeavePage() {
         title={isAdmin ? "Semua pengajuan cuti." : "Pengajuan cuti saya."}
         subtitle={isAdmin ? `${pending} permintaan menunggu approval` : `${requests.length} pengajuan`}
       />
+
 
       {requests.length === 0 ? (
         <EmptyState

@@ -31,14 +31,14 @@ async function loadData(userId: string, todayISO: string) {
 
   const { data: today } = await sb
     .from("attendance_logs")
-    .select("id, user_id, date, check_in, check_out, status, notes, location")
+    .select("id, user_id, log_date, check_in_at, check_out_at, status, notes")
     .eq("user_id", userId)
-    .eq("date", todayISO)
+    .eq("log_date", todayISO)
     .maybeSingle()
 
   const { data: history } = await sb
     .from("attendance_logs")
-    .select("id, date, check_in, check_out, status, notes, location, user_id")
+    .select("id, log_date, check_in_at, check_out_at, status, notes, user_id")
     .eq("user_id", userId)
     .order("date", { ascending: false })
     .limit(30)
@@ -61,8 +61,8 @@ async function checkIn(userId: string) {
   const today = new Date().toISOString().split("T")[0]
   await sb.from("attendance_logs").upsert({
     user_id: userId,
-    date: today,
-    check_in: new Date().toISOString(),
+    log_date: today,
+    check_in_at: new Date().toISOString(),
     status: "present",
   })
   revalidatePath("/attendance")
@@ -77,7 +77,7 @@ async function checkOut(userId: string) {
   const today = new Date().toISOString().split("T")[0]
   await sb
     .from("attendance_logs")
-    .update({ check_out: new Date().toISOString() })
+    .update({ check_out_at: new Date().toISOString() })
     .eq("user_id", userId)
     .eq("date", today)
   revalidatePath("/attendance")
@@ -109,14 +109,14 @@ export default async function AttendancePage() {
         subtitle={new Date(todayISO).toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
         action={
           <div className="flex gap-2">
-            {!today?.check_in ? (
+            {!today?.check_in_at ? (
               <form action={async () => { "use server"; await checkIn(userId) }}>
                 <button type="submit" className="btn btn-primary inline-flex items-center gap-2">
                   <LogIn className="h-4 w-4" />
                   Check-in
                 </button>
               </form>
-            ) : !today?.check_out ? (
+            ) : !today?.check_out_at ? (
               <form action={async () => { "use server"; await checkOut(userId) }}>
                 <button type="submit" className="btn btn-primary inline-flex items-center gap-2">
                   <LogOut className="h-4 w-4" />
@@ -148,13 +148,13 @@ export default async function AttendancePage() {
             <div className="flex items-center gap-2">
               <LogIn className="h-4 w-4 text-[var(--color-success)]" aria-hidden />
               <span className="text-sm">
-                Check-in: {today.check_in ? new Date(today.check_in).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "—"}
+                Check-in: {today.check_in_at ? new Date(today.check_in_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "—"}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <LogOut className="h-4 w-4 text-[var(--color-warning)]" aria-hidden />
               <span className="text-sm">
-                Check-out: {today.check_out ? new Date(today.check_out).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "Belum"}
+                Check-out: {today.check_out_at ? new Date(today.check_out_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "Belum"}
               </span>
             </div>
             <span className="pill" data-variant="verdigris">
@@ -182,16 +182,16 @@ export default async function AttendancePage() {
                   <Icon className={`h-5 w-5 ${meta.color}`} aria-hidden />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium">
-                      {new Date(h.date).toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                      {new Date(h.log_date).toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
                     </p>
                     {h.notes && (
                       <p className="text-xs text-[var(--color-text-tertiary)] truncate">{h.notes}</p>
                     )}
                   </div>
                   <div className="text-right text-xs text-[var(--color-text-secondary)] tabular-nums">
-                    {h.check_in ? new Date(h.check_in).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "—"}
+                    {h.check_in_at ? new Date(h.check_in_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "—"}
                     {" → "}
-                    {h.check_out ? new Date(h.check_out).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "—"}
+                    {h.check_out_at ? new Date(h.check_out_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "—"}
                   </div>
                   <span className="pill" data-variant="neutral">{meta.label}</span>
                 </li>
