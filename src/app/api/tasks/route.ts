@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
     const url = req.nextUrl
     const scheduledDate = url.searchParams.get('scheduled_date')
     const status = url.searchParams.get('status')
+    const includeTemplate = url.searchParams.get('includeTemplate') === 'true'
     const limit = Math.min(Number(url.searchParams.get('limit')) || 50, 200)
     const onlyMine = url.searchParams.get('mine') !== 'false'
     const page = Math.max(1, Number(url.searchParams.get('page')) || 1)
@@ -46,6 +47,10 @@ export async function GET(req: NextRequest) {
     }
     if (status) {
       query = query.eq('status', status)
+    }
+    // Default: exclude template/sample tasks (C.1 fix)
+    if (!includeTemplate) {
+      query = query.or('is_template.is.null,is_template.eq.false')
     }
 
     const { data, error, count } = await query

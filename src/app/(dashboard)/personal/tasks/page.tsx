@@ -44,10 +44,11 @@ export default function PersonalTasksPage() {
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<TaskTab>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [includeTemplate, setIncludeTemplate] = useState(false)
   const [page, setPage] = useState(1)
 
   const { data, isLoading } = useQuery({
-    queryKey: ['tasks', 'all', page, PAGE_SIZE],
+    queryKey: ['tasks', 'all', page, PAGE_SIZE, includeTemplate],
     queryFn: async () => {
       try {
         const res = await fetch(`/api/tasks?page=${page}&pageSize=${PAGE_SIZE}&sort=scheduled_date:desc`, { credentials: 'include' })
@@ -226,6 +227,16 @@ export default function PersonalTasksPage() {
             className="w-64 pl-10"
             aria-label="Cari tugas"
           />
+          <label className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] cursor-pointer">
+            <input
+              type="checkbox"
+              checked={includeTemplate}
+              onChange={(e) => { setIncludeTemplate(e.target.checked); setPage(1) }}
+              className="rounded border-[var(--color-border)]"
+              aria-label="Tampilkan tugas template (contoh 2025)"
+            />
+            <span>Tampilkan template (10K+)</span>
+          </label>
           <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-secondary)]" />
         </div>
       </div>

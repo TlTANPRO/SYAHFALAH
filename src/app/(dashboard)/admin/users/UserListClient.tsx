@@ -6,8 +6,9 @@
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
-import { Search, Filter, X, ChevronRight, Users, Mail, Phone } from 'lucide-react'
+import { Search, Filter, X, ChevronRight, Users, Mail, Phone, CheckSquare } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { BulkActionBar } from '@/components/ui/BulkActionBar'
 import { Card, CardContent } from '@/components/ui/card'
 import { Pagination } from '@/components/ui/Pagination'
 
@@ -48,6 +49,7 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
   const [division, setDivision] = useState<string>('all')
   const [page, setPage] = useState(1)
   const pageSize = 25
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   const divName = useMemo(
     () => new Map(divisions.map(d => [d.id, d.name])),
@@ -219,7 +221,24 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
               </tbody>
             </table>
           </div>
-          <Pagination
+          
+
+      <BulkActionBar
+        selectedCount={selectedIds.size}
+        total={data?.total ?? 0}
+        onClear={() => setSelectedIds(new Set())}
+      >
+        <button
+          type="button"
+          onClick={() => alert(`Set ${selectedIds.size} user aktif (TODO: bulk update)`)}
+          className="px-3 py-1.5 text-xs font-medium rounded-full bg-white/15 hover:bg-white/25 transition flex items-center gap-1.5"
+        >
+          <CheckSquare className="h-3.5 w-3.5" />
+          Set Aktif
+        </button>
+      </BulkActionBar>
+
+      <Pagination
             page={page}
             pageSize={pageSize}
             total={total}
