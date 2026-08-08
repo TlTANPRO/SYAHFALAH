@@ -1,0 +1,236 @@
+{
+  "user": {
+    "name": "Reta",
+    "email": "reta@syahfalah.co",
+    "pin": "5182",
+    "role": "staff"
+  },
+  "loginSuccess": true,
+  "routes": [
+    {
+      "route": "/",
+      "status": 200,
+      "redirected": false,
+      "url": "/personal",
+      "h1": "Selamat bekerja.",
+      "errorText": "",
+      "bodyText": "Skip to main content | Syahfalah | OPERATIONS | COMMAND | Dashboard | PERSONAL | My Tasks | My KPIs | My SOW | My Schedule | Notifications | LIBRARY | SOW Library | KPI Explorer | Rewards | Calendar | Settings | Reta | Staff | Personal | ⌘ | K | 9+ | Reta | Beranda | Personal | PERSONAL · SABTU, 8 AGUSTUS | Selamat bekerja. | Pilih aktivitas di baw"
+    },
+    {
+      "route": "/owner",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Reta · role staff | Tasks saya | Kembali"
+    },
+    {
+      "route": "/personal",
+      "status": 200,
+      "redirected": false,
+      "url": "/personal",
+      "h1": "Selamat bekerja.",
+      "errorText": "",
+      "bodyText": "Skip to main content | Syahfalah | OPERATIONS | COMMAND | Dashboard | PERSONAL | My Tasks | My KPIs | My SOW | My Schedule | Notifications | LIBRARY | SOW Library | KPI Explorer | Rewards | Calendar | Settings | Reta | Staff | Personal | ⌘ | K | 9+ | Reta | Beranda | Personal | PERSONAL · SABTU, 8 AGUSTUS | Selamat bekerja. | Pilih aktivitas di baw"
+    },
+    {
+      "route": "/admin",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Reta · role staff | Tasks saya | Kembali"
+    },
+    {
+      "route": "/kepala-kantor",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Reta · role staff | Tasks saya | Kembali"
+    },
+    {
+      "route": "/divisi",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Reta · role staff | Tasks saya | Kembali"
+    },
+    {
+      "route": "/calendar",
+      "status": 200,
+      "redirected": false,
+      "url": "/calendar",
+      "h1": "Ritme kerja",
+      "errorText": "",
+      "bodyText": "Skip to main content | Syahfalah | OPERATIONS | COMMAND | Dashboard | PERSONAL | My Tasks | My KPIs | My SOW | My Schedule | Notifications | LIBRARY | SOW Library | KPI Explorer | Rewards | Calendar | Settings | Reta | Staff | Calendar | ⌘ | K | 9+ | Reta | Beranda | Ritme kerja | Ritme kerja | Meeting yang sudah dijadwalkan dan harus diikuti semua"
+    },
+    {
+      "route": "/help",
+      "status": 200,
+      "redirected": false,
+      "url": "/help",
+      "h1": "Help & FAQ",
+      "errorText": "",
+      "bodyText": "Skip to main content | Syahfalah | OPERATIONS | COMMAND | Dashboard | PERSONAL | My Tasks | My KPIs | My SOW | My Schedule | Notifications | LIBRARY | SOW Library | KPI Explorer | Rewards | Calendar | Settings | Reta | Staff | Help | ⌘ | K | 9+ | Reta | Beranda | Help & FAQ | Help & FAQ | Pertanyaan yang sering ditanyain. Kalau belum ada di sini, h"
+    },
+    {
+      "route": "/owner/marketing",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Reta · role staff | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/purchasing",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Reta · role staff | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/maintenance",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Reta · role staff | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/projects",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Reta · role staff | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/kpi",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Reta · role staff | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/reports",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Reta · role staff | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/cabangs",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Reta · role staff | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/approvals",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Reta · role staff | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/audit",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Reta · role staff | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/notifications",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Reta · role staff | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/performance",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Reta · role staff | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/twin",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Reta · role staff | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/ai/copilot",
+      "status": 404,
+      "redirected": false,
+      "url": "/owner/ai/copilot",
+      "h1": "Halaman Tidak Ditemukan",
+      "errorText": "",
+      "bodyText": "Skip to main content | 404 | Halaman Tidak Ditemukan | Tautan ini tidak aktif atau halaman sudah dipindahkan. Coba kembali ke beranda atau dashboard pribadi. | Kembali | Dashboard"
+    },
+    {
+      "route": "/personal/tasks",
+      "status": 200,
+      "redirected": false,
+      "url": "/personal/tasks",
+      "h1": "Tugas",
+      "errorText": "",
+      "bodyText": "Skip to main content | Syahfalah | OPERATIONS | COMMAND | Dashboard | PERSONAL | My Tasks | My KPIs | My SOW | My Schedule | Notifications | LIBRARY | SOW Library | KPI Explorer | Rewards | Calendar | Settings | Reta | Staff | Personal / Tasks | ⌘ | K | 9+ | Reta | Beranda | Personal | Tugas |  PERSONAL | Tugas | Sabtu, 8 Agustus 2026 | 407 total | Cari"
+    },
+    {
+      "route": "/personal/kpi",
+      "status": 200,
+      "redirected": false,
+      "url": "/personal/kpi",
+      "h1": "KPI Saya",
+      "errorText": "",
+      "bodyText": "Skip to main content | Syahfalah | OPERATIONS | COMMAND | Dashboard | PERSONAL | My Tasks | My KPIs | My SOW | My Schedule | Notifications | LIBRARY | SOW Library | KPI Explorer | Rewards | Calendar | Settings | Reta | Staff | Personal / Kpi | ⌘ | K | 9+ | Reta | Beranda | Personal | KPI |  PERSONAL | KPI Saya | Penulis · 0 KPI personal · 0 tercapai | "
+    },
+    {
+      "route": "/personal/sow",
+      "status": 200,
+      "redirected": false,
+      "url": "/personal/sow",
+      "h1": "My SOW",
+      "errorText": "",
+      "bodyText": "Skip to main content | Syahfalah | OPERATIONS | COMMAND | Dashboard | PERSONAL | My Tasks | My KPIs | My SOW | My Schedule | Notifications | LIBRARY | SOW Library | KPI Explorer | Rewards | Calendar | Settings | Reta | Staff | Personal / Sow | ⌘ | K | 9+ | Reta | Beranda | Personal | SOW |  PERSONAL | My SOW | 3 SOW relevan untuk posisi Anda | 3 SOW | S"
+    },
+    {
+      "route": "/personal/schedule",
+      "status": 200,
+      "redirected": false,
+      "url": "/personal/schedule",
+      "h1": "My Schedule",
+      "errorText": "",
+      "bodyText": "Skip to main content | Syahfalah | OPERATIONS | COMMAND | Dashboard | PERSONAL | My Tasks | My KPIs | My SOW | My Schedule | Notifications | LIBRARY | SOW Library | KPI Explorer | Rewards | Calendar | Settings | Reta | Staff | Personal / Schedule | ⌘ | K | 9+ | Reta | Beranda | Personal | Jadwal |  PERSONAL | My Schedule | Hari ini: Sabtu, 8 Agustus "
+    }
+  ]
+}

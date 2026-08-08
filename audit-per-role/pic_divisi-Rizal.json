@@ -1,0 +1,236 @@
+{
+  "user": {
+    "name": "Rizal",
+    "email": "rizal@syahfalah.com",
+    "pin": "4410",
+    "role": "pic_divisi"
+  },
+  "loginSuccess": true,
+  "routes": [
+    {
+      "route": "/",
+      "status": 200,
+      "redirected": false,
+      "url": "/divisi/5bef568a-8919-4bff-92df-b9553938f61d",
+      "h1": "",
+      "errorText": "",
+      "bodyText": "Skip to main content | Syahfalah | OPERATIONS | COMMAND | Dashboard | DIVISION | Division KPIs | Team KPIs | Leads Pipeline | Content Calendar | PERSONAL | My Tasks | My KPIs | My SOW | My Schedule | Notifications | LIBRARY | SOW Library | KPI Explorer | RACI Matrix | Rewards | Calendar | Settings | Rizal | Pic Divisi | Divisi / 5bef568a 8919 4b"
+    },
+    {
+      "route": "/owner",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Rizal · role pic_divisi | Tasks saya | Kembali"
+    },
+    {
+      "route": "/personal",
+      "status": 200,
+      "redirected": false,
+      "url": "/personal",
+      "h1": "Selamat bekerja.",
+      "errorText": "",
+      "bodyText": "Skip to main content | Syahfalah | OPERATIONS | COMMAND | Dashboard | DIVISION | Division KPIs | Team KPIs | Leads Pipeline | Content Calendar | PERSONAL | My Tasks | My KPIs | My SOW | My Schedule | Notifications | LIBRARY | SOW Library | KPI Explorer | RACI Matrix | Rewards | Calendar | Settings | Rizal | Pic Divisi | Personal | ⌘ | K | 9+ | Rizal | Ber"
+    },
+    {
+      "route": "/admin",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Rizal · role pic_divisi | Tasks saya | Kembali"
+    },
+    {
+      "route": "/kepala-kantor",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Rizal · role pic_divisi | Tasks saya | Kembali"
+    },
+    {
+      "route": "/divisi",
+      "status": 200,
+      "redirected": false,
+      "url": "/divisi",
+      "h1": "Divisi",
+      "errorText": "",
+      "bodyText": "Skip to main content | Syahfalah | OPERATIONS | COMMAND | Dashboard | DIVISION | Division KPIs | Team KPIs | Leads Pipeline | Content Calendar | PERSONAL | My Tasks | My KPIs | My SOW | My Schedule | Notifications | LIBRARY | SOW Library | KPI Explorer | RACI Matrix | Rewards | Calendar | Settings | Rizal | Pic Divisi | Divisi | ⌘ | K | 9+ | Rizal | Beran"
+    },
+    {
+      "route": "/calendar",
+      "status": 200,
+      "redirected": false,
+      "url": "/calendar",
+      "h1": "Ritme kerja",
+      "errorText": "",
+      "bodyText": "Skip to main content | Syahfalah | OPERATIONS | COMMAND | Dashboard | DIVISION | Division KPIs | Team KPIs | Leads Pipeline | Content Calendar | PERSONAL | My Tasks | My KPIs | My SOW | My Schedule | Notifications | LIBRARY | SOW Library | KPI Explorer | RACI Matrix | Rewards | Calendar | Settings | Rizal | Pic Divisi | Calendar | ⌘ | K | 9+ | Rizal | Ber"
+    },
+    {
+      "route": "/help",
+      "status": 200,
+      "redirected": false,
+      "url": "/help",
+      "h1": "Help & FAQ",
+      "errorText": "",
+      "bodyText": "Skip to main content | Syahfalah | OPERATIONS | COMMAND | Dashboard | DIVISION | Division KPIs | Team KPIs | Leads Pipeline | Content Calendar | PERSONAL | My Tasks | My KPIs | My SOW | My Schedule | Notifications | LIBRARY | SOW Library | KPI Explorer | RACI Matrix | Rewards | Calendar | Settings | Rizal | Pic Divisi | Help | ⌘ | K | 9+ | Rizal | Beranda"
+    },
+    {
+      "route": "/owner/marketing",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Rizal · role pic_divisi | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/purchasing",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Rizal · role pic_divisi | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/maintenance",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Rizal · role pic_divisi | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/projects",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Rizal · role pic_divisi | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/kpi",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Rizal · role pic_divisi | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/reports",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Rizal · role pic_divisi | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/cabangs",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Rizal · role pic_divisi | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/approvals",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Rizal · role pic_divisi | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/audit",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Rizal · role pic_divisi | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/notifications",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Rizal · role pic_divisi | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/performance",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Rizal · role pic_divisi | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/twin",
+      "status": 200,
+      "redirected": false,
+      "url": "/forbidden?reason=role",
+      "h1": "403 — Akses Ditolak",
+      "errorText": "",
+      "bodyText": "Skip to main content | 403 — Akses Ditolak | Role Anda tidak punya akses ke halaman ini. | Login sebagai Rizal · role pic_divisi | Tasks saya | Kembali"
+    },
+    {
+      "route": "/owner/ai/copilot",
+      "status": 404,
+      "redirected": false,
+      "url": "/owner/ai/copilot",
+      "h1": "Halaman Tidak Ditemukan",
+      "errorText": "",
+      "bodyText": "Skip to main content | 404 | Halaman Tidak Ditemukan | Tautan ini tidak aktif atau halaman sudah dipindahkan. Coba kembali ke beranda atau dashboard pribadi. | Kembali | Dashboard"
+    },
+    {
+      "route": "/personal/tasks",
+      "status": 200,
+      "redirected": false,
+      "url": "/personal/tasks",
+      "h1": "Tugas",
+      "errorText": "",
+      "bodyText": "Skip to main content | Syahfalah | OPERATIONS | COMMAND | Dashboard | DIVISION | Division KPIs | Team KPIs | Leads Pipeline | Content Calendar | PERSONAL | My Tasks | My KPIs | My SOW | My Schedule | Notifications | LIBRARY | SOW Library | KPI Explorer | RACI Matrix | Rewards | Calendar | Settings | Rizal | Pic Divisi | Personal / Tasks | ⌘ | K | 9+ | R"
+    },
+    {
+      "route": "/personal/kpi",
+      "status": 200,
+      "redirected": false,
+      "url": "/personal/kpi",
+      "h1": "KPI Saya",
+      "errorText": "",
+      "bodyText": "Skip to main content | Syahfalah | OPERATIONS | COMMAND | Dashboard | DIVISION | Division KPIs | Team KPIs | Leads Pipeline | Content Calendar | PERSONAL | My Tasks | My KPIs | My SOW | My Schedule | Notifications | LIBRARY | SOW Library | KPI Explorer | RACI Matrix | Rewards | Calendar | Settings | Rizal | Pic Divisi | Personal / Kpi | ⌘ | K | 9+ | Riz"
+    },
+    {
+      "route": "/personal/sow",
+      "status": 200,
+      "redirected": false,
+      "url": "/personal/sow",
+      "h1": "My SOW",
+      "errorText": "",
+      "bodyText": "Skip to main content | Syahfalah | OPERATIONS | COMMAND | Dashboard | DIVISION | Division KPIs | Team KPIs | Leads Pipeline | Content Calendar | PERSONAL | My Tasks | My KPIs | My SOW | My Schedule | Notifications | LIBRARY | SOW Library | KPI Explorer | RACI Matrix | Rewards | Calendar | Settings | Rizal | Pic Divisi | Personal / Sow | ⌘ | K | 9+ | Riz"
+    },
+    {
+      "route": "/personal/schedule",
+      "status": 200,
+      "redirected": false,
+      "url": "/personal/schedule",
+      "h1": "My Schedule",
+      "errorText": "",
+      "bodyText": "Skip to main content | Syahfalah | OPERATIONS | COMMAND | Dashboard | DIVISION | Division KPIs | Team KPIs | Leads Pipeline | Content Calendar | PERSONAL | My Tasks | My KPIs | My SOW | My Schedule | Notifications | LIBRARY | SOW Library | KPI Explorer | RACI Matrix | Rewards | Calendar | Settings | Rizal | Pic Divisi | Personal / Schedule | ⌘ | K | 9"
+    }
+  ]
+}
