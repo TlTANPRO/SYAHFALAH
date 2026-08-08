@@ -11,6 +11,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ProjectCreateForm } from './ProjectCreateForm'
 import { BlockCreateForm } from './BlockCreateForm'
 import { HouseUnitCreateForm } from './HouseUnitCreateForm'
+import { HeroSection } from '@/components/layout/HeroSection'
+import { EmptyState } from '@/components/ui/empty-state'
 
 type Tab = 'projects' | 'blocks' | 'house_units'
 const TABS: readonly Tab[] = ['projects', 'blocks', 'house_units'] as const
@@ -134,15 +136,23 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
     <div className="space-y-6">
       <Breadcrumbs crumbs={[{ label: 'Owner', href: '/owner' }, { label: 'Project Management' }]} />
 
-      <div>
-        <h1 className="display-lg flex items-center gap-2">
-          <Building2 className="h-6 w-6 text-[var(--color-brand-500)]" />
-          Project Management
-        </h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          Cluster → Project → Block → House Unit. Phase 2 (migration 017).
-        </p>
-      </div>
+      <HeroSection
+        eyebrow={<><Building2 className="inline h-3 w-3 mr-1" aria-hidden /> Project Management</>}
+        title={<h1 className="display-lg">Project Management</h1>}
+        subtitle="Cluster → Project → Block → House Unit."
+        pills={
+          activeCabang ? (
+            <span className="pill" data-variant="brand">
+              Filtered · {activeCabang.name}
+            </span>
+          ) : (
+            <span className="pill" data-variant="brand">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-500)]" aria-hidden />
+              Live · realtime
+            </span>
+          )
+        }
+      />
 
       {counts && (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -215,7 +225,26 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
             </CardHeader>
             <CardContent className="p-0">
               {rows.length === 0 ? (
-                <p className="p-6 text-center text-sm text-[var(--color-text-muted)]">Belum ada data.</p>
+                <EmptyState
+                  icon={Building2}
+                  variant={(cabangId) ? 'search-empty' : 'no-data'}
+                  eyebrow={TAB_LABEL[activeTab]}
+                  title={
+                    cabangId
+                      ? `Tidak ada ${TAB_LABEL[activeTab].toLowerCase()} di cabang ${activeCabang?.name ?? 'ini'}`
+                      : `Belum ada ${TAB_LABEL[activeTab].toLowerCase()}`
+                  }
+                  description={
+                    cabangId
+                      ? 'Coba ganti cabang atau reset filter.'
+                      : 'Tambahkan entri pertama dengan form di atas.'
+                  }
+                  action={
+                    !cabangId
+                      ? undefined
+                      : { label: 'Reset filter', href: `/owner/projects?tab=${activeTab}` }
+                  }
+                />
               ) : (
                 <ul className="divide-y divide-[var(--color-border-subtle)]">
                   {rows.map((r: any) => (
