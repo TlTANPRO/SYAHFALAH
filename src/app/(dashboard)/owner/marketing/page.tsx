@@ -13,6 +13,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ListFilters } from '@/components/ui/ListFilters'
 import { CustomerCreateForm } from './CustomerCreateForm'
 import { EntityCreateForm } from './EntityCreateForm'
+import { HeroSection } from '@/components/layout/HeroSection'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { EmptyState } from '@/components/ui/empty-state'
+import { ErrorState } from '@/components/ui/error-state'
+import { SkeletonKpiGrid } from '@/components/ui/loading-skeleton'
 
 const TABS = ['customers', 'surveys', 'bookings', 'sp3k', 'akad'] as const
 type Tab = typeof TABS[number]
@@ -173,15 +178,17 @@ export default async function MarketingPage({ searchParams }: PageProps) {
     <div className="space-y-6">
       <Breadcrumbs crumbs={[{ label: 'Owner', href: '/owner' }, { label: 'Marketing CRM' }]} />
 
-      <div>
-        <h1 className="display-lg flex items-center gap-2">
-          <Megaphone className="h-6 w-6 text-[var(--color-brand-500)]" />
-          Marketing CRM
-        </h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          Pipeline Lead → Survey → Booking → SP3K → Akad. Phase 2 domain (migration 016).
-        </p>
-      </div>
+      <HeroSection
+        eyebrow={<><Megaphone className="inline h-3 w-3 mr-1" aria-hidden /> Marketing CRM</>}
+        title={<h1 className="display-lg">Marketing CRM</h1>}
+        subtitle="Pipeline Lead → Survey → Booking → SP3K → Akad."
+        pills={
+          <span className="pill" data-variant="brand">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-500)]" aria-hidden />
+            Live · realtime
+          </span>
+        }
+      />
 
       {/* Stats */}
       {counts && (
@@ -238,9 +245,26 @@ export default async function MarketingPage({ searchParams }: PageProps) {
             </CardHeader>
             <CardContent className="p-0">
               {rows.length === 0 ? (
-                <p className="p-6 text-center text-sm text-[var(--color-text-muted)]">
-                  {filtered ? 'Tidak ada data sesuai filter.' : 'Belum ada data. Buat entri pertama Anda dengan form di atas.'}
-                </p>
+                <EmptyState
+                  icon={Megaphone}
+                  variant={filtered ? 'search-empty' : 'no-data'}
+                  eyebrow={TAB_LABEL[activeTab]}
+                  title={
+                    filtered
+                      ? `Tidak ada ${TAB_LABEL[activeTab].toLowerCase()} yang sesuai filter`
+                      : `Belum ada ${TAB_LABEL[activeTab].toLowerCase()}`
+                  }
+                  description={
+                    filtered
+                      ? 'Coba ubah filter atau kata kunci pencarian di atas.'
+                      : 'Buat entri pertama dengan form di atas. Data akan muncul otomatis di sini.'
+                  }
+                  action={
+                    !filtered
+                      ? undefined
+                      : { label: 'Reset filter', href: `/owner/marketing?tab=${activeTab}` }
+                  }
+                />
               ) : (
                 <ul className="divide-y divide-[var(--color-border-subtle)]">
                   {rows.map((r: any) => (
