@@ -13,6 +13,9 @@ import { SupplierCreateForm } from './SupplierCreateForm'
 import { MaterialCreateForm } from './MaterialCreateForm'
 import { PurchaseRequestCreateForm } from './PurchaseRequestCreateForm'
 import { PurchaseOrderCreateForm } from './PurchaseOrderCreateForm'
+import { HeroSection } from '@/components/layout/HeroSection'
+import { EmptyState } from '@/components/ui/empty-state'
+import { ShoppingCart as CartIcon } from 'lucide-react'
 
 type Tab = 'suppliers' | 'materials' | 'purchase_requests' | 'purchase_orders'
 const TABS: readonly Tab[] = ['suppliers', 'materials', 'purchase_requests', 'purchase_orders'] as const
@@ -92,15 +95,17 @@ export default async function PurchasingPage({ searchParams }: PageProps) {
     <div className="space-y-6">
       <Breadcrumbs crumbs={[{ label: 'Owner', href: '/owner' }, { label: 'Purchasing' }]} />
 
-      <div>
-        <h1 className="display-lg flex items-center gap-2">
-          <ShoppingCart className="h-6 w-6 text-[var(--color-brand-500)]" />
-          Purchasing
-        </h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          Suppliers → Materials → Purchase Requests → Purchase Orders. Phase 2 (migration 018).
-        </p>
-      </div>
+      <HeroSection
+        eyebrow={<><CartIcon className="inline h-3 w-3 mr-1" aria-hidden /> Purchasing</>}
+        title={<h1 className="display-lg">Purchasing</h1>}
+        subtitle="Suppliers → Materials → Purchase Requests → Purchase Orders."
+        pills={
+          <span className="pill" data-variant="brand">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-500)]" aria-hidden />
+            Live · realtime
+          </span>
+        }
+      />
 
       {counts && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -159,9 +164,26 @@ export default async function PurchasingPage({ searchParams }: PageProps) {
             </CardHeader>
             <CardContent className="p-0">
               {rows.length === 0 ? (
-                <p className="p-6 text-center text-sm text-[var(--color-text-muted)]">
-                  {(status || q) ? 'Tidak ada data sesuai filter.' : 'Belum ada data.'}
-                </p>
+                <EmptyState
+                  icon={CartIcon}
+                  variant={(status || q) ? 'search-empty' : 'no-data'}
+                  eyebrow={TAB_LABEL[activeTab]}
+                  title={
+                    (status || q)
+                      ? `Tidak ada ${TAB_LABEL[activeTab].toLowerCase()} yang sesuai filter`
+                      : `Belum ada ${TAB_LABEL[activeTab].toLowerCase()}`
+                  }
+                  description={
+                    (status || q)
+                      ? 'Coba ubah filter atau kata kunci pencarian di atas.'
+                      : 'Tambahkan entri pertama dengan form di atas. Data akan muncul otomatis di sini.'
+                  }
+                  action={
+                    !(status || q)
+                      ? undefined
+                      : { label: 'Reset filter', href: `/owner/purchasing?tab=${activeTab}` }
+                  }
+                />
               ) : (
                 <ul className="divide-y divide-[var(--color-border-subtle)]">
                   {rows.map((r: any) => (
