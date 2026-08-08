@@ -201,8 +201,35 @@ export function Sidebar() {
       {/* Brand header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-[var(--color-border-subtle)]">
         {!sidebarCollapsed && (
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="brand-mark" aria-hidden="true">S</div>
+          <Link href="/" className="flex items-center gap-2.5 group" aria-label="Syahfalah dashboard">
+            <div
+              className="h-8 w-8 rounded-md overflow-hidden"
+              aria-hidden="true"
+            >
+              <svg viewBox="0 0 64 64" className="h-full w-full" role="img" aria-label="Syahfalah">
+                <defs>
+                  <linearGradient id="sidebar-blue" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="oklch(0.55 0.20 260)" />
+                    <stop offset="100%" stopColor="oklch(0.38 0.18 260)" />
+                  </linearGradient>
+                  <linearGradient id="sidebar-aurum" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="oklch(0.78 0.15 75)" />
+                    <stop offset="100%" stopColor="oklch(0.62 0.16 75)" />
+                  </linearGradient>
+                  <linearGradient id="sidebar-verdigris" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="oklch(0.65 0.13 175)" />
+                    <stop offset="100%" stopColor="oklch(0.50 0.12 175)" />
+                  </linearGradient>
+                </defs>
+                <rect width="64" height="64" fill="url(#sidebar-blue)" />
+                <path d="M0 38 L64 38 L64 40 L0 40 Z" fill="url(#sidebar-aurum)" opacity="0.95" />
+                <path d="M0 50 L64 50 L64 51 L0 51 Z" fill="url(#sidebar-verdigris)" opacity="0.85" />
+                <path
+                  d="M44 22 Q44 14 32 14 Q20 14 20 22 Q20 30 32 30 Q44 30 44 38 Q44 50 32 50 Q20 50 20 42"
+                  stroke="white" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none"
+                />
+              </svg>
+            </div>
             <div className="flex flex-col">
               <span className="font-semibold text-sm tracking-tight text-[var(--color-text-primary)] leading-none">
                 Syahfalah
@@ -214,8 +241,13 @@ export function Sidebar() {
           </Link>
         )}
         {sidebarCollapsed && (
-          <Link href="/" className="brand-mark mx-auto" aria-label="Syahfalah home">
-            S
+          <Link
+            href="/"
+            className="brand-mark mx-auto"
+            aria-label="Syahfalah home"
+            title="Syahfalah"
+          >
+            <span className="relative z-10">S</span>
           </Link>
         )}
         {!sidebarCollapsed && (

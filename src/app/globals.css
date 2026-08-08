@@ -389,6 +389,27 @@
     pointer-events: none;
     opacity: 0.5;
   }
+  .hero-aurum {
+    background:
+      radial-gradient(ellipse at top left, oklch(0.72 0.15 75 / 0.10), transparent 50%),
+      radial-gradient(ellipse at bottom right, oklch(0.50 0.20 260 / 0.06), transparent 50%);
+  }
+  .hero-aurum::after {
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 39px,
+        oklch(0.72 0.15 75 / 0.05) 39px,
+        oklch(0.72 0.15 75 / 0.05) 40px
+      );
+  }
+  .hero-dense {
+    padding: 1.25rem 1.5rem;
+  }
+  .hero-dense::after {
+    opacity: 0.25;
+  }
 
   /* === Hub — config surface, calm grid === */
   .hub-grid {
