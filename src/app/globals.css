@@ -61,7 +61,7 @@
   /* === Status === */
   --color-success: var(--color-verdigris-500);
   --color-warning: oklch(0.78 0.16 70);
-  --color-danger:  oklch(0.62 0.22 25);
+  --color-danger:  oklch(0.55 0.22 25);  /* darkened from 0.62 for 4.5:1 contrast on white */
   --color-info:    oklch(0.65 0.18 235);
 
   /* === Workflow (canonical 5-stage pipeline) === */
@@ -179,6 +179,8 @@
   html, body {
     background-color: var(--color-surface-0);
     color: var(--color-text-primary);
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 
   body {
@@ -591,6 +593,23 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 0.875rem;
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  @media (min-width: 768px) {
+    .data-table {
+      display: table;
+      overflow-x: visible;
+    }
+  }
+  /* Wrapper for tables that need to fit container */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-responsive .data-table {
+    min-width: 100%;
   }
   .data-table th {
     text-align: left;
