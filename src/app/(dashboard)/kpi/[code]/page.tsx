@@ -142,7 +142,7 @@ export default async function Page({ params }: PageProps) {
                 {avgProgress != null ? `${avgProgress.toFixed(1)}%` : '—'}
               </p>
             </div>
-            <div className="h-2 rounded-full bg-[var(--color-surface-2)] overflow-hidden" role="progressbar"
+            <div className="h-2 rounded-full bg-[var(--color-surface-2)] overflow-hidden" role="progressbar" aria-label={`Rata-rata progress ${avgProgress}%`}
                  aria-valuenow={avgProgress ?? 0} aria-valuemin={0} aria-valuemax={100}>
               <div
                 className={`h-full transition-all duration-500 ease-out ${progressColor}`}

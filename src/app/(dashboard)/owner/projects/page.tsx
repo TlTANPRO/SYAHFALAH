@@ -189,7 +189,7 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
                 href={`/owner/projects?tab=${activeTab}`}
                 className={`pill ${cabangId ? '' : 'bg-[var(--color-brand-500)] text-white'}`}
                 data-variant={cabangId ? 'outline' : 'brand'}
-                aria-pressed={!cabangId}
+                aria-current={!cabangId ? "page" : "false"}
               >
                 Semua ({cabangCounts ? Array.from(cabangCounts.values()).reduce((a, b) => a + b, 0) : counts?.projects ?? 0})
               </a>
@@ -201,7 +201,7 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
                     href={`/owner/projects?tab=${activeTab}&cabang=${c.id}`}
                     className={`pill ${isActive ? 'bg-[var(--color-brand-500)] text-white' : ''}`}
                     data-variant={isActive ? 'brand' : 'outline'}
-                    aria-pressed={isActive}
+                    aria-current={isActive}
                   >
                     {c.code} ({cabangCounts.get(c.id) ?? 0})
                   </a>

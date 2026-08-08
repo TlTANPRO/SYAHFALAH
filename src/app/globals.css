@@ -55,7 +55,7 @@
   /* === Text (dark) === */
   --color-text-primary:   #fafafa;
   --color-text-secondary: #a1a1aa;
-  --color-text-tertiary:  #71717a;
+  --color-text-tertiary:  #a1a1aa;
   --color-text-muted:     #52525b;
 
   /* === Status === */
@@ -130,7 +130,7 @@
 
   --color-text-primary:   #0a0a0a;
   --color-text-secondary: #52525b;
-  --color-text-tertiary:  #71717a;
+  --color-text-tertiary:  #52525b;
   --color-text-muted:     #a1a1aa;
 
   --shadow-card: 0 0 0 1px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04);
@@ -153,14 +153,23 @@
 
   --color-text-primary:   #fafafa;
   --color-text-secondary: #a1a1aa;
-  --color-text-tertiary:  #71717a;
+  --color-text-tertiary:  #a1a1aa;
   --color-text-muted:     #52525b;
 
   --shadow-card: 0 0 0 1px rgba(255,255,255,0.06), 0 1px 2px rgba(0,0,0,0.4);
   --shadow-card-hover: 0 0 0 1px rgba(255,255,255,0.10), 0 4px 12px rgba(0,0,0,0.5);
   --shadow-elevated: 0 0 0 1px rgba(255,255,255,0.10), 0 8px 24px rgba(0,0,0,0.6);
   --color-text-inverse: #fafafa;
+  --color-brand-500:  var(--color-brand-400); /* lighter for dark mode contrast */
+  --color-brand-400:  oklch(0.72 0.20 260);
+  --color-brand-300:  oklch(0.82 0.18 260);
+  --color-verdigris-500: var(--color-verdigris-400);
+  --color-verdigris-400: oklch(0.72 0.13 175);
+  --color-warning:     oklch(0.82 0.16 70);
+  --color-danger:      oklch(0.70 0.22 25);
+  --color-info:        oklch(0.72 0.18 235);
 }
+
 
 @layer base {
   * {

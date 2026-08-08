@@ -146,7 +146,7 @@ export default async function Page({ searchParams }: PageProps) {
                     <p className="text-xs text-[var(--color-text-tertiary)] mt-1 font-mono">
                       {fmtWhen(n.created_at)}
                       {n.link && (
-                        <> · <a href={n.link} className="text-[var(--color-brand-500)] hover:underline">{n.link}</a></>
+                        <> · <a href={n.link} className="text-[var(--color-brand-500)] underline">{n.link}</a></>
                       )}
                     </p>
                     {/* Cross-link to /owner/approvals for approval-related notifications. */}
@@ -154,7 +154,7 @@ export default async function Page({ searchParams }: PageProps) {
                       const isApproval = (kind.includes('approval') || /approval|persetujuan|approve/i.test(n.title))
                       if (!isApproval) return null
                       return (
-                        <a href="/owner/approvals" className="mt-2 inline-flex items-center gap-1 text-xs text-[var(--color-brand-500)] hover:underline">
+                        <a href="/owner/approvals" className="mt-2 inline-flex items-center gap-1 text-xs text-[var(--color-brand-500)] underline">
                           Buka Persetujuan →
                         </a>
                       )

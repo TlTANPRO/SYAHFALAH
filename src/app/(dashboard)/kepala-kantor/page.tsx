@@ -236,6 +236,7 @@ export default function KepalaKantorDashboard() {
                     <div
                       className="relative h-1 w-full overflow-hidden rounded-full bg-[var(--color-surface-2)]"
                       role="progressbar"
+                      aria-label={`Progress ${div.division_name}`}
                       aria-valuenow={progress}
                       aria-valuemin={0}
                       aria-valuemax={100}
