@@ -5,7 +5,6 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { Search, Filter, X, ChevronRight, Target } from 'lucide-react'
@@ -57,6 +56,7 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 export function KpiListClient({ divisions, periods, initialData, total: initialTotal }: Props) {
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [q, setQ] = useState('')
   const [division, setDivision] = useState<string>('all')
   const [period, setPeriod] = useState<string>('all')
