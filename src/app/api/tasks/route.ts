@@ -48,10 +48,7 @@ export async function GET(req: NextRequest) {
     if (status) {
       query = query.eq('status', status)
     }
-    // Default: exclude template/sample tasks (C.1 fix)
-    if (!includeTemplate) {
-      query = query.or('is_template.is.null,is_template.eq.false')
-    }
+    // (template/sample data hard-deleted; includeTemplate flag kept for backward compat)
 
     const { data, error, count } = await query
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
