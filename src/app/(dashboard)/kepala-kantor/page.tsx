@@ -6,29 +6,56 @@
 
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
-import { Target, Building2, ClipboardList, Shield, FileText, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react'
+import {
+  Target,
+  Building2,
+  ClipboardList,
+  Shield,
+  FileText,
+  TrendingUp,
+  ArrowRight,
+} from 'lucide-react'
 import { formatPercent } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
-import { TopPageHero } from '@/components/layout/TopPageHero'
+import { HeroSection } from '@/components/layout/HeroSection'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { StatCard } from '@/components/layout/StatCard'
 import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ErrorState } from '@/components/ui/error-state'
+import { SkeletonKpiGrid, SkeletonCardGrid } from '@/components/ui/loading-skeleton'
 
 const DIVISION_ICON: Record<string, React.ReactNode> = {
-  MARKETING: <Target className="h-5 w-5" />,
-  FINANCE: <ClipboardList className="h-5 w-5" />,
-  CONSTRUCTION: <Building2 className="h-5 w-5" />,
-  MAINTENANCE: <Shield className="h-5 w-5" />,
-  MEDIA: <FileText className="h-5 w-5" />,
-  PURCHASING: <ClipboardList className="h-5 w-5" />,
+  MARKETING: <Target className="h-4 w-4" />,
+  FINANCE: <ClipboardList className="h-4 w-4" />,
+  CONSTRUCTION: <Building2 className="h-4 w-4" />,
+  MAINTENANCE: <Shield className="h-4 w-4" />,
+  MEDIA: <FileText className="h-4 w-4" />,
+  PURCHASING: <ClipboardList className="h-4 w-4" />,
+}
+
+// Map progress to semantic color tokens
+function progressAccent(progress: number): 'success' | 'info' | 'warning' | 'danger' {
+  if (progress >= 80) return 'success'
+  if (progress >= 60) return 'info'
+  if (progress >= 40) return 'warning'
+  return 'danger'
+}
+
+function progressColor(progress: number): string {
+  const accent = progressAccent(progress)
+  if (accent === 'success') return 'text-[var(--color-verdigris-500)]'
+  if (accent === 'info') return 'text-[var(--color-info)]'
+  if (accent === 'warning') return 'text-[var(--color-warning)]'
+  return 'text-[var(--color-danger)]'
 }
 
 export default function KepalaKantorDashboard() {
   const supabase = createClient()
 
   // Fetch division summary
-  const { data: divisionSummaries } = useQuery({
+  const { data: divisionSummaries, isLoading: divLoading, error: divError } = useQuery({
     queryKey: ['division-kpi-summary'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -81,28 +108,74 @@ export default function KepalaKantorDashboard() {
     },
   })
 
+  if (divError) {
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs crumbs={[{ label: 'Kepala Kantor' }]} />
+        <ErrorState
+          title="Gagal memuat data operasional"
+          description="Terjadi kesalahan saat memuat data lintas divisi. Coba lagi."
+          error={divError instanceof Error ? divError.message : 'Unknown error'}
+        />
+      </div>
+    )
+  }
+
+  if (divLoading) {
+    return (
+      <div className="space-y-8">
+        <Breadcrumbs crumbs={[{ label: 'Kepala Kantor' }]} />
+        <div className="hero">
+          <div className="relative z-10">
+            <div className="skeleton h-3 w-32 mb-3" />
+            <div className="skeleton h-10 w-1/2 mb-2" />
+            <div className="skeleton h-4 w-2/3" />
+          </div>
+        </div>
+        <SkeletonKpiGrid count={4} />
+        <SkeletonCardGrid count={6} />
+      </div>
+    )
+  }
+
   const totalTasksCompleted = taskSummary?.reduce((sum, t) => sum + (t.completed_count ?? 0), 0) ?? 0
   const totalTasksOverdue = taskSummary?.reduce((sum, t) => sum + (t.overdue_count ?? 0), 0) ?? 0
   const avgProgress = teamKPIs?.length
     ? teamKPIs.reduce((sum, m) => sum + (Number(m.avg_progress) || 0), 0) / teamKPIs.length
     : 0
+  const topPerformers = teamKPIs?.filter((m) => (Number(m.avg_progress) || 0) >= 80).length ?? 0
 
   return (
     <div className="space-y-8">
-      
-      <Breadcrumbs crumbs={[{ label: "Kepala Kantor" }]} />
-      <TopPageHero
-        title="Ringkasan Operasional"
+      <Breadcrumbs crumbs={[{ label: 'Kepala Kantor' }]} />
+
+      {/* Hero */}
+      <HeroSection
+        eyebrow={
+          <>
+            <Shield className="inline h-3 w-3 mr-1" aria-hidden /> Operasional
+          </>
+        }
+        title={<h1 className="display-lg">Ringkasan operasional</h1>}
         subtitle="Performa lintas divisi dan ritme kerja tim. Update otomatis saat data berubah."
+        pills={
+          <span className="pill" data-variant="brand">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-500)]" aria-hidden />
+            Live · realtime
+          </span>
+        }
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <section
+        aria-label="Statistik utama"
+        className="grid grid-cols-2 md:grid-cols-4 gap-3 stagger-item"
+      >
         <StatCard
           label="Anggota tim aktif"
           value={teamKPIs?.length ?? 0}
           accent="brand"
-          hint={teamKPIs ? `${teamKPIs.filter(m => (Number(m.avg_progress) || 0) >= 80).length} di atas 80%` : undefined}
+          hint={teamKPIs ? `${topPerformers} di atas 80%` : undefined}
         />
         <StatCard
           label="Rata-rata progress"
@@ -119,130 +192,193 @@ export default function KepalaKantorDashboard() {
           value={totalTasksOverdue.toLocaleString('id-ID')}
           accent={totalTasksOverdue > 0 ? 'danger' : 'neutral'}
         />
-      </div>
+      </section>
 
       {/* Division cards */}
       <section>
-        <header className="mb-4">
-          <h2 className="display-md">Performa Divisi</h2>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">Rata-rata progress KPI per divisi.</p>
-        </header>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {divisionSummaries?.map((div: any) => {
-            const progress = Number(div.avg_progress) || 0
-            const accent = progress >= 80 ? 'success' : progress >= 60 ? 'info' : progress >= 40 ? 'warning' : 'danger'
-            return (
-              <Link
-                key={div.division_id}
-                href={`/divisi/${div.division_id}`}
-                className="card hover:border-[var(--color-brand-500)]/40 transition-colors group"
-              >
-                <div className="card-body space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-mono">{div.division_code}</p>
-                      <p className="font-heading text-base font-semibold mt-1 group-hover:text-[var(--color-brand-500)] transition-colors">{div.division_name}</p>
+        <PageHeader
+          eyebrow="Divisi"
+          title={<h2 className="display-md">Performa divisi</h2>}
+          subtitle="Rata-rata progress KPI per divisi."
+        />
+        {divisionSummaries && divisionSummaries.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {divisionSummaries.map((div: any) => {
+              const progress = Number(div.avg_progress) || 0
+              const accent = progressAccent(progress)
+              return (
+                <Link
+                  key={div.division_id}
+                  href={`/divisi/${div.division_id}`}
+                  className="card hover:border-[var(--color-brand-500)]/40 transition-colors group"
+                  aria-label={`${div.division_name} — ${progress.toFixed(0)}% progress`}
+                >
+                  <div className="card-body space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="cluster-badge">{div.division_code}</p>
+                        <p className="font-heading text-base font-semibold mt-1 group-hover:text-[var(--color-brand-500)] transition-colors">
+                          {div.division_name}
+                        </p>
+                      </div>
+                      <div className="text-[var(--color-brand-500)] opacity-60">
+                        {DIVISION_ICON[div.division_code] ?? <Target className="h-4 w-4" />}
+                      </div>
                     </div>
-                    <div className="text-[var(--color-brand-500)] opacity-60">{DIVISION_ICON[div.division_code] ?? <Target className="h-5 w-5" />}</div>
-                  </div>
 
-                  <div className="flex items-baseline gap-2">
-                    <p className={`text-3xl font-heading font-bold tabular-nums ${accent === 'success' ? 'text-[var(--color-verdigris-500)]' : accent === 'info' ? 'text-[var(--color-info)]' : accent === 'warning' ? 'text-[var(--color-warning)]' : 'text-[var(--color-danger)]'}`}>{progress.toFixed(0)}%</p>
-                    <p className="text-xs text-[var(--color-text-tertiary)]">{div.kpi_count} KPI</p>
-                  </div>
+                    <div className="flex items-baseline gap-2">
+                      <p className={`text-3xl font-heading font-bold tabular-nums ${progressColor(progress)}`}>
+                        {progress.toFixed(0)}%
+                      </p>
+                      <p className="text-xs text-[var(--color-text-tertiary)]">{div.kpi_count} KPI</p>
+                    </div>
 
-                  <div className="relative h-1 w-full overflow-hidden rounded-full bg-[var(--color-surface-2)]">
-                    <div className="absolute inset-y-0 left-0 bg-[var(--color-brand-500)]" style={{ width: `${Math.min(100, progress)}%` }} />
-                  </div>
+                    <div
+                      className="relative h-1 w-full overflow-hidden rounded-full bg-[var(--color-surface-2)]"
+                      role="progressbar"
+                      aria-valuenow={progress}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                    >
+                      <div
+                        className={`absolute inset-y-0 left-0 bg-[var(--color-${accent})]`}
+                        style={{ width: `${Math.min(100, progress)}%` }}
+                      />
+                    </div>
 
-                  <div className="flex flex-wrap gap-1 text-[10px]">
-                    <span className="pill" data-variant="success">{div.achieved_count} tercapai</span>
-                    <span className="pill" data-variant="info">{div.on_track_count} on track</span>
-                    {(div.at_risk_count ?? 0) > 0 && <span className="pill" data-variant="warning">{div.at_risk_count} at risk</span>}
-                    {(div.off_track_count ?? 0) > 0 && <span className="pill" data-variant="danger">{div.off_track_count} off</span>}
+                    <div className="flex flex-wrap gap-1 text-[10px]">
+                      <span className="pill" data-variant="success">{div.achieved_count} tercapai</span>
+                      <span className="pill" data-variant="info">{div.on_track_count} on track</span>
+                      {(div.at_risk_count ?? 0) > 0 && (
+                        <span className="pill" data-variant="warning">{div.at_risk_count} at risk</span>
+                      )}
+                      {(div.off_track_count ?? 0) > 0 && (
+                        <span className="pill" data-variant="danger">{div.off_track_count} off</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </Link>
-            )
-          })}
-        </div>
+                </Link>
+              )
+            })}
+          </div>
+        ) : (
+          <EmptyState
+            icon={Building2}
+            eyebrow="Divisi"
+            title="Belum ada data performa divisi"
+            description="Tambahkan divisi dan assign KPI untuk mulai melihat performa lintas divisi."
+            action={{ label: 'Buka Admin > Divisi', href: '/admin/divisions' }}
+          />
+        )}
       </section>
 
       {/* Team KPIs */}
       <section>
-        <header className="mb-4">
-          <h2 className="display-md">Performa Tim</h2>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">{teamKPIs?.length ?? 0} anggota dengan KPI personal aktif. Klik baris untuk lihat detail.</p>
-        </header>
+        <PageHeader
+          eyebrow="Tim"
+          title={<h2 className="display-md">Performa tim</h2>}
+          subtitle={`${teamKPIs?.length ?? 0} anggota dengan KPI personal aktif. Klik baris untuk lihat detail.`}
+        />
         {teamKPIs && teamKPIs.length > 0 ? (
           <PersonalKpiTable members={teamKPIs as any} />
         ) : (
           <EmptyState
-        icon={ Target }
-        title="Belum ada data KPI personal tim."
-        description=""
-      />
+            icon={Target}
+            eyebrow="Tim"
+            title="Belum ada data KPI personal tim"
+            description="Assign KPI ke anggota tim untuk mulai menampilkan progres mereka di sini."
+            action={{ label: 'Buka Admin > Users', href: '/admin/users' }}
+          />
         )}
       </section>
 
       {/* Task summary per divisi */}
       <section>
-        <header className="mb-4">
-          <h2 className="display-md">Status Task per Divisi</h2>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">Jumlah task berdasarkan status di tiap divisi.</p>
-        </header>
+        <PageHeader
+          eyebrow="Task"
+          title={<h2 className="display-md">Status task per divisi</h2>}
+          subtitle="Jumlah task berdasarkan status di tiap divisi."
+        />
         {taskSummary && taskSummary.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {taskSummary.map((t: any) => (
-              <div key={t.division_id} className="card">
+              <Link
+                key={t.division_id}
+                href={`/divisi/${t.division_id}`}
+                className="card hover:border-[var(--color-brand-500)]/40 transition-colors"
+                aria-label={`${t.division_name} — ${Number(t.completion_rate).toFixed(0)}% selesai`}
+              >
                 <div className="card-body">
                   <div className="flex items-center justify-between mb-3">
                     <p className="font-heading text-base font-semibold">{t.division_name}</p>
-                    <span className="pill" data-variant={t.completion_rate >= 80 ? 'success' : t.completion_rate >= 60 ? 'info' : 'warning'}>
+                    <span
+                      className="pill"
+                      data-variant={
+                        t.completion_rate >= 80 ? 'success' : t.completion_rate >= 60 ? 'info' : 'warning'
+                      }
+                    >
                       {Number(t.completion_rate).toFixed(0)}% selesai
                     </span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-center">
+                  <div className="grid grid-cols-2 gap-2 text-center">
                     <div>
-                      <p className="text-2xl font-heading font-bold tabular-nums text-[var(--color-verdigris-500)]">{t.completed_count}</p>
+                      <p className="text-2xl font-heading font-bold tabular-nums text-[var(--color-verdigris-500)]">
+                        {t.completed_count}
+                      </p>
                       <p className="text-xs text-[var(--color-text-tertiary)]">Selesai</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-heading font-bold tabular-nums text-[var(--color-info)]">{t.in_progress_count}</p>
+                      <p className="text-2xl font-heading font-bold tabular-nums text-[var(--color-info)]">
+                        {t.in_progress_count}
+                      </p>
                       <p className="text-xs text-[var(--color-text-tertiary)]">Berjalan</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-heading font-bold tabular-nums text-[var(--color-warning)]">{t.pending_count}</p>
+                      <p className="text-2xl font-heading font-bold tabular-nums text-[var(--color-warning)]">
+                        {t.pending_count}
+                      </p>
                       <p className="text-xs text-[var(--color-text-tertiary)]">Tertunda</p>
                     </div>
                     <div>
-                      <p className={`text-2xl font-heading font-bold tabular-nums ${t.overdue_count > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-tertiary)]'}`}>{t.overdue_count}</p>
+                      <p
+                        className={`text-2xl font-heading font-bold tabular-nums ${t.overdue_count > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-tertiary)]'}`}
+                      >
+                        {t.overdue_count}
+                      </p>
                       <p className="text-xs text-[var(--color-text-tertiary)]">Lewat tempo</p>
                     </div>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-8 text-center">
-            <ClipboardList className="h-8 w-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
-            <p className="text-sm text-[var(--color-text-secondary)]">Belum ada data task.</p>
-          </div>
+          <EmptyState
+            icon={ClipboardList}
+            eyebrow="Task"
+            title="Belum ada data task"
+            description="Tambahkan task pertama untuk melihat distribusi status."
+          />
         )}
       </section>
 
       {/* Quick links to divisions */}
       {divisions && divisions.length > 0 && (
         <section>
-          <header className="mb-4">
-            <h2 className="display-md">Lompat ke Divisi</h2>
-            <p className="text-sm text-[var(--color-text-secondary)] mt-1">Halaman detail tiap divisi.</p>
-          </header>
+          <PageHeader
+            eyebrow="Navigasi"
+            title={<h2 className="display-md">Lompat ke divisi</h2>}
+            subtitle="Halaman detail tiap divisi."
+          />
           <div className="flex flex-wrap gap-2">
             {divisions.map((d: any) => (
-              <Link key={d.id} href={`/divisi/${d.id}`} className="pill" data-variant="brand">
-                {d.name}
+              <Link
+                key={d.id}
+                href={`/divisi/${d.id}`}
+                className="pill hover:scale-105 transition-transform"
+                data-variant="brand"
+              >
+                {d.name} <ArrowRight className="h-3 w-3" aria-hidden />
               </Link>
             ))}
           </div>
