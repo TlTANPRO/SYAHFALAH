@@ -6,15 +6,31 @@
 
 import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import { Target, TrendingUp, DollarSign, Users, CheckCircle, AlertTriangle, Building2, ClipboardList, Shield, FileText, Calendar, Home } from 'lucide-react'
+import {
+  Target,
+  TrendingUp,
+  Users,
+  ClipboardList,
+  FileText,
+  ArrowRight,
+  AlertTriangle,
+  Building2,
+} from 'lucide-react'
 import { formatCurrency, formatPercent } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { TopPageHero } from '@/components/layout/TopPageHero'
+import { HeroSection } from '@/components/layout/HeroSection'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { StatCard } from '@/components/layout/StatCard'
 import { KpiTile } from '@/components/layout/KpiTile'
 import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ErrorState } from '@/components/ui/error-state'
+import {
+  SkeletonKpiGrid,
+  SkeletonCardGrid,
+  SkeletonTable,
+} from '@/components/ui/loading-skeleton'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 export default function DivisionDashboard() {
@@ -23,7 +39,11 @@ export default function DivisionDashboard() {
   const supabase = createClient()
 
   // 1. Fetch division meta by ID
-  const { data: division, isLoading: divLoading } = useQuery({
+  const {
+    data: division,
+    isLoading: divLoading,
+    error: divError,
+  } = useQuery({
     queryKey: ['division', divisionId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -74,7 +94,7 @@ export default function DivisionDashboard() {
     enabled: !!divisionId,
   })
 
-  // 4. Fetch task summary (this division only)
+  // 4. Fetch task summary
   const { data: taskSummary } = useQuery({
     queryKey: ['division-task-summary', divisionId],
     queryFn: async () => {
@@ -104,14 +124,32 @@ export default function DivisionDashboard() {
     enabled: !!divisionId,
   })
 
-  if (divLoading) {
+  if (divError) {
     return (
       <div className="space-y-6">
-      <Breadcrumbs crumbs={[{ label: "Divisi" }, { label: "Overview" }]} />
-        <div className="h-24 rounded-lg bg-[var(--color-surface-2)] animate-pulse" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <div key={i} className="h-24 rounded-lg bg-[var(--color-surface-2)] animate-pulse" />)}
+        <Breadcrumbs crumbs={[{ label: 'Divisi' }, { label: 'Overview' }]} />
+        <ErrorState
+          title="Gagal memuat divisi"
+          description="Terjadi kesalahan saat memuat data divisi. Coba lagi atau kembali ke dashboard."
+          error={divError instanceof Error ? divError.message : 'Unknown error'}
+        />
+      </div>
+    )
+  }
+
+  if (divLoading) {
+    return (
+      <div className="space-y-8">
+        <Breadcrumbs crumbs={[{ label: 'Divisi' }, { label: 'Overview' }]} />
+        <div className="hero">
+          <div className="relative z-10">
+            <div className="skeleton h-3 w-32 mb-3" />
+            <div className="skeleton h-10 w-1/2 mb-2" />
+            <div className="skeleton h-4 w-2/3" />
+          </div>
         </div>
+        <SkeletonKpiGrid count={4} />
+        <SkeletonCardGrid count={6} />
       </div>
     )
   }
@@ -119,11 +157,15 @@ export default function DivisionDashboard() {
   if (!division) {
     return (
       <div className="space-y-6">
-        <TopPageHero
+        <Breadcrumbs crumbs={[{ label: 'Divisi' }, { label: 'Overview' }]} />
+        <HeroSection
+          eyebrow="Divisi"
           title="Divisi tidak ditemukan"
           subtitle={`ID ${divisionId} tidak ada di data aktif.`}
         />
-        <Link href="/" className="text-sm text-[var(--color-brand-500)] hover:underline">← Kembali ke dashboard</Link>
+        <Link href="/" className="btn" data-variant="primary" data-size="sm">
+          ← Kembali ke dashboard
+        </Link>
       </div>
     )
   }
@@ -132,24 +174,46 @@ export default function DivisionDashboard() {
 
   return (
     <div className="space-y-8">
+      <Breadcrumbs crumbs={[{ label: 'Divisi' }, { label: division.name }]} />
+
       {/* Hero header */}
-      <TopPageHero
-        title={division.name}
+      <HeroSection
+        eyebrow={
+          <>
+            <Building2 className="inline h-3 w-3 mr-1" aria-hidden /> Divisi
+          </>
+        }
+        title={<h1 className="display-lg">{division.name}</h1>}
         subtitle={division.description || 'Ringkasan divisi, target, dan tim.'}
-        rightSlot={
-          <span className="font-mono text-xs uppercase tracking-wider text-[var(--color-text-tertiary)]">
-            {division.code}
-          </span>
+        pills={
+          <>
+            <span className="cluster-badge">{division.code}</span>
+            <Link
+              href={`/divisi/${divisionId}/kpi`}
+              className="btn"
+              data-variant="primary"
+              data-size="sm"
+            >
+              Lihat KPI <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </Link>
+          </>
         }
       />
 
-      {/* Stats: task progress + team size + KPI count */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Stats — task progress + team size + KPI count */}
+      <section
+        aria-label="Statistik utama"
+        className="grid grid-cols-2 md:grid-cols-4 gap-4 stagger-item"
+      >
         <StatCard
           label="Task selesai"
           value={`${completionRate.toFixed(0)}%`}
           accent="brand"
-          hint={taskSummary ? `${taskSummary.completed_count} dari ${taskSummary.completed_count + taskSummary.pending_count + taskSummary.in_progress_count}` : '—'}
+          hint={
+            taskSummary
+              ? `${taskSummary.completed_count} dari ${taskSummary.completed_count + taskSummary.pending_count + taskSummary.in_progress_count}`
+              : '—'
+          }
         />
         <StatCard
           label="Lewat tempo"
@@ -166,14 +230,15 @@ export default function DivisionDashboard() {
           value={teamKPIs?.length ?? 0}
           accent="neutral"
         />
-      </div>
+      </section>
 
-      {/* Division KPIs (Level 3) */}
+      {/* Division KPIs */}
       <section>
-        <header className="mb-4">
-          <h2 className="display-md">Target KPI Divisi</h2>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">Level 3 — apa yang harus dicapai divisi {division.name} di tahun ini.</p>
-        </header>
+        <PageHeader
+          eyebrow="Target"
+          title={<h2 className="display-md">Target KPI Divisi</h2>}
+          subtitle={`Level 3 — apa yang harus dicapai divisi ${division.name} di tahun ini.`}
+        />
         {divisionKPIs && divisionKPIs.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {divisionKPIs.map((kpi: any) => (
@@ -181,12 +246,20 @@ export default function DivisionDashboard() {
                 key={kpi.id}
                 code={kpi.code}
                 name={kpi.name}
-                target={kpi.unit === 'IDR' ? formatCurrency(Number(kpi.target)) :
-                       kpi.unit === '%' ? formatPercent(Number(kpi.target)) :
-                       `${kpi.target}${kpi.unit ? ' ' + kpi.unit : ''}`}
-                actual={kpi.unit === 'IDR' ? formatCurrency(Number(kpi.actual)) :
-                        kpi.unit === '%' ? formatPercent(Number(kpi.actual)) :
-                        `${kpi.actual}${kpi.unit ? ' ' + kpi.unit : ''}`}
+                target={
+                  kpi.unit === 'IDR'
+                    ? formatCurrency(Number(kpi.target))
+                    : kpi.unit === '%'
+                    ? formatPercent(Number(kpi.target))
+                    : `${kpi.target}${kpi.unit ? ' ' + kpi.unit : ''}`
+                }
+                actual={
+                  kpi.unit === 'IDR'
+                    ? formatCurrency(Number(kpi.actual))
+                    : kpi.unit === '%'
+                    ? formatPercent(Number(kpi.actual))
+                    : `${kpi.actual}${kpi.unit ? ' ' + kpi.unit : ''}`
+                }
                 progress={Number(kpi.progress)}
                 status={kpi.status}
               />
@@ -194,56 +267,80 @@ export default function DivisionDashboard() {
           </div>
         ) : (
           <EmptyState
-        icon={ Target }
-        title="Belum ada target KPI untuk divisi ini di tahun {new Date().getFullYear()}."
-        description=""
-      />
+            icon={Target}
+            eyebrow="KPI"
+            title={`Belum ada target KPI untuk divisi ini di tahun ${new Date().getFullYear()}`}
+            description="Tambahkan target KPI melalui menu Admin > KPI Definition, atau hubungi Kepala Kantor untuk setup awal."
+            action={{ label: 'Buka KPI Library', href: '/kpi' }}
+          />
         )}
       </section>
 
-      {/* Team personal KPIs (Level 4) */}
+      {/* Team personal KPIs */}
       <section>
-        <header className="mb-4">
-          <h2 className="display-md">Performa Tim</h2>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">{teamKPIs?.length ?? 0} anggota dengan KPI personal aktif.</p>
-        </header>
+        <PageHeader
+          eyebrow="Tim"
+          title={<h2 className="display-md">Performa Tim</h2>}
+          subtitle={`${teamKPIs?.length ?? 0} anggota dengan KPI personal aktif.`}
+          actions={
+            <Link
+              href={`/divisi/${divisionId}/team`}
+              className="btn"
+              data-variant="outline"
+              data-size="sm"
+            >
+              Lihat tim <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </Link>
+          }
+        />
         {teamKPIs && teamKPIs.length > 0 ? (
           <PersonalKpiTable members={teamKPIs as any} />
         ) : (
-          <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-8 text-center">
-            <Users className="h-8 w-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
-            <p className="text-sm text-[var(--color-text-secondary)]">Belum ada anggota dengan KPI personal di divisi ini.</p>
-          </div>
+          <EmptyState
+            icon={Users}
+            eyebrow="Tim"
+            title="Belum ada anggota dengan KPI personal di divisi ini"
+            description="Tambahkan anggota tim terlebih dahulu untuk mulai melacak KPI personal mereka."
+            action={{ label: 'Buka Admin > Users', href: '/admin/users' }}
+          />
         )}
       </section>
 
       {/* Task completion breakdown */}
       <section>
-        <header className="mb-4">
-          <h2 className="display-md">Status Task</h2>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">Jumlah task berdasarkan statusnya.</p>
-        </header>
+        <PageHeader
+          eyebrow="Task"
+          title={<h2 className="display-md">Status Task</h2>}
+          subtitle="Jumlah task berdasarkan statusnya."
+        />
         {taskSummary ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <StatCard label="Selesai" value={taskSummary.completed_count} accent="success" />
             <StatCard label="Berjalan" value={taskSummary.in_progress_count} accent="info" />
             <StatCard label="Tertunda" value={taskSummary.pending_count} accent="warning" />
-            <StatCard label="Lewat tempo" value={taskSummary.overdue_count} accent={taskSummary.overdue_count > 0 ? 'danger' : 'neutral'} />
+            <StatCard
+              label="Lewat tempo"
+              value={taskSummary.overdue_count}
+              accent={taskSummary.overdue_count > 0 ? 'danger' : 'neutral'}
+            />
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-8 text-center">
-            <ClipboardList className="h-8 w-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
-            <p className="text-sm text-[var(--color-text-secondary)]">Belum ada task untuk divisi ini.</p>
-          </div>
+          <EmptyState
+            icon={ClipboardList}
+            eyebrow="Task"
+            title="Belum ada task untuk divisi ini"
+            description="Tambahkan task pertama untuk mulai melihat bagaimana status task berubah dari waktu ke waktu."
+          />
         )}
       </section>
 
       {/* SOW */}
       <section>
-        <header className="mb-4">
-          <h2 className="display-md">Scope of Work</h2>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">SOW aktif di divisi {division.name}.</p>
-        </header>
+        <PageHeader
+          eyebrow="SOW"
+          title={<h2 className="display-md">Scope of Work</h2>}
+          subtitle={`SOW aktif di divisi ${division.name}.`}
+        />
         {sows && sows.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {sows.map((sow: any) => (
@@ -251,19 +348,39 @@ export default function DivisionDashboard() {
                 <div className="card-body space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-heading text-base font-semibold">{sow.position_name}</p>
-                    <span className="pill" data-variant={sow.status === 'in_progress' ? 'info' : sow.status === 'planned' ? 'neutral' : 'success'}>{sow.status}</span>
+                    <span
+                      className="pill"
+                      data-variant={
+                        sow.status === 'in_progress'
+                          ? 'info'
+                          : sow.status === 'planned'
+                          ? 'neutral'
+                          : 'success'
+                      }
+                    >
+                      {sow.status}
+                    </span>
                   </div>
-                  <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2">{sow.tujuan_posisi}</p>
+                  <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2">
+                    {sow.tujuan_posisi}
+                  </p>
                   {sow.tools && sow.tools.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {sow.tools.slice(0, 4).map((tool: string) => (
-                        <span key={tool} className="pill" data-variant="neutral">{tool}</span>
+                        <span key={tool} className="pill" data-variant="neutral">
+                          {tool}
+                        </span>
                       ))}
                     </div>
                   )}
                   <div className="pt-2 border-t border-[var(--color-border-default)] flex items-center justify-between">
-                    <p className="text-xs text-[var(--color-text-tertiary)] font-mono">{sow.task_count} tasks</p>
-                    <Link href={`/divisi/${divisionId}/kpi`} className="text-xs text-[var(--color-brand-500)] hover:underline font-medium">
+                    <p className="text-xs text-[var(--color-text-tertiary)] font-mono">
+                      {sow.task_count} tasks
+                    </p>
+                    <Link
+                      href={`/divisi/${divisionId}/kpi`}
+                      className="text-xs text-[var(--color-brand-500)] hover:underline font-medium"
+                    >
                       Detail KPI →
                     </Link>
                   </div>
@@ -272,10 +389,13 @@ export default function DivisionDashboard() {
             ))}
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed border-[var(--color-border-default)] p-8 text-center">
-            <FileText className="h-8 w-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
-            <p className="text-sm text-[var(--color-text-secondary)]">Belum ada SOW aktif untuk divisi ini.</p>
-          </div>
+          <EmptyState
+            icon={FileText}
+            eyebrow="SOW"
+            title="Belum ada SOW aktif untuk divisi ini"
+            description="Buat SOW untuk setiap posisi di divisi. SOW membantu anggota tim memahami tanggung jawab dan target mereka."
+            action={{ label: 'Buka SOW Editor', href: '/admin/sow' }}
+          />
         )}
       </section>
     </div>
