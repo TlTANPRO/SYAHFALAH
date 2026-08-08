@@ -18,6 +18,9 @@ import { Badge } from '@/components/ui/badge'
 import { Pagination } from '@/components/ui/Pagination'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { HeroSection } from '@/components/layout/HeroSection'
+import { EmptyState } from '@/components/ui/empty-state'
+import { SkeletonRow } from '@/components/ui/loading-skeleton'
 
 type TaskTab = 'all' | 'pending' | 'in_progress' | 'overdue' | 'carry_over' | 'completed'
 
@@ -167,12 +170,20 @@ export default function PersonalTasksPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        {[...Array(5)].map((_, i) => (
-          <Card key={i} className="animate-pulse">
-            <CardContent className="h-20" />
-          </Card>
-        ))}
+      <div className="space-y-6">
+        <Breadcrumbs crumbs={[{ label: 'Personal', href: '/personal' }, { label: 'Tugas' }]} />
+        <div className="hero">
+          <div className="relative z-10">
+            <div className="skeleton h-3 w-32 mb-3" />
+            <div className="skeleton h-10 w-1/2 mb-2" />
+            <div className="skeleton h-4 w-2/3" />
+          </div>
+        </div>
+        <div className="space-y-3">
+          {[...Array(5)].map((_, i) => (
+            <SkeletonRow key={i} />
+          ))}
+        </div>
       </div>
     )
   }
@@ -181,25 +192,30 @@ export default function PersonalTasksPage() {
     <div className="space-y-6">
       {/* Header */}
       <Breadcrumbs crumbs={[{ label: 'Personal', href: '/personal' }, { label: 'Tugas' }]} />
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="font-heading text-2xl font-bold">Tugas</h1>
-          <p className="text-[var(--color-text-secondary)]">{formatDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
-        </div>
-        <div className="flex gap-2">
-          <div className="relative">
-            <Label htmlFor="tasks-search" className="sr-only">Cari tugas</Label>
-            <Input
-              id="tasks-search"
-              name="tasks-search"
-              placeholder="Cari tugas..."
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setPage(1) }}
-              className="w-64 pl-10"
-              aria-label="Cari tugas"
-            />
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-secondary)]" />
-          </div>
+      <HeroSection
+        eyebrow={<><CheckCircle className="inline h-3 w-3 mr-1" aria-hidden /> Personal</>}
+        title={<h1 className="display-lg">Tugas</h1>}
+        subtitle={formatDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+        pills={
+          <span className="pill" data-variant="brand">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-500)]" aria-hidden />
+            {totalInCollection} total
+          </span>
+        }
+      />
+      <div className="flex gap-2">
+        <div className="relative">
+          <Label htmlFor="tasks-search" className="sr-only">Cari tugas</Label>
+          <Input
+            id="tasks-search"
+            name="tasks-search"
+            placeholder="Cari tugas..."
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setPage(1) }}
+            className="w-64 pl-10"
+            aria-label="Cari tugas"
+          />
+          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-secondary)]" />
         </div>
       </div>
 
@@ -233,19 +249,30 @@ export default function PersonalTasksPage() {
       {/* Task List */}
       <div className="space-y-3">
         {filteredTasks.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <CheckCircle className="h-12 w-12 text-[var(--color-text-secondary)]/50 mx-auto mb-4" />
-              <h3 className="font-medium text-[var(--color-text-primary)] mb-1">Tidak ada tugas</h3>
-              <p className="text-sm text-[var(--color-text-secondary)]">
-                {searchQuery
-                  ? `Tidak ada hasil untuk "${searchQuery}".`
-                  : activeTab === 'overdue'
-                    ? 'Tidak ada tugas overdue. Bagus!'
-                    : 'Halaman ini kosong.'}
-              </p>
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={CheckCircle}
+            variant={searchQuery ? 'search-empty' : 'no-data'}
+            eyebrow={activeTab === 'all' ? 'Tugas' : tabs.find(t => t.id === activeTab)?.label ?? 'Tugas'}
+            title={
+              searchQuery
+                ? `Tidak ada hasil untuk "${searchQuery}"`
+                : activeTab === 'overdue'
+                  ? 'Tidak ada tugas overdue'
+                  : 'Belum ada tugas'
+            }
+            description={
+              searchQuery
+                ? 'Coba kata kunci lain atau bersihkan pencarian.'
+                : activeTab === 'overdue'
+                  ? 'Bagus! Tetap jaga ritme kerja Anda.'
+                  : 'Tugas baru akan muncul di sini.'
+            }
+            action={
+              searchQuery
+                ? { label: 'Hapus pencarian', onClick: () => { setSearchQuery(''); setPage(1) } }
+                : undefined
+            }
+          />
         ) : (
           filteredTasks.map((task) => (
             <Card key={task.id} className={task.status === 'overdue' ? 'border-[var(--color-danger)]/30 bg-[var(--color-danger)]/5' : ''}>
