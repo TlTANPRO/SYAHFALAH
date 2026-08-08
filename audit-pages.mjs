@@ -3,7 +3,6 @@
 
 import puppeteer from 'puppeteer';
 import { AxePuppeteer } from '@axe-core/puppeteer';
-import lighthouse from 'lighthouse';
 import { writeFile } from 'node:fs/promises';
 
 const BASE_URL = 'https://syahfalah-dashboard.vercel.app';

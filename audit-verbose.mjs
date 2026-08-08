@@ -1,8 +1,6 @@
 // audit-verbose.mjs - audit one page with detail
 import puppeteer from 'puppeteer';
 import { AxePuppeteer } from '@axe-core/puppeteer';
-import { writeFile } from 'node:fs/promises';
-
 const url = process.argv[2] || 'https://syahfalah-dashboard.vercel.app/owner/kpi';
 const PIN = '1607';
 

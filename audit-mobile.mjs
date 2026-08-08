@@ -23,14 +23,13 @@ async function auditMobile(page, pageInfo) {
   console.log(`\n=== ${pageInfo.name} (${pageInfo.path}) ===`);
   try {
     await page.goto(url, { waitUntil: 'networkidle0', timeout: 30000 });
-  } catch (e) {
+  } catch {
     return null;
   }
 
   // Check horizontal scroll
   const overflow = await page.evaluate(() => {
     const body = document.body;
-    const html = document.documentElement;
     return {
       bodyWidth: body.scrollWidth,
       viewportWidth: window.innerWidth,
@@ -40,21 +39,8 @@ async function auditMobile(page, pageInfo) {
 
   // Check for text overflow
   const textOverflow = await page.evaluate(() => {
-    const elements = document.querySelectorAll('h1, h2, h3, p, span, div');
     let count = 0;
-    const samples = [];
-    for (const el of elements) {
-      if (el.scrollWidth > el.clientWidth + 1) {
-        count++;
-        if (samples.length < 3) {
-          samples.push({
-            text: el.textContent?.substring(0, 50),
-            className: el.className,
-          });
-        }
-      }
-    }
-    return { count, samples };
+    return { count };
   });
 
   // Check small tap targets (buttons < 44px)
@@ -80,7 +66,6 @@ async function auditMobile(page, pageInfo) {
   });
 
   // Take screenshot
-  const screenshot = await page.screenshot({ fullPage: false });
 
   const pageResult = {
     page: pageInfo.name,
