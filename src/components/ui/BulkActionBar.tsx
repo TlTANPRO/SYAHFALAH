@@ -1,38 +1,47 @@
-// components/ui/BulkActionBar.tsx
-// Selection bar yang muncul di atas table ketika user pilih 1+ rows.
-// Generic, reusable — pass selection count + onClear + action buttons.
+// src/components/ui/BulkActionBar.tsx
+// Sticky bottom action bar that appears when rows are selected in a table.
+// Shows count + actions (export selected, delete, change status, etc).
 
 'use client'
 
+import { ReactNode } from 'react'
 import { X } from 'lucide-react'
-import type { ReactNode } from 'react'
 
-interface Props {
-  count: number
-  total: number
+interface BulkActionBarProps {
+  /** Number of selected rows. Accepts either prop name for compatibility. */
+  selectedCount?: number
+  count?: number
+  /** Total rows (for "X of Y" display). */
+  total?: number
   onClear: () => void
-  children?: ReactNode
+  children: ReactNode
 }
 
-export function BulkActionBar({ count, total, onClear, children }: Props) {
-  if (count === 0) return null
+export function BulkActionBar({ selectedCount, count, total, onClear, children }: BulkActionBarProps) {
+  const n = selectedCount ?? count ?? 0
+  if (n === 0) return null
+
   return (
     <div
-      role="toolbar"
+      role="region"
       aria-label="Bulk actions"
-      className="sticky top-16 z-20 mb-3 flex items-center gap-2 rounded-lg border border-[var(--color-brand-500)]/30 bg-[var(--color-brand-500)]/5 px-3 py-2 backdrop-blur-sm"
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full bg-[var(--color-brand-700)] text-white px-4 py-2.5 shadow-2xl motion-page-fade-in"
     >
-      <span className="text-xs font-medium">
-        {count} dari {total} dipilih
+      <span className="flex items-center gap-2 text-sm font-medium">
+        <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-white/20 text-xs font-bold">
+          {n}
+        </span>
+        {total != null ? `${n} dari ${total}` : "dipilih"}
       </span>
-      <div className="flex items-center gap-1 ml-2">{children}</div>
+      <div className="h-5 w-px bg-white/30" aria-hidden />
+      <div className="flex items-center gap-1">{children}</div>
       <button
         type="button"
         onClick={onClear}
-        className="ml-auto p-1 rounded-md text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] transition-colors"
+        className="ml-1 p-1 rounded-full hover:bg-white/20 transition"
         aria-label="Clear selection"
       >
-        <X className="h-3.5 w-3.5" />
+        <X className="h-4 w-4" />
       </button>
     </div>
   )

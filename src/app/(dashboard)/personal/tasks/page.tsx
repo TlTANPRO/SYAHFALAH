@@ -7,7 +7,8 @@
 // field did not exist in production data — see migration history).
 
 import { useState, useMemo } from 'react'
-import { CheckCircle, Clock, AlertTriangle, Plus, Filter, ChevronDown, Calendar, Flag, RotateCcw } from 'lucide-react'
+import { CheckCircle, Clock, AlertTriangle, Plus, Filter, ChevronDown, Calendar, Flag, RotateCcw,
+  Info} from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -203,6 +204,16 @@ export default function PersonalTasksPage() {
           </span>
         }
       />
+      <div className="rounded-xl border border-[var(--color-aurum-500)]/30 bg-[var(--color-aurum-500)]/5 p-4 flex items-start gap-3">
+        <Info className="h-5 w-5 text-[var(--color-aurum-500)] shrink-0 mt-0.5" aria-hidden />
+        <div>
+          <p className="font-semibold text-sm">Tugas ini berisi template contoh</p>
+          <p className="text-xs text-[var(--color-text-secondary)] mt-1">
+            Banyak tugas menggunakan judul repetitive seperti "Board Communication" dengan tanggal 2025.
+            Untuk data operasional nyata, hapus lewat menu Admin atau rubah via editor.
+          </p>
+        </div>
+      </div>
       <div className="flex gap-2">
         <div className="relative">
           <Label htmlFor="tasks-search" className="sr-only">Cari tugas</Label>

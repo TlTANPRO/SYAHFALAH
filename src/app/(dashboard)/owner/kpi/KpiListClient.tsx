@@ -5,12 +5,14 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { Search, Filter, X, ChevronRight, Target } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Pagination } from '@/components/ui/Pagination'
 import { ExportCsvButton } from '@/components/ui/ExportCsvButton'
+import { BulkActionBar } from '@/components/ui/BulkActionBar'
 import { formatValue } from '@/lib/format'
 
 export interface KpiRow {
@@ -81,6 +83,23 @@ export function KpiListClient({ divisions, periods, initialData, total: initialT
       ? { data: initialData, total: initialTotal, page: 1, pageSize }
       : undefined,
   })
+
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+  const toggleSelectAll = () => {
+    if (selectedIds.size === rows.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(rows.map(r => r.id)))
+    }
+  }
 
   const rows = data?.data ?? initialData
   const total = data?.total ?? initialTotal
@@ -169,6 +188,16 @@ export function KpiListClient({ divisions, periods, initialData, total: initialT
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border-default)]">
+                  <th className="p-3 w-8">
+                    <input
+                      type="checkbox"
+                      checked={rows.length > 0 && selectedIds.size === rows.length}
+                      ref={el => { if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < rows.length }}
+                      onChange={toggleSelectAll}
+                      aria-label="Pilih semua baris"
+                      className="h-4 w-4 rounded border-[var(--color-border-default)] cursor-pointer"
+                    />
+                  </th>
                   <th className="text-left p-3 font-medium text-[var(--color-text-secondary)]">KPI</th>
                   <th className="text-left p-3 font-medium text-[var(--color-text-secondary)]">Level</th>
                   <th className="text-left p-3 font-medium text-[var(--color-text-secondary)]">Divisi</th>
@@ -198,6 +227,15 @@ export function KpiListClient({ divisions, periods, initialData, total: initialT
                 ) : (
                   rows.map(k => (
                     <tr key={k.id} className="border-b border-[var(--color-border-default)]/50 hover:bg-[var(--color-surface-2)]/50 transition-colors">
+                        <td className="p-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(k.id)}
+                            onChange={() => toggleSelect(k.id)}
+                            aria-label={`Pilih ${k.code ?? k.name ?? 'KPI'}`}
+                            className="h-4 w-4 rounded border-[var(--color-border-default)] cursor-pointer"
+                          />
+                        </td>
                       <td className="p-3">
                         <Link
                           href={k.code ? `/kpi/${encodeURIComponent(k.code)}` : `/kpi/${k.id}`}
