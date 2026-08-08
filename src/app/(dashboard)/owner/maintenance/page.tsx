@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ListFilters } from '@/components/ui/ListFilters'
 import { TicketCreateForm } from './TicketCreateForm'
+import { HeroSection } from '@/components/layout/HeroSection'
+import { EmptyState } from '@/components/ui/empty-state'
 
 type Tab = 'tickets' | 'logs'
 const TABS: readonly Tab[] = ['tickets', 'logs'] as const
@@ -81,15 +83,17 @@ export default async function MaintenancePage({ searchParams }: PageProps) {
     <div className="space-y-6">
       <Breadcrumbs crumbs={[{ label: 'Owner', href: '/owner' }, { label: 'Maintenance' }]} />
 
-      <div>
-        <h1 className="display-lg flex items-center gap-2">
-          <Wrench className="h-6 w-6 text-[var(--color-brand-500)]" />
-          Maintenance
-        </h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          Ticket → Status changes / comments. Phase 2 (migration 019).
-        </p>
-      </div>
+      <HeroSection
+        eyebrow={<><Wrench className="inline h-3 w-3 mr-1" aria-hidden /> Maintenance</>}
+        title={<h1 className="display-lg">Maintenance</h1>}
+        subtitle="Ticket → Status changes / comments."
+        pills={
+          <span className="pill" data-variant="brand">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-500)]" aria-hidden />
+            Live · realtime
+          </span>
+        }
+      />
 
       {counts && (
         <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
@@ -146,9 +150,26 @@ export default async function MaintenancePage({ searchParams }: PageProps) {
             </CardHeader>
             <CardContent className="p-0">
               {rows.length === 0 ? (
-                <p className="p-6 text-center text-sm text-[var(--color-text-muted)]">
-                  {(priority || status || q) ? 'Tidak ada data sesuai filter.' : 'Belum ada data.'}
-                </p>
+                <EmptyState
+                  icon={Wrench}
+                  variant={(priority || status || q) ? 'search-empty' : 'no-data'}
+                  eyebrow={TAB_LABEL[activeTab]}
+                  title={
+                    (priority || status || q)
+                      ? `Tidak ada ${TAB_LABEL[activeTab].toLowerCase()} yang sesuai filter`
+                      : `Belum ada ${TAB_LABEL[activeTab].toLowerCase()}`
+                  }
+                  description={
+                    (priority || status || q)
+                      ? 'Coba ubah filter atau kata kunci pencarian di atas.'
+                      : 'Tambahkan ticket pertama dengan form di atas. Data akan muncul otomatis di sini.'
+                  }
+                  action={
+                    !(priority || status || q)
+                      ? undefined
+                      : { label: 'Reset filter', href: `/owner/maintenance?tab=${activeTab}` }
+                  }
+                />
               ) : (
                 <ul className="divide-y divide-[var(--color-border-subtle)]">
                   {rows.map((r: any) => (
