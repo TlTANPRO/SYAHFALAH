@@ -5,6 +5,7 @@
 // Owner-only (existing layout guard). Service-role reads. Mutations
 // through /api/approvals and /api/approvals/[id]/decision.
 
+import { t } from '@/lib/l10n'
 import { createClient } from '@supabase/supabase-js'
 import { ClipboardCheck, Plus, Check, X } from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'

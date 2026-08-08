@@ -4,6 +4,7 @@
 // Tabs: customers / surveys / bookings / sp3k / akad.
 // Each tab lists recent rows + a small creation form (POST → reload).
 
+import { t } from '@/lib/l10n'
 import { createClient } from '@supabase/supabase-js'
 import { Megaphone, Plus, Loader2 } from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
@@ -33,7 +34,7 @@ const TAB_LABEL: Record<Tab, string> = {
 const SURVEY_RESULT_CHIPS = [
   { value: 'interested', label: 'Interested' },
   { value: 'not_interested', label: 'Not Interested' },
-  { value: 'pending', label: 'Pending' },
+  { value: 'pending', label: t('Pending') },
   { value: 'revisit', label: 'Revisit' },
 ] as const
 
@@ -108,14 +109,14 @@ async function loadTab(tab: Tab, q: string | null = null, result: string | null 
 }
 
 const BOOKING_STATUS_CHIPS = [
-  { value: 'pending', label: 'Pending' },
+  { value: 'pending', label: t('Pending') },
   { value: 'confirmed', label: 'Confirmed' },
   { value: 'cancelled', label: 'Cancelled' },
   { value: 'expired', label: 'Expired' },
 ] as const
 
 const SP3K_STATUS_CHIPS = [
-  { value: 'pending', label: 'Pending' },
+  { value: 'pending', label: t('Pending') },
   { value: 'approved', label: 'Approved' },
   { value: 'rejected', label: 'Rejected' },
   { value: 'cancelled', label: 'Cancelled' },
