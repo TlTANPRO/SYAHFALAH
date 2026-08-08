@@ -135,7 +135,10 @@ function Section({ title, items, collapsed, pathname, divisionId }: SectionProps
       <ul className="space-y-0.5">
         {items.map((item) => {
           const href = resolveLink(item.href, divisionId)
-          const isActive = pathname === href || pathname.startsWith(href + '/')
+          // Strip query string for matching — sidebar hrefs like '/owner/marketing?tab=customers'
+          // should match pathname '/owner/marketing' regardless of which tab is active.
+          const baseHref = href.split('?')[0]
+          const isActive = pathname === baseHref || pathname.startsWith(baseHref + '/')
           const Icon = item.icon
           return (
             <li key={item.href}>
