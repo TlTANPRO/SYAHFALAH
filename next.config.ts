@@ -32,6 +32,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Enable gzip/brotli compression for text responses (HTML, JS, CSS)
+  compress: true,
   // 'standalone' output requires a Node server, but Vercel deploys Next.js
   // as Lambda serverless functions — the 'standalone' build was failing
   // pnpm run build on Vercel. Default 'undefined' lets Vercel pick the
@@ -47,6 +49,11 @@ const nextConfig: NextConfig = {
   // re-enabled once eslint-config-next catches up to ESLint 9.
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  experimental: {
+    // Tree-shake icon imports — lucide-react has 1000+ icons
+    // that get pulled in even when only 5-10 are used.
+    optimizePackageImports: ['lucide-react', 'date-fns', '@tanstack/react-query'],
   },
   async headers() {
     return [

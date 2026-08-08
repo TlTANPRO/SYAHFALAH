@@ -40,7 +40,39 @@
   --color-verdigris-500: oklch(0.65 0.13 175);
   --color-verdigris-700: oklch(0.50 0.12 175);
 
-  /* === Surfaces (dark mode default) === */
+  
+  /* === Spacing scale (R2 Design System — consistent spacing across pages) === */
+  --spacing-1:  0.25rem;   /*  4px */
+  --spacing-2:  0.5rem;    /*  8px */
+  --spacing-3:  0.75rem;   /* 12px */
+  --spacing-4:  1rem;      /* 16px */
+  --spacing-5:  1.25rem;   /* 20px */
+  --spacing-6:  1.5rem;    /* 24px */
+  --spacing-8:  2rem;      /* 32px */
+  --spacing-10: 2.5rem;    /* 40px */
+  --spacing-12: 3rem;      /* 48px */
+  --spacing-16: 4rem;      /* 64px */
+  --spacing-20: 5rem;      /* 80px */
+
+  /* === Radius scale === */
+  --radius-sm:  0.25rem;
+  --radius-md:  0.5rem;
+  --radius-lg:  0.75rem;
+  --radius-xl:  1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* === Typography scale (R2 Design System) === */
+  --font-display: 2.5rem;       /* 40px */
+  --font-h1: 2rem;              /* 32px */
+  --font-h2: 1.5rem;            /* 24px */
+  --font-h3: 1.25rem;           /* 20px */
+  --font-body: 1rem;            /* 16px */
+  --font-small: 0.875rem;       /* 14px */
+  --font-caption: 0.75rem;      /* 12px */
+  --font-label: 0.875rem;       /* 14px */
+
+/* === Surfaces (dark mode default) === */
   --color-surface-0:  #0a0a0a;            /* page background */
   --color-surface-1:  #0f0f10;            /* card background */
   --color-surface-2:  #141416;            /* nav, sidebar */

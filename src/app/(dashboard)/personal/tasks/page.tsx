@@ -215,7 +215,7 @@ export default function PersonalTasksPage() {
           </p>
         </div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <div className="relative">
           <Label htmlFor="tasks-search" className="sr-only">Cari tugas</Label>
           <Input
