@@ -67,10 +67,26 @@ export default async function Page() {
     <div className="space-y-6">
       <Breadcrumbs crumbs={[{ label: 'Matriks RACI' }]} />
       <HeroSection
-        eyebrow={<><Info className="inline h-3 w-3 mr-1" aria-hidden /> Raci</>}
+        eyebrow={<><Info className="inline h-3 w-3 mr-1" aria-hidden /> Sample Template</>}
         title={<h1 className="display-lg">Matriks RACI</h1>}
         subtitle="Siapa ngapain. R = eksekusi, A = pemilik hasil, C = dimintai pendapat, I = hanya tahu."
       />
+
+      <div
+        role="note"
+        aria-label="Sample template disclaimer"
+        className="rounded-md border border-[var(--color-info)]/40 bg-[var(--color-info)]/10 p-3 flex items-start gap-2"
+      >
+        <Info className="h-4 w-4 text-[var(--color-info)] mt-0.5" aria-hidden />
+        <div className="flex-1 text-sm text-[var(--color-text-secondary)]">
+          <strong className="font-semibold text-[var(--color-text-primary)]">Sample Template.</strong>{' '}
+          Matriks ini adalah <em>template</em> default. Admin dapat menyesuaikan aktivitas & penugasan
+          di tabel <code className="font-mono text-xs px-1 py-0.5 rounded bg-[var(--color-surface-2)]">public.raci_tasks</code>{' '}
+          & <code className="font-mono text-xs px-1 py-0.5 rounded bg-[var(--color-surface-2)]">public.raci_assignments</code>{' '}
+          via Supabase SQL editor. Untuk buat custom matrix baru, lihat{' '}
+          <Link href="/sow" className="text-[var(--color-brand-500)] underline">Daftar SOW</Link>.
+        </div>
+      </div>
 
       {noResponsible.length > 0 && (
         <div className="rounded-md border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 p-3 flex items-start gap-2">
