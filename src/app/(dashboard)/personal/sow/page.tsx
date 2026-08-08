@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { FileText, Clock, ChevronRight } from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { HeroSection } from '@/components/layout/HeroSection'
+import { EmptyState } from '@/components/ui/empty-state'
 
 interface SowTask {
   id: string
@@ -68,11 +70,26 @@ export default async function Page() {
   return (
     <div className="space-y-6">
       <Breadcrumbs crumbs={[{ label: "Personal", href: "/personal" }, { label: "SOW" }]} />
-      <div>
-        <h1 className="font-heading text-2xl font-bold">My SOW</h1>
-        <p className="text-[var(--color-text-secondary)]">{sow.length} SOW relevan untuk posisi Anda</p>
-      </div>
+      <HeroSection
+        eyebrow={<><FileText className="inline h-3 w-3 mr-1" aria-hidden /> Personal</>}
+        title={<h1 className="display-lg">My SOW</h1>}
+        subtitle={`${sow.length} SOW relevan untuk posisi Anda`}
+        pills={
+          <span className="pill" data-variant="brand">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-500)]" aria-hidden />
+            {sow.length} SOW
+          </span>
+        }
+      />
 
+      {sow.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          eyebrow="SOW"
+          title="Belum ada SOW untuk posisi Anda"
+          description="SOW akan muncul di sini setelah admin assign SOW sesuai posisi Anda."
+        />
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {sow.map(s => (
           <Card key={s.id}>
@@ -114,6 +131,7 @@ export default async function Page() {
           </Card>
         ))}
       </div>
+      )}
     </div>
   )
 }

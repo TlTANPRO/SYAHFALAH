@@ -6,6 +6,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { Bell, Info, AlertTriangle, CheckCircle2, MailOpen } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { HeroSection } from '@/components/layout/HeroSection'
 import { ListFilters } from '@/components/ui/ListFilters'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { MarkReadActions } from './MarkReadActions'
@@ -63,21 +64,32 @@ export default async function Page({ searchParams }: PageProps) {
   return (
     <div className="space-y-6">
       <Breadcrumbs crumbs={[{ label: 'Personal', href: '/personal' }, { label: 'Notifikasi' }]} />
-      <div>
-        <h1 className="display-lg flex items-center gap-2">
-          <Bell className="h-6 w-6 text-[var(--color-brand-500)]" />
-          Notifikasi
-        </h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          {filtered
+      <HeroSection
+        eyebrow={<><Bell className="inline h-3 w-3 mr-1" aria-hidden /> Personal</>}
+        title={<h1 className="display-lg">Notifikasi</h1>}
+        subtitle={
+          filtered
             ? `${notifs.length} hasil${activeUnread ? ' (unread only)' : ''}.`
             : unreadCount > 0
               ? `${unreadCount} belum dibaca dari total ${notifs.length}.`
               : notifs.length > 0
                 ? `Semua sudah dibaca. Total ${notifs.length}.`
-                : 'Belum ada notifikasi.'}
-        </p>
-      </div>
+                : 'Belum ada notifikasi.'
+        }
+        pills={
+          unreadCount > 0 ? (
+            <span className="pill" data-variant="warning">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-warning)]" aria-hidden />
+              {unreadCount} belum dibaca
+            </span>
+          ) : (
+            <span className="pill" data-variant="success">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-verdigris-500)]" aria-hidden />
+              Semua dibaca
+            </span>
+          )
+        }
+      />
 
       <ListFilters
         basePath="/personal/notifications"
@@ -96,8 +108,11 @@ export default async function Page({ searchParams }: PageProps) {
         {notifs.length === 0 ? (
           <EmptyState
             icon={Bell}
+            variant={filtered ? 'search-empty' : 'no-data'}
+            eyebrow="Notifikasi"
             title={filtered ? 'Tidak ada notifikasi sesuai filter' : 'Belum ada notifikasi'}
             description={filtered ? 'Coba ubah kata kunci atau pilih tab Semua.' : 'Update penting akan muncul di sini.'}
+            action={filtered ? { label: 'Reset filter', href: '/personal/notifications' } : undefined}
           />
         ) : (
           notifs.map(n => {

@@ -10,6 +10,9 @@ import { Badge } from '@/components/ui/badge'
 import { Target, TrendingUp, CheckCircle, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { HeroSection } from '@/components/layout/HeroSection'
+import { StatCard } from '@/components/layout/StatCard'
+import { EmptyState } from '@/components/ui/empty-state'
 
 interface KpiRow {
   id: string
@@ -72,42 +75,41 @@ export default async function Page() {
   return (
     <div className="space-y-6">
       <Breadcrumbs crumbs={[{ label: "Personal", href: "/personal" }, { label: "KPI" }]} />
-      <div>
-        <h1 className="font-heading text-2xl font-bold">KPI Saya</h1>
-        <p className="text-[var(--color-text-secondary)]">
-          {user?.position || 'User'} · {kpis.length} KPI personal · {achieved} tercapai
-        </p>
-      </div>
+      <HeroSection
+        eyebrow={<><Target className="inline h-3 w-3 mr-1" aria-hidden /> Personal</>}
+        title={<h1 className="display-lg">KPI Saya</h1>}
+        subtitle={`${user?.position || 'User'} · ${kpis.length} KPI personal · ${achieved} tercapai`}
+        pills={
+          <span className="pill" data-variant="brand">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-500)]" aria-hidden />
+            {avgProgress}% avg progress
+          </span>
+        }
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-[var(--color-text-secondary)] mb-1">
-              <Target className="h-3.5 w-3.5" />
-              <span className="text-xs uppercase tracking-wide">Total KPI</span>
-            </div>
-            <div className="font-heading text-2xl font-bold tabular-nums">{kpis.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-[var(--color-text-secondary)] mb-1">
-              <CheckCircle className="h-3.5 w-3.5" />
-              <span className="text-xs uppercase tracking-wide">Achieved</span>
-            </div>
-            <div className="font-heading text-2xl font-bold tabular-nums text-[var(--color-success)]">{achieved}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-[var(--color-text-secondary)] mb-1">
-              <TrendingUp className="h-3.5 w-3.5" />
-              <span className="text-xs uppercase tracking-wide">Avg Progress</span>
-            </div>
-            <div className="font-heading text-2xl font-bold tabular-nums">{avgProgress}%</div>
-          </CardContent>
-        </Card>
-      </div>
+      <section
+        aria-label="Statistik KPI"
+        className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger-item"
+      >
+        <StatCard
+          label="Total KPI"
+          value={kpis.length}
+          accent="brand"
+          icon={<Target className="h-3.5 w-3.5" aria-hidden />}
+        />
+        <StatCard
+          label="Achieved"
+          value={achieved}
+          accent="success"
+          icon={<CheckCircle className="h-3.5 w-3.5" aria-hidden />}
+        />
+        <StatCard
+          label="Avg Progress"
+          value={`${avgProgress}%`}
+          accent={avgProgress >= 80 ? 'success' : avgProgress >= 60 ? 'info' : 'warning'}
+          icon={<TrendingUp className="h-3.5 w-3.5" aria-hidden />}
+        />
+      </section>
 
       <Card>
         <CardHeader>

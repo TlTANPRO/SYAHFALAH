@@ -9,6 +9,8 @@ import { jwtVerify } from 'jose'
 import { createClient } from '@supabase/supabase-js'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { HeroSection } from '@/components/layout/HeroSection'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 const FALLBACK_SECRET = 'dev-only-fallback-key-for-local-development-min-32-chars'
 
@@ -125,21 +127,27 @@ export default async function Page() {
   return (
     <div className="space-y-6">
       <Breadcrumbs crumbs={[{ label: 'Personal', href: '/personal' }, { label: 'Jadwal' }]} />
-      <div>
-        <h1 className="display-lg">My Schedule</h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          Hari ini: {today}. Minggu ini: {start} – {end}.
-        </p>
-      </div>
+      <HeroSection
+        eyebrow={<><CalendarDays className="inline h-3 w-3 mr-1" aria-hidden /> Personal</>}
+        title={<h1 className="display-lg">My Schedule</h1>}
+        subtitle={`Hari ini: ${today}. Minggu ini: ${start} – ${end}.`}
+        pills={
+          <span className="pill" data-variant="brand">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-500)]" aria-hidden />
+            {tasks.length} task minggu ini
+          </span>
+        }
+      />
 
-      <div>
-        <h2 className="display-md">Ritme harian</h2>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          {daily.length > 0
+      <PageHeader
+        eyebrow="Ritme"
+        title={<h2 className="display-md">Ritme harian</h2>}
+        subtitle={
+          daily.length > 0
             ? `${daily.length} acara rutin yang harus konsisten tiap hari kerja.`
-            : 'Belum ada ritme harian — admin bisa tambah di Supabase recurring_events.'}
-        </p>
-      </div>
+            : 'Belum ada ritme harian — admin bisa tambah di Supabase recurring_events.'
+        }
+      />
       <div className="card overflow-hidden">
         <div className="overflow-x-auto"><table className="data-table">
           <thead>
@@ -163,14 +171,15 @@ export default async function Page() {
         </table></div>
       </div>
 
-      <div>
-        <h2 className="display-md">Ritme mingguan</h2>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          {weekly.length > 0
+      <PageHeader
+        eyebrow="Ritme"
+        title={<h2 className="display-md">Ritme mingguan</h2>}
+        subtitle={
+          weekly.length > 0
             ? 'Acara tetap yang tampil di kalender tiap minggu.'
-            : 'Belum ada ritme mingguan.'}
-        </p>
-      </div>
+            : 'Belum ada ritme mingguan.'
+        }
+      />
       <div className="card overflow-hidden">
         <div className="overflow-x-auto"><table className="data-table">
           <thead>
@@ -196,16 +205,22 @@ export default async function Page() {
         </table></div>
       </div>
 
-      <div>
-        <h2 className="display-md">Task minggu ini</h2>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          {tasks.length > 0 ? `${tasks.length} task dengan due date minggu ini.` : 'Belum ada task jatuh tempo minggu ini.'}
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Task"
+        title={<h2 className="display-md">Task minggu ini</h2>}
+        subtitle={
+          tasks.length > 0
+            ? `${tasks.length} task dengan due date minggu ini.`
+            : 'Belum ada task jatuh tempo minggu ini.'
+        }
+      />
       {tasks.length === 0 ? (
         <EmptyState
-          title="Tidak ada jadwal"
+          icon={CalendarDays}
+          eyebrow="Schedule"
+          title="Tidak ada jadwal minggu ini"
           description="Tugas baru akan muncul di kalender berdasarkan plan tim Anda."
+          action={undefined}
         />
       ) : (
         <div className="space-y-3">
