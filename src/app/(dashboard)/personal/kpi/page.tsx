@@ -95,19 +95,19 @@ export default async function Page() {
           label="Total KPI"
           value={kpis.length}
           accent="brand"
-          icon={<Target className="h-3.5 w-3.5" aria-hidden />}
+          icon={Target}
         />
         <StatCard
           label="Achieved"
           value={achieved}
           accent="success"
-          icon={<CheckCircle className="h-3.5 w-3.5" aria-hidden />}
+          icon={CheckCircle}
         />
         <StatCard
           label="Avg Progress"
           value={`${avgProgress}%`}
           accent={avgProgress >= 80 ? 'success' : avgProgress >= 60 ? 'info' : 'warning'}
-          icon={<TrendingUp className="h-3.5 w-3.5" aria-hidden />}
+          icon={TrendingUp}
         />
       </section>
 

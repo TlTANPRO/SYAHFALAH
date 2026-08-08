@@ -10,6 +10,7 @@ import {
   FileText,
   ArrowRight,
   Shield,
+Icon
 } from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 

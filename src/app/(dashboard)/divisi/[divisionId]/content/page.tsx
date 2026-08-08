@@ -2,9 +2,12 @@
 // Content calendar untuk divisi Media. Karena tabel content_calendar
 // belum ada, pakai data statis jadwal rutin media team.
 
-import { Calendar, Clock, User } from 'lucide-react'
+import { Calendar, Clock, User , Info
+} from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
+import { HeroSection } from '@/components/layout/HeroSection'
+import { PageHeader } from '@/components/layout/PageHeader'
 interface ContentPlan {
   minggu: string
   jenis: string
@@ -41,12 +44,11 @@ export default function Page() {
   return (
     <div className="space-y-6">
       <Breadcrumbs crumbs={[{ label: "Divisi" }, { label: "Content" }]} />
-      <div>
-        <h1 className="display-lg">Content Calendar</h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          Jadwal Agustus 2026. PIC: Reni (review), Rifki (Reels), Reta (Carousel & artikel).
-        </p>
-      </div>
+      <HeroSection
+        eyebrow={<><Info className="inline h-3 w-3 mr-1" aria-hidden /> Divisi</>}
+        title={<h1 className="display-lg">Content Calendar</h1>}
+        subtitle="Jadwal Agustus 2026. PIC: Reni (review), Rifki (Reels), Reta (Carousel & artikel)."
+      />
 
       <div className="space-y-4">
         {Object.entries(byWeek).map(([week, items]) => (

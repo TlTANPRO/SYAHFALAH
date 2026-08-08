@@ -1,8 +1,10 @@
 // components/layout/StatCard.tsx
 // Stat tile: label + big value + optional hint + accent color.
 // Optional icon (top-right) + trend indicator (delta with arrow).
+// Icon can be either a LucideIcon (component ref) or ReactNode (JSX).
 
 import type { ReactNode } from 'react'
+import { type LucideIcon } from 'lucide-react'
 
 type Accent = 'brand' | 'success' | 'warning' | 'danger' | 'info' | 'neutral'
 
@@ -29,13 +31,27 @@ interface StatCardProps {
   value: string | number
   hint?: string
   accent?: Accent
-  /** Optional icon — rendered top-right in a small chip. */
-  icon?: ReactNode
+  /** Optional icon — LucideIcon ref or ReactNode. */
+  icon?: LucideIcon | ReactNode
   /** Trend indicator — e.g. { value: '+12%', direction: 'up' }. */
   trend?: { value: string; direction: 'up' | 'down' | 'flat' }
 }
 
+function isLucideIcon(icon: LucideIcon | ReactNode): icon is LucideIcon {
+  return typeof icon === 'function' || (typeof icon === 'object' && icon !== null && '$$typeof' in icon)
+}
+
 export function StatCard({ label, value, hint, accent = 'neutral', icon, trend }: StatCardProps) {
+  let iconNode: ReactNode = null
+  if (icon) {
+    if (isLucideIcon(icon)) {
+      const Icon = icon
+      iconNode = <Icon className="h-3.5 w-3.5" aria-hidden />
+    } else {
+      iconNode = icon
+    }
+  }
+
   return (
     <div className={`card ${ACCENT_BG[accent]} relative overflow-hidden`}>
       <div className="card-body">
@@ -43,12 +59,12 @@ export function StatCard({ label, value, hint, accent = 'neutral', icon, trend }
           <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">
             {label}
           </p>
-          {icon && (
+          {iconNode && (
             <span
               className={`inline-flex h-6 w-6 items-center justify-center rounded ${ACCENT_BG[accent] || 'bg-[var(--color-surface-2)]'} ${ACCENT_TEXT[accent]}`}
               aria-hidden="true"
             >
-              {icon}
+              {iconNode}
             </span>
           )}
         </div>

@@ -7,6 +7,9 @@ import { createClient } from '@supabase/supabase-js'
 import { KpiListClient, type KpiRow } from './KpiListClient'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
+import { Info } from 'lucide-react'
+import { HeroSection } from '@/components/layout/HeroSection'
+import { PageHeader } from '@/components/layout/PageHeader'
 async function loadData() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -64,12 +67,11 @@ export default async function Page() {
   return (
     <div className="space-y-6">
       <Breadcrumbs crumbs={[{ label: "Owner", href: "/owner" }, { label: "KPI" }]} />
-      <div>
-        <h1 className="display-lg">KPI Strategis</h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          Level 1 (perusahaan) dan Level 2 (divisi). Diurutkan dari progress tertinggi.
-        </p>
-      </div>
+      <HeroSection
+        eyebrow={<><Info className="inline h-3 w-3 mr-1" aria-hidden /> Owner</>}
+        title={<h1 className="display-lg">KPI Strategis</h1>}
+        subtitle="Level 1 (perusahaan) dan Level 2 (divisi). Diurutkan dari progress tertinggi."
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

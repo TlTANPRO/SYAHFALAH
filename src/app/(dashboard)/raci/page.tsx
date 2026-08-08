@@ -7,9 +7,12 @@
 
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
-import { CheckCircle2, Circle, Eye, MessageSquare, AlertTriangle, ChevronRight } from 'lucide-react'
+import { CheckCircle2, Circle, Eye, MessageSquare, AlertTriangle, ChevronRight , Icon, Info
+} from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
+import { HeroSection } from '@/components/layout/HeroSection'
+import { PageHeader } from '@/components/layout/PageHeader'
 const ROLES = [
   { key: 'marketing',   label: 'Marketing' },
   { key: 'owner',       label: 'Owner' },
@@ -63,12 +66,11 @@ export default async function Page() {
   return (
     <div className="space-y-6">
       <Breadcrumbs crumbs={[{ label: 'Matriks RACI' }]} />
-      <div>
-        <h1 className="display-lg">Matriks RACI</h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          Siapa ngapain. R = eksekusi, A = pemilik hasil, C = dimintai pendapat, I = hanya tahu.
-        </p>
-      </div>
+      <HeroSection
+        eyebrow={<><Info className="inline h-3 w-3 mr-1" aria-hidden /> Raci</>}
+        title={<h1 className="display-lg">Matriks RACI</h1>}
+        subtitle="Siapa ngapain. R = eksekusi, A = pemilik hasil, C = dimintai pendapat, I = hanya tahu."
+      />
 
       {noResponsible.length > 0 && (
         <div className="rounded-md border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 p-3 flex items-start gap-2">

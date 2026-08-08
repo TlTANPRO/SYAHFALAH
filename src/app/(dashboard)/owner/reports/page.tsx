@@ -3,8 +3,11 @@
 
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
-import { TrendingUp, Users, CheckCircle2, AlertCircle, ChevronRight } from 'lucide-react'
+import { TrendingUp, Users, CheckCircle2, AlertCircle, ChevronRight , Info
+} from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { HeroSection } from '@/components/layout/HeroSection'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { ReportsClient } from './ReportsClient'
 
 interface DivisionTaskSummary {
@@ -64,12 +67,11 @@ export default async function Page() {
   return (
     <div className="space-y-6 print:space-y-4">
       <Breadcrumbs crumbs={[{ label: 'Owner', href: '/owner' }, { label: 'Laporan Eksekutif' }]} />
-      <div>
-        <h1 className="display-lg">Laporan Eksekutif</h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          Ringkasan keseluruhan perusahaan · {new Date().toLocaleDateString('id-ID', { dateStyle: 'long' })}
-        </p>
-      </div>
+      <HeroSection
+        eyebrow={<><Info className="inline h-3 w-3 mr-1" aria-hidden /> Owner</>}
+        title={<h1 className="display-lg">Laporan Eksekutif</h1>}
+        subtitle="Ringkasan keseluruhan perusahaan · {new Date().toLocaleDateString('id-ID', { dateStyle: 'long' })}"
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="kpi-tile">

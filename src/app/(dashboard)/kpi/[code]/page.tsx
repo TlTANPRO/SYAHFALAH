@@ -5,7 +5,8 @@
 
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Target, ChevronRight, ArrowLeft, Info } from 'lucide-react'
+import { Target, ChevronRight, ArrowLeft, Info 
+} from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { formatValue, formatDelta, timeAgo } from '@/lib/format'
 import { createClient } from '@supabase/supabase-js'

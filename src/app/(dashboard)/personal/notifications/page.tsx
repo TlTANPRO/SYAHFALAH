@@ -4,7 +4,8 @@
 // Mark-read actions call /api/notifications endpoint.
 
 import { createClient } from '@supabase/supabase-js'
-import { Bell, Info, AlertTriangle, CheckCircle2, MailOpen } from 'lucide-react'
+import { Bell, Info, AlertTriangle, CheckCircle2, MailOpen , Icon
+} from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { HeroSection } from '@/components/layout/HeroSection'
 import { ListFilters } from '@/components/ui/ListFilters'

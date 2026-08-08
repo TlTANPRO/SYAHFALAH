@@ -4,8 +4,11 @@
 
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
-import { Phone, Calendar, MapPin, User } from 'lucide-react'
+import { Phone, Calendar, MapPin, User , Info
+} from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { HeroSection } from '@/components/layout/HeroSection'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface Lead {
@@ -80,12 +83,11 @@ export default async function Page({
   return (
     <div className="space-y-6">
       <Breadcrumbs crumbs={[{ label: "Divisi", href: `/divisi/${divisionId}` }, { label: "Leads" }]} />
-      <div>
-        <h1 className="display-lg">Pipeline Marketing</h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          {leads.length > 0 ? `${leads.length} calon buyer aktif · geser ke stage berikutnya.` : 'Belum ada leads.'}
-        </p>
-      </div>
+      <HeroSection
+        eyebrow={<><Info className="inline h-3 w-3 mr-1" aria-hidden /> Divisi</>}
+        title={<h1 className="display-lg">Pipeline Marketing</h1>}
+        subtitle="{leads.length > 0 ? `${leads.length} calon buyer aktif · geser ke stage berikutnya.` : 'Belum ada leads.'}"
+      />
 
       {leads.length === 0 ? (
         <EmptyState

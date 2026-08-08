@@ -4,9 +4,12 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent } from '@/components/ui/card'
+import { HeroSection } from '@/components/layout/HeroSection'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
 import { TeamClient } from './TeamClient'
-import { Users } from 'lucide-react'
+import { Users , Info
+} from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 interface Member {
@@ -65,10 +68,11 @@ export default async function Page() {
   return (
     <div className="space-y-6">
       <Breadcrumbs crumbs={[{ label: "Kepala Kantor", href: "/kepala-kantor" }, { label: "Team" }]} />
-      <div>
-        <h1 className="font-heading text-2xl font-bold">Team KPIs</h1>
-        <p className="text-[var(--color-text-secondary)]">Overview KPI seluruh tim perusahaan</p>
-      </div>
+      <HeroSection
+        eyebrow={<><Info className="inline h-3 w-3 mr-1" aria-hidden /> Kepala Kantor</>}
+        title={<h1 className="display-lg">Team KPIs</h1>}
+        subtitle="Overview KPI seluruh tim perusahaan"
+      />
       <Card>
         <CardContent>
           <PersonalKpiTable members={members} />

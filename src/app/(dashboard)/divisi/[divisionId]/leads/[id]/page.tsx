@@ -128,12 +128,12 @@ export default async function LeadDetailPage({
           <CardContent>
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
               <Field label="Nama" value={lead.customer_name} />
-              <Field label="Telepon" value={lead.customer_phone} icon={<Phone className="h-3 w-3" />} />
-              <Field label="Cluster" value={Array.isArray((lead as any).cluster) ? (lead as any).cluster[0]?.name : (lead as any).cluster?.name ?? '—'} icon={<Building className="h-3 w-3" />} />
-              <Field label="Sumber" value={lead.source ?? '—'} icon={<Tag className="h-3 w-3" />} />
+              <Field label="Telepon" value={lead.customer_phone} icon={<Phone className="h-4 w-4" aria-hidden />} />
+              <Field label="Cluster" value={Array.isArray((lead as any).cluster) ? (lead as any).cluster[0]?.name : (lead as any).cluster?.name ?? '—'} icon={<Building className="h-4 w-4" aria-hidden />} />
+              <Field label="Sumber" value={lead.source ?? '—'} icon={<Tag className="h-4 w-4" aria-hidden />} />
               <Field label="Sales" value={Array.isArray((lead as any).assignee) ? (lead as any).assignee[0]?.full_name : (lead as any).assignee?.full_name ?? '—'} />
               <Field label="Estimasi Nilai" value={fmtMoney(lead.estimated_value_rupiah)} />
-              <Field label="Dibuat" value={fmtTime(lead.created_at)} icon={<Calendar className="h-3 w-3" />} />
+              <Field label="Dibuat" value={fmtTime(lead.created_at)} icon={<Calendar className="h-4 w-4" aria-hidden />} />
               {lead.stage === 'batal' && (
                 <Field label="Alasan Batal">
                   <span className="text-red-600">{lead.batal_reason ?? '—'}</span>
@@ -177,14 +177,14 @@ export default async function LeadDetailPage({
         </CardHeader>
         <CardContent>
           <ol className="relative border-l border-[var(--color-border-default)] ml-3 space-y-4">
-            <TimelineItem icon={<Phone className="h-3 w-3" />} time={lead.contacted_at} label="Dihubungi" />
-            <TimelineItem icon={<ClipboardCheck className="h-3 w-3" />} time={lead.surveyed_at} label="Survei" />
-            <TimelineItem icon={<Calendar className="h-3 w-3" />} time={lead.booked_at} label="Booking" />
-            <TimelineItem icon={<FileText className="h-3 w-3" />} time={lead.closing_at} label="Akad" />
+            <TimelineItem icon={<Phone className="h-4 w-4" aria-hidden />} time={lead.contacted_at} label="Dihubungi" />
+            <TimelineItem icon={<ClipboardCheck className="h-4 w-4" aria-hidden />} time={lead.surveyed_at} label="Survei" />
+            <TimelineItem icon={<Calendar className="h-4 w-4" aria-hidden />} time={lead.booked_at} label="Booking" />
+            <TimelineItem icon={<FileText className="h-4 w-4" aria-hidden />} time={lead.closing_at} label="Akad" />
             {lead.stage === 'batal' && (
-              <TimelineItem icon={<Tag className="h-3 w-3" />} time={lead.batal_at} label="Batal" muted note={lead.batal_reason ?? undefined} />
+              <TimelineItem icon={<Tag className="h-4 w-4" aria-hidden />} time={lead.batal_at} label="Batal" muted note={lead.batal_reason ?? undefined} />
             )}
-            <TimelineItem icon={<User className="h-3 w-3" />} time={lead.created_at} label="Lead dibuat" muted />
+            <TimelineItem icon={<User className="h-4 w-4" aria-hidden />} time={lead.created_at} label="Lead dibuat" muted />
           </ol>
         </CardContent>
       </Card>

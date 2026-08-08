@@ -3,8 +3,10 @@
 // Owner-only. Shows branch stats + create form (foundation; full
 // branch-scoping UI is a separate sprint).
 
-import { Building, Plus } from 'lucide-react'
+import { Building, Plus , Info
+} from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { CabangCreateForm } from './CabangCreateForm'
@@ -101,7 +103,10 @@ export default async function CabangsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {cabangs.length === 0 ? (
-            <p className="p-6 text-center text-sm text-[var(--color-text-muted)]">Belum ada cabang.</p>
+            <EmptyState
+              icon={Info}
+              title="Belum ada cabang."
+            />
           ) : (
             <ul className="divide-y divide-[var(--color-border-subtle)]">
               {cabangs.map(c => (
