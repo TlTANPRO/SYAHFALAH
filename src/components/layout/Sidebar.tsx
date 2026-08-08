@@ -36,7 +36,9 @@ import {
   Bell,
   ChevronLeft,
   ChevronRight,
-} from 'lucide-react'
+  CheckCircle2,
+  CalendarOff,
+  Network,} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -88,6 +90,8 @@ const personalNav: NavItem[] = [
   { name: 'My SOW', href: '/personal/sow', icon: FileText, roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },
   { name: 'My Schedule', href: '/personal/schedule', icon: Calendar, roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },
   { name: 'Notifications', href: '/personal/notifications', icon: ClipboardList, roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },
+  { name: 'Attendance', href: '/attendance', icon: CheckCircle2, roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },
+  { name: 'Leave', href: '/leave', icon: CalendarOff, roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },
 ]
 
 const adminNav: NavItem[] = [
@@ -98,6 +102,9 @@ const adminNav: NavItem[] = [
 
 const libraryNav: NavItem[] = [
   { name: 'SOW Library', href: '/sow', icon: FileText, roles: ['owner', 'kepala_kantor', 'pic_divisi', 'staff'] },
+  { name: 'Employees', href: '/employees', icon: Users, roles: ['owner', 'kepala_kantor', 'pic_divisi'] },
+  { name: 'Org Chart', href: '/org-chart', icon: Network, roles: ['owner', 'kepala_kantor', 'pic_divisi'] },
+  { name: 'Documents', href: '/documents', icon: FileText, roles: ['owner', 'kepala_kantor', 'pic_divisi', 'staff'] },
   { name: 'KPI Explorer', href: '/kpi', icon: Target, roles: ['owner', 'kepala_kantor', 'pic_divisi', 'staff'] },
   { name: 'RACI Matrix', href: '/raci', icon: GitBranch, roles: ['owner', 'kepala_kantor', 'pic_divisi'] },
   { name: 'Rewards', href: '/rewards', icon: Award, roles: ['owner', 'kepala_kantor', 'pic_divisi', 'staff'] },
