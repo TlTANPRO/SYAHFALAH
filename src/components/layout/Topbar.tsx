@@ -19,6 +19,7 @@ import { useUIStore } from '@/stores/uiStore'
 import { useTheme } from '@/providers/ThemeProvider'
 import { NotificationBell } from '@/components/notification/NotificationBell'
 import { UserMenu } from '@/components/auth/UserMenu'
+import { LiveIndicator } from '@/components/ui/live-indicator'
 
 function formatPath(pathname: string): string {
   if (pathname === '/') return 'Beranda'
@@ -119,6 +120,9 @@ export function Topbar() {
           >
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
+
+          {/* Live indicator */}
+          <LiveIndicator />
 
           {/* User Menu */}
           <UserMenu user={user} />

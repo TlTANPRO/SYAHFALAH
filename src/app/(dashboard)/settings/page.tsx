@@ -1,22 +1,58 @@
 // src/app/(dashboard)/settings/page.tsx
 // Halaman pengaturan. Profil, notifikasi, tema, dan session.
+// v2: Notifikasi toggles pakai <SwitchField> + auto-save ke API
+// (live sync via users.notification_prefs jsonb column).
 
 'use client'
 
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Moon, Sun, Bell, Lock, User, Smartphone } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { SwitchField } from '@/components/ui/switch'
+import { useToggleMutation } from '@/lib/hooks/use-toggle-mutation'
+import { useUIStore } from '@/stores/uiStore'
+
+const NOTIF_PREF_KEYS = ['whatsapp_group', 'email', 'desktop_push'] as const
+type NotifPrefKey = typeof NOTIF_PREF_KEYS[number]
+
+interface PrefsResponse {
+  prefs: Record<string, boolean>
+}
+
+async function fetchPrefs(): Promise<PrefsResponse> {
+  const res = await fetch('/api/notifications/preferences', { credentials: 'include' })
+  if (!res.ok) throw new Error('Failed to load preferences')
+  return res.json()
+}
+
+const NOTIF_META: Array<{ key: NotifPrefKey; label: string; desc: string }> = [
+  { key: 'whatsapp_group', label: 'WhatsApp group Syahfalah', desc: 'Notifikasi buyer baru, SP3K, dan akad' },
+  { key: 'email', label: 'Email', desc: 'Weekly recap setiap Senin pagi' },
+  { key: 'desktop_push', label: 'Desktop push', desc: 'Browser notification saat lead baru masuk' },
+]
 
 export default function Page() {
   const { user } = useAuthStore()
+  const { addToast } = useUIStore()
   const [theme, setTheme] = useState<'dark' | 'light' | 'auto'>(() => {
     if (typeof window === 'undefined') return 'dark'
     return (localStorage.getItem('syahfalah-theme') as any) || 'dark'
   })
-  const [notifWA, setNotifWA] = useState(true)
-  const [notifEmail, setNotifEmail] = useState(false)
-  const [notifDesktop, setNotifDesktop] = useState(true)
+
+  // Fetch prefs from DB
+  const { data: prefsData, isLoading: prefsLoading } = useQuery({
+    queryKey: ['notif-prefs', user?.id],
+    queryFn: fetchPrefs,
+    enabled: !!user,
+    staleTime: 30_000,
+  })
+
+  const toggle = useToggleMutation({
+    url: '/api/notifications/preferences',
+    invalidate: [['notif-prefs', user?.id]],
+  })
 
   const applyTheme = (next: 'dark' | 'light' | 'auto') => {
     setTheme(next)
@@ -39,11 +75,10 @@ export default function Page() {
   return (
     <div className="space-y-6">
       <div>
-      <Breadcrumbs crumbs={ [{ label: 'Settings' }] } />
-        
+        <Breadcrumbs crumbs={[{ label: 'Settings' }]} />
         <h1 className="display-lg">Settings</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          Atur profil, notifikasi, dan preferensi tampilan.
+          Atur profil, notifikasi, dan preferensi tampilan. Perubahan tersimpan otomatis.
         </p>
       </div>
 
@@ -117,32 +152,49 @@ export default function Page() {
             <Bell className="h-4 w-4 text-[var(--color-text-tertiary)]" />
             <h2 className="font-heading text-base font-semibold">Notifikasi</h2>
           </div>
+          {toggle.isError && (
+            <span className="text-xs text-[var(--color-danger)]" role="alert">
+              Gagal menyimpan — coba lagi
+            </span>
+          )}
         </div>
-        <div className="card-body space-y-3">
-          {[
-            { label: 'WhatsApp group Syahfalah', desc: 'Notifikasi buyer baru, SP3K, dan akad',  state: notifWA, set: setNotifWA },
-            { label: 'Email', desc: 'Weekly recap setiap Senin pagi', state: notifEmail, set: setNotifEmail },
-            { label: 'Desktop push', desc: 'Browser notification saat lead baru masuk', state: notifDesktop, set: setNotifDesktop },
-          ].map((n, i) => (
-            <label key={i} className="flex items-start justify-between gap-3 cursor-pointer p-3 rounded-md hover:bg-[var(--color-surface-2)] transition-colors">
-              <div>
-                <p className="text-sm font-medium">{n.label}</p>
-                <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">{n.desc}</p>
-              </div>
-              <button
-                onClick={() => n.set(!n.state)}
-                className={`relative h-6 w-11 rounded-full border transition-colors flex-shrink-0 ${
-                  n.state ? 'bg-[var(--color-brand-500)] border-[var(--color-brand-500)]' : 'bg-[var(--color-surface-2)] border-[var(--color-border-default)]'
-                }`}
-              >
-                <span
-                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-[var(--color-surface-1)] transition-transform ${
-                    n.state ? 'translate-x-5' : 'translate-x-0.5'
-                  }`}
+        <div className="card-body space-y-1">
+          {prefsLoading ? (
+            <div className="space-y-2 p-3">
+              {[0, 1, 2].map(i => (
+                <div key={i} className="h-12 rounded bg-[var(--color-surface-2)]/50 animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            NOTIF_META.map(n => {
+              const isOn = !!prefsData?.prefs?.[n.key]
+              const isPending =
+                toggle.isPending &&
+                toggle.variables?.key === n.key
+              return (
+                <SwitchField
+                  key={n.key}
+                  label={n.label}
+                  description={n.desc}
+                  checked={isOn}
+                  loading={isPending}
+                  onCheckedChange={(value) =>
+                    toggle.mutate(
+                      { key: n.key, value },
+                      {
+                        onSuccess: () => {
+                          addToast({ type: 'success', title: 'Preferensi disimpan', message: `${n.label} ${value ? 'aktif' : 'non-aktif'}` })
+                        },
+                        onError: () => {
+                          addToast({ type: 'destructive', title: 'Gagal menyimpan', message: 'Coba lagi dalam beberapa detik' })
+                        },
+                      },
+                    )
+                  }
                 />
-              </button>
-            </label>
-          ))}
+              )
+            })
+          )}
         </div>
       </div>
 
