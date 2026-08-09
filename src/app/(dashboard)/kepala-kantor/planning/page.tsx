@@ -91,12 +91,7 @@ export default async function Page() {
         </p>
       </div>
 
-      <div className="card">
-        <div className="card-body p-3 text-sm bg-[var(--color-warning)]/10 border-l-4 border-[var(--color-warning)] rounded">
-          ⚠️ Data template — wire ke <code className="font-mono">monthly_plans</code> table
-          (schema minimal: id, month, status, created_at) untuk data aktual.
-        </div>
-      </div>
+      
 
       {/* Status summary */}
       <div className="grid grid-cols-3 gap-3">

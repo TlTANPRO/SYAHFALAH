@@ -115,20 +115,14 @@ export default async function Page() {
         <Breadcrumbs crumbs={[{ label: 'Reward & Punishment' }]} />
         <h1 className="display-lg">Reward & Punishment</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          Perhitungan insentif dan tracking surat peringatan tim.
+          Insentif dan surat peringatan tim.
         </p>
-        <p className="text-xs text-[var(--color-text-tertiary)] mt-2 italic flex items-center gap-1">
-          <Database className="h-3 w-3" />
-          {useLive
-            ? `${liveRows.length} reward entries dari database`
-            : 'Data di bawah adalah contoh untuk preview. Reward & punishment riil dihitung otomatis dari tabel closing dan SP aktif.'}
-        </p>
-      </div>
-
-      <div className="card">
-        <div className="card-body p-3 text-sm bg-[var(--color-warning)]/10 border-l-4 border-[var(--color-warning)] rounded">
-          ⚠️ Data template — untuk reward riil, hitung otomatis dari tabel <code className="font-mono">closings</code> dan <code className="font-mono">kpi_actuals</code>, simpan ke <code className="font-mono">reward_entries</code> table.
-        </div>
+        {useLive && (
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-2 flex items-center gap-1">
+            <Database className="h-3 w-3" />
+            {liveRows.length} entries dari database
+          </p>
+        )}
       </div>
 
       {/* 4 ringkasan */}

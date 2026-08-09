@@ -84,18 +84,12 @@ export default async function Page() {
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
           Catatan percakapan 1-on-1 dengan tim. Tulis langsung, jangan ditunda.
         </p>
-        <p className="text-xs text-[var(--color-text-tertiary)] mt-2 italic flex items-center gap-1">
-          <Database className="h-3 w-3" />
-          {useLive
-            ? `${liveRows.length} sesi coaching dari database (tasks matched)`
-            : 'Contoh sesi coaching. Data riil di-load dari tasks.description / title mengandung kata "coaching".'}
-        </p>
-      </div>
-
-      <div className="card">
-        <div className="card-body p-3 text-sm bg-[var(--color-warning)]/10 border-l-4 border-[var(--color-warning)] rounded">
-          ⚠️ Data template — coaching sessions belum di-load dari database. Implement table <code>coaching_sessions</code> atau wire ke <code>tasks</code> untuk hasil nyata.
-        </div>
+        {useLive && (
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-2 flex items-center gap-1">
+            <Database className="h-3 w-3" />
+            {liveRows.length} sesi dari database
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

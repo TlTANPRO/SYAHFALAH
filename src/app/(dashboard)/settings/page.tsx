@@ -77,9 +77,6 @@ export default function Page() {
       <div>
         <Breadcrumbs crumbs={[{ label: 'Settings' }]} />
         <h1 className="display-lg">Settings</h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          Atur profil, notifikasi, dan preferensi tampilan. Perubahan tersimpan otomatis.
-        </p>
       </div>
 
       {/* Profil */}
@@ -225,9 +222,6 @@ export default function Page() {
               Logout device ini
             </button>
           </div>
-          <p className="text-xs text-[var(--color-text-tertiary)]">
-            Session berlaku 8 jam. Akan muncul notifikasi 2 menit sebelum expiry.
-          </p>
         </div>
       </div>
     </div>
