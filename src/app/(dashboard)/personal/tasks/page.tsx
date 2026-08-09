@@ -197,7 +197,7 @@ export default function PersonalTasksPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       {/* Header */}
       <Breadcrumbs crumbs={[{ label: 'Personal', href: '/personal' }, { label: 'Tugas' }]} />
       <HeroSection

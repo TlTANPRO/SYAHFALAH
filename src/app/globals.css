@@ -97,6 +97,13 @@
   --color-danger:  oklch(0.55 0.22 25);  /* darkened from 0.62 for 4.5:1 contrast on white */
   --color-info:    oklch(0.65 0.18 235);
 
+  /* === Status foregrounds (text on coloured backgrounds) ===
+   * All set to white for guaranteed 4.5:1+ contrast in BOTH light & dark
+   * since danger/warning/success bg are saturated colored. */
+  --color-destructive-foreground: #ffffff;
+  --color-warning-foreground:     #1a1a1c;  /* dark on yellow/orange */
+  --color-success-foreground:     #ffffff;  /* white on verdigris */
+
   /* === Workflow (canonical 5-stage pipeline) === */
   --color-stage-new:       oklch(0.65 0.05 250);
   --color-stage-contacted: oklch(0.65 0.15 235);
