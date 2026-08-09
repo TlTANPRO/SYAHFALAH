@@ -324,9 +324,9 @@ export default function PersonalTasksPage() {
                   {/* Task Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className={task.status === 'completed' ? 'line-through text-[var(--color-text-secondary)]' : 'font-medium text-[var(--color-text-primary)]'}>
+                      <h2 className={task.status === 'completed' ? 'line-through text-base text-[var(--color-text-secondary)]' : 'font-medium text-base text-[var(--color-text-primary)]'}>
                         {task.title}
-                      </h3>
+                      </h2>
                       {task.is_carry_over && (
                         <Badge variant="warning" className="text-xs">Carry-over</Badge>
                       )}

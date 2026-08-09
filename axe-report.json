@@ -1,0 +1,492 @@
+[
+  {
+    "path": "/",
+    "name": "login",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      }
+    ],
+    "totalViolations": 2
+  },
+  {
+    "path": "/owner",
+    "name": "executive-overview",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      }
+    ],
+    "totalViolations": 2
+  },
+  {
+    "path": "/owner/kpi",
+    "name": "kpi-explorer",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      }
+    ],
+    "totalViolations": 2
+  },
+  {
+    "path": "/owner/performance",
+    "name": "performance",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "help": "Heading levels should only increase by one",
+        "nodes": 1,
+        "description": "Ensure the order of headings is semantically correct"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      }
+    ],
+    "totalViolations": 3
+  },
+  {
+    "path": "/owner/reports",
+    "name": "reports",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      }
+    ],
+    "totalViolations": 2
+  },
+  {
+    "path": "/owner/dw",
+    "name": "data-warehouse",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 3,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      },
+      {
+        "id": "page-has-heading-one",
+        "impact": "moderate",
+        "help": "Page should contain a level-one heading",
+        "nodes": 1,
+        "description": "Ensure that the page, or at least one of its frames contains a level-one heading"
+      }
+    ],
+    "totalViolations": 5
+  },
+  {
+    "path": "/owner/audit",
+    "name": "audit-log",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "empty-table-header",
+        "impact": "minor",
+        "help": "Table header text should not be empty",
+        "nodes": 1,
+        "description": "Ensure table headers have discernible text"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      }
+    ],
+    "totalViolations": 3
+  },
+  {
+    "path": "/personal",
+    "name": "personal-dashboard",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 2,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      }
+    ],
+    "totalViolations": 3
+  },
+  {
+    "path": "/personal/tasks",
+    "name": "personal-tasks",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 3,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "help": "Heading levels should only increase by one",
+        "nodes": 1,
+        "description": "Ensure the order of headings is semantically correct"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      }
+    ],
+    "totalViolations": 5
+  },
+  {
+    "path": "/personal/kpi",
+    "name": "personal-kpi",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "help": "Heading levels should only increase by one",
+        "nodes": 1,
+        "description": "Ensure the order of headings is semantically correct"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      }
+    ],
+    "totalViolations": 3
+  },
+  {
+    "path": "/admin/users",
+    "name": "admin-users",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      }
+    ],
+    "totalViolations": 2
+  },
+  {
+    "path": "/employees",
+    "name": "employees",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      },
+      {
+        "id": "page-has-heading-one",
+        "impact": "moderate",
+        "help": "Page should contain a level-one heading",
+        "nodes": 1,
+        "description": "Ensure that the page, or at least one of its frames contains a level-one heading"
+      },
+      {
+        "id": "select-name",
+        "impact": "critical",
+        "help": "Select element must have an accessible name",
+        "nodes": 2,
+        "description": "Ensure select element has an accessible name"
+      }
+    ],
+    "totalViolations": 5
+  },
+  {
+    "path": "/attendance",
+    "name": "attendance",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      },
+      {
+        "id": "page-has-heading-one",
+        "impact": "moderate",
+        "help": "Page should contain a level-one heading",
+        "nodes": 1,
+        "description": "Ensure that the page, or at least one of its frames contains a level-one heading"
+      }
+    ],
+    "totalViolations": 3
+  },
+  {
+    "path": "/leave",
+    "name": "leave",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      },
+      {
+        "id": "page-has-heading-one",
+        "impact": "moderate",
+        "help": "Page should contain a level-one heading",
+        "nodes": 1,
+        "description": "Ensure that the page, or at least one of its frames contains a level-one heading"
+      }
+    ],
+    "totalViolations": 3
+  },
+  {
+    "path": "/documents",
+    "name": "documents",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      },
+      {
+        "id": "page-has-heading-one",
+        "impact": "moderate",
+        "help": "Page should contain a level-one heading",
+        "nodes": 1,
+        "description": "Ensure that the page, or at least one of its frames contains a level-one heading"
+      },
+      {
+        "id": "select-name",
+        "impact": "critical",
+        "help": "Select element must have an accessible name",
+        "nodes": 1,
+        "description": "Ensure select element has an accessible name"
+      }
+    ],
+    "totalViolations": 4
+  },
+  {
+    "path": "/org-chart",
+    "name": "org-chart",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      },
+      {
+        "id": "page-has-heading-one",
+        "impact": "moderate",
+        "help": "Page should contain a level-one heading",
+        "nodes": 1,
+        "description": "Ensure that the page, or at least one of its frames contains a level-one heading"
+      }
+    ],
+    "totalViolations": 3
+  },
+  {
+    "path": "/sow",
+    "name": "sow",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 2,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "help": "Heading levels should only increase by one",
+        "nodes": 1,
+        "description": "Ensure the order of headings is semantically correct"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      }
+    ],
+    "totalViolations": 4
+  },
+  {
+    "path": "/calendar",
+    "name": "calendar",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 2,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      }
+    ],
+    "totalViolations": 3
+  },
+  {
+    "path": "/settings",
+    "name": "settings",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 5,
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "image-redundant-alt",
+        "impact": "minor",
+        "help": "Alternative text of images should not be repeated as text",
+        "nodes": 1,
+        "description": "Ensure image alternative is not repeated as text"
+      }
+    ],
+    "totalViolations": 6
+  }
+]

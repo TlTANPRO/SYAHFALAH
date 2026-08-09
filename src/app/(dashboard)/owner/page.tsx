@@ -207,7 +207,7 @@ export default async function Page() {
       {/* ==================== KPI RIBBON (4 tiles) ==================== */}
       <section
         aria-label="Ringkasan utama"
-        className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-item"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-up"
       >
         <article className="kpi-tile">
           <div className="flex items-center justify-between mb-2">

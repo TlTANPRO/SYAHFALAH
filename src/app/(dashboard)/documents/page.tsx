@@ -109,6 +109,7 @@ export default async function DocumentsPage({
             </div>
             <select
               name="category"
+              aria-label="Filter kategori"
               defaultValue={category}
               className="h-10 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 text-sm"
             >

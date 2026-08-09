@@ -53,7 +53,11 @@ export function HeroSection({
               {eyebrow}
             </p>
           )}
-          {title}
+          {typeof title === 'string' ? (
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[var(--color-text-primary)]">{title}</h1>
+          ) : (
+            title
+          )}
           {subtitle && (
             <p className="text-sm text-[var(--color-text-secondary)]">{subtitle}</p>
           )}
@@ -85,11 +89,13 @@ export function HeroSection({
               {eyebrow}
             </p>
           )}
-          {title}
+          {typeof title === 'string' ? (
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-[var(--color-text-primary)]">{title}</h1>
+          ) : (
+            title
+          )}
           {subtitle && (
-            <p className="text-sm text-[var(--color-text-secondary)] max-w-xl">
-              {subtitle}
-            </p>
+            <p className="text-sm text-[var(--color-text-secondary)] max-w-xl">{subtitle}</p>
           )}
         </div>
         {(pills || action) && (

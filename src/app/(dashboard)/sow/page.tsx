@@ -60,7 +60,7 @@ export default async function Page() {
                       <FileText className="h-4 w-4 text-[var(--color-text-secondary)] group-hover:text-[var(--color-brand-500)] flex-shrink-0" />
                       <span className="font-mono text-xs text-[var(--color-text-secondary)] group-hover:text-[var(--color-brand-500)]">{s.code}</span>
                     </div>
-                    <h3 className="text-base font-medium">{s.title}</h3>
+                    <h2 className="text-base font-medium">{s.title}</h2>
                   </div>
                   <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                 </Link>

@@ -106,13 +106,13 @@ export default async function EmployeesPage({
                 className="pl-10 w-64"
               />
             </div>
-            <select name="division" defaultValue={division} className="h-10 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 text-sm">
+            <select name="division" aria-label="Filter divisi" defaultValue={division} className="h-10 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 text-sm">
               <option value="">Semua divisi</option>
               {divisions.map((d: any) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
-            <select name="role" defaultValue={role} className="h-10 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 text-sm">
+            <select name="role" aria-label="Filter peran" defaultValue={role} className="h-10 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 text-sm">
               <option value="">Semua role</option>
               {Object.entries(ROLE_LABELS).map(([k, v]) => (
                 <option key={k} value={k}>{v}</option>
