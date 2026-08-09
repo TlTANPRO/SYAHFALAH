@@ -55,3 +55,6 @@ audit-per-role/
 test-puppeteer.mjs
 mobile-overflow-verbose.mjs
 .hermes/plans/archive/
+
+# Lighthouse audit (ephemeral, regenerated)
+lighthouse-quick.json
