@@ -1,10 +1,10 @@
 // kepala-kantor/page.tsx
 // Halaman Kepala Kantor — semua divisi + performa tim + ritme kerja.
-// Samakan dengan /owner/overview tapi fokusnya operasional lintas divisi.
+// Server-side fetch (sesuai pola /kepala-kantor/team/page.tsx) supaya
+// query `team_personal_kpis` jalan via service_role key dan bukan
+// anon (yang return 401 karena RLS deny users).
 
-'use client'
-
-import { useQuery } from '@tanstack/react-query'
+import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import {
   Target,
@@ -12,11 +12,8 @@ import {
   ClipboardList,
   Shield,
   FileText,
-  TrendingUp,
   ArrowRight,
 } from 'lucide-react'
-import { formatPercent } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
 import { HeroSection } from '@/components/layout/HeroSection'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { StatCard } from '@/components/layout/StatCard'
@@ -24,7 +21,6 @@ import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ErrorState } from '@/components/ui/error-state'
-import { SkeletonKpiGrid, SkeletonCardGrid } from '@/components/ui/loading-skeleton'
 
 const DIVISION_ICON: Record<string, React.ReactNode> = {
   MARKETING: <Target className="h-4 w-4" />,
@@ -51,95 +47,62 @@ function progressColor(progress: number): string {
   return 'text-[var(--color-danger)]'
 }
 
-export default function KepalaKantorDashboard() {
-  const supabase = createClient()
+async function load() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) {
+    return { teamKPIs: [], divisionSummaries: [], taskSummary: [], divisions: [], error: 'config' as const }
+  }
+  const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+  const [teamRes, divRes, taskRes, divisionsRes] = await Promise.all([
+    supabase
+      .from('team_personal_kpis')
+      .select('user_id, name, position, division_id, division_name, kpi_count, avg_progress, achieved_count, on_track_count, at_risk_count, off_track_count')
+      .neq('division_name', 'Test Seed')
+      .order('avg_progress', { ascending: false }),
+    supabase
+      .from('division_kpi_summary')
+      .select('*')
+      .neq('division_name', 'Test Seed')
+      .order('avg_progress', { ascending: false }),
+    supabase
+      .from('division_task_summary')
+      .select('*')
+      .neq('division_name', 'Test Seed')
+      .order('division_name'),
+    supabase
+      .from('divisions')
+      .select('id, name, code')
+      .eq('is_active', true)
+      .order('sort_order'),
+  ])
+  return {
+    teamKPIs: teamRes.data ?? [],
+    divisionSummaries: divRes.data ?? [],
+    taskSummary: taskRes.data ?? [],
+    divisions: divisionsRes.data ?? [],
+    error: teamRes.error || divRes.error || taskRes.error ? 'fetch' : null,
+  }
+}
 
-  // Fetch division summary
-  const { data: divisionSummaries, isLoading: divLoading, error: divError } = useQuery({
-    queryKey: ['division-kpi-summary'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('division_kpi_summary')
-        .select('*').neq('division_name', 'Test Seed')
-        .order('avg_progress', { ascending: false })
-      if (error) throw error
-      return data ?? []
-    },
-  })
+export default async function KepalaKantorDashboard() {
+  const { teamKPIs, divisionSummaries, taskSummary, divisions, error } = await load()
 
-  // Fetch team personal KPIs
-  const { data: teamKPIs } = useQuery({
-    queryKey: ['team-personal-kpis'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('team_personal_kpis')
-        .select('user_id, name, position, division_id, division_name, kpi_count, avg_progress, achieved_count, on_track_count, at_risk_count, off_track_count')
-        .neq('division_name', 'Test Seed')
-        .order('avg_progress', { ascending: false })
-      if (error) throw error
-      return data ?? []
-    },
-  })
-
-  // Fetch task summary
-  const { data: taskSummary } = useQuery({
-    queryKey: ['division-task-summary'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('division_task_summary')
-        .select('*').neq('division_name', 'Test Seed')
-        .order('division_name')
-      if (error) throw error
-      return data ?? []
-    },
-  })
-
-  // Fetch divisions for cross-link
-  const { data: divisions } = useQuery({
-    queryKey: ['divisions-active'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('divisions')
-        .select('id, name, code')
-        .eq('is_active', true)
-        .order('sort_order')
-      if (error) throw error
-      return data ?? []
-    },
-  })
-
-  if (divError) {
+  if (error === 'config') {
     return (
       <div className="space-y-6">
         <Breadcrumbs crumbs={[{ label: 'Kepala Kantor' }]} />
         <ErrorState
-          title="Gagal memuat data operasional"
-          description="Terjadi kesalahan saat memuat data lintas divisi. Coba lagi."
-          error={divError instanceof Error ? divError.message : 'Unknown error'}
+          title="Konfigurasi server belum lengkap"
+          description="NEXT_PUBLIC_SUPABASE_URL atau SUPABASE_SERVICE_ROLE_KEY tidak ditemukan."
+          error="Missing env vars"
         />
       </div>
     )
   }
 
-  if (divLoading) {
-    return (
-      <div className="space-y-8">
-        <Breadcrumbs crumbs={[{ label: 'Kepala Kantor' }]} />
-        <div className="hero">
-          <div className="relative z-10">
-            <div className="skeleton h-3 w-32 mb-3" />
-            <div className="skeleton h-10 w-1/2 mb-2" />
-            <div className="skeleton h-4 w-2/3" />
-          </div>
-        </div>
-        <SkeletonKpiGrid count={4} />
-        <SkeletonCardGrid count={6} />
-      </div>
-    )
-  }
-
-  const totalTasksCompleted = taskSummary?.reduce((sum, t) => sum + (t.completed_count ?? 0), 0) ?? 0
-  const totalTasksOverdue = taskSummary?.reduce((sum, t) => sum + (t.overdue_count ?? 0), 0) ?? 0
+  const totalTasksCompleted = taskSummary?.reduce((sum, t) => sum + (Number(t.completed_count) || 0), 0) ?? 0
+  const totalTasksOverdue = taskSummary?.reduce((sum, t) => sum + (Number(t.overdue_count) || 0), 0) ?? 0
   const avgProgress = teamKPIs?.length
     ? teamKPIs.reduce((sum, m) => sum + (Number(m.avg_progress) || 0), 0) / teamKPIs.length
     : 0
