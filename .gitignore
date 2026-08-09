@@ -44,3 +44,14 @@ yarn-error.log*
 next-env.d.ts
 deploy.tar.gz
 test.env
+
+
+# === Audit/verification artifacts (ephemeral, regenerated per audit) ===
+/audit-report.json
+/audit-mobile.json
+/lighthouse-report.json
+/audit-per-role-summary.json
+/audit-per-role/
+/test-puppeteer.mjs
+/mobile-overflow-verbose.mjs
+.hermes/plans/archive/
