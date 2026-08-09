@@ -9,6 +9,7 @@ import { Topbar } from '@/components/layout/Topbar'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
 import { CommandDialog } from '@/components/ui/command-palette'
+import { QuickAddDialog } from '@/components/ui/quick-add-dialog'
 import { SessionExpiryBanner } from '@/components/auth/SessionExpiryBanner'
 import { ToastContainer } from '@/components/ui/toast-container'
 import { OfflineStatusBanner } from '@/components/OfflineStatusBanner'
@@ -21,11 +22,24 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, isLoading, isAuthenticated } = useAuthStore()
   const { sidebarCollapsed, isMobile, commandPaletteOpen, setCommandPaletteOpen, openCommandPalette } = useUIStore()
+  const [quickAddOpen, setQuickAddOpen] = useState(false)
 
   // Rehydrate persisted auth store on mount so middleware-protected pages
   // see isAuthenticated=true on the very first render after a hard nav.
   useEffect(() => {
     useAuthStore.persist.rehydrate()
+  }, [])
+
+  // Cmd+Shift+K to open Quick Add (Cmd+K = command palette)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setQuickAddOpen((v) => !v)
+      }
+    }
+    window.addEventListener('keydown', onKey, { capture: true })
+    return () => window.removeEventListener('keydown', onKey, { capture: true } as EventListenerOptions)
   }, [])
 
   // Handle mobile sidebar behavior
@@ -104,6 +118,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Global command palette (⌘K / Ctrl+K) */}
       <CommandDialog open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
+
+      {/* Quick-Add dialog (⌘⇧K / Ctrl+Shift+K) */}
+      <QuickAddDialog open={quickAddOpen} onOpenChange={setQuickAddOpen} />
 
       {/* Toast notifications (aria-live region inside) */}
       <ToastContainer />

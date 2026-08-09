@@ -7,8 +7,11 @@
 // field did not exist in production data — see migration history).
 
 import { useState, useMemo } from 'react'
-import { CheckCircle, Clock, AlertTriangle, Plus, Filter, ChevronDown, Calendar, Flag, RotateCcw,
+import { useRouter } from 'next/navigation'
+import { CheckCircle, Clock, AlertTriangle, Plus, Filter, ChevronDown, Calendar, Flag, RotateCcw, Edit3,
   Info} from 'lucide-react'
+import { InlineEdit } from '@/components/ui/inline-edit'
+import { DetailSheet } from '@/components/ui/detail-sheet'
 import { formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -46,6 +49,9 @@ export default function PersonalTasksPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [includeTemplate, setIncludeTemplate] = useState(false)
   const [page, setPage] = useState(1)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const router = useRouter()
 
   const { data, isLoading } = useQuery({
     queryKey: ['tasks', 'all', page, PAGE_SIZE, includeTemplate],
@@ -297,7 +303,7 @@ export default function PersonalTasksPage() {
           />
         ) : (
           filteredTasks.map((task) => (
-            <Card key={task.id} className={task.status === 'overdue' ? 'border-[var(--color-danger)]/30 bg-[var(--color-danger)]/5' : ''}>
+            <Card key={task.id} className={`group ${task.status === 'overdue' ? 'border-[var(--color-danger)]/30 bg-[var(--color-danger)]/5' : ''}`}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
                   {/* Status Toggle */}
@@ -324,9 +330,30 @@ export default function PersonalTasksPage() {
                   {/* Task Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <h2 className={task.status === 'completed' ? 'line-through text-base text-[var(--color-text-secondary)]' : 'font-medium text-base text-[var(--color-text-primary)]'}>
-                        {task.title}
-                      </h2>
+                      <InlineEdit
+                        value={task.title}
+                        type="text"
+                        aria-label="Judul task"
+                        validate={(v) => !String(v).trim() ? 'Judul tidak boleh kosong' : null}
+                        onSave={async (newTitle) => {
+                          await fetch(`/api/tasks/${task.id}`, {
+                            method: 'PATCH',
+                            credentials: 'include',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ title: newTitle }),
+                          })
+                          queryClient.invalidateQueries({ queryKey: ['tasks'] })
+                        }}
+                        className={task.status === 'completed' ? 'line-through text-base text-[var(--color-text-secondary)]' : 'font-medium text-base text-[var(--color-text-primary)]'}
+                      />
+                      <button
+                        onClick={() => { setEditingTask(task); setSheetOpen(true) }}
+                        className="opacity-0 group-hover:opacity-100 inline-flex items-center gap-1 text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-brand-500)] transition-opacity"
+                        aria-label="Edit detail"
+                      >
+                        <Edit3 className="h-3 w-3" />
+                        Detail
+                      </button>
                       {task.is_carry_over && (
                         <Badge variant="warning" className="text-xs">Carry-over</Badge>
                       )}
@@ -404,6 +431,32 @@ export default function PersonalTasksPage() {
         pageSize={PAGE_SIZE}
         total={total}
         onPageChange={setPage}
+      />
+
+      {/* Detail Sheet for inline editing */}
+      <DetailSheet
+        table="tasks"
+        rowId={editingTask?.id ?? null}
+        data={editingTask as unknown as Record<string, unknown>}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        mode="edit"
+        onSaved={() => {
+          queryClient.invalidateQueries({ queryKey: ['tasks'] })
+          router.refresh()
+        }}
+        onDeleted={() => {
+          queryClient.invalidateQueries({ queryKey: ['tasks'] })
+        }}
+        onDelete={async () => {
+          // Use existing PATCH with cancelled status — actual hard-delete would need DELETE endpoint
+          await fetch('/api/tasks', {
+            method: 'PATCH',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: editingTask!.id, status: 'cancelled' }),
+          })
+        }}
       />
     </div>
   )
