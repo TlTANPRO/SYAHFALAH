@@ -678,13 +678,11 @@
     width: 2rem;
     height: 2rem;
     border-radius: var(--radius-md);
-    background: linear-gradient(135deg, var(--color-brand-500), var(--color-brand-700));
-    color: white;
-    font-weight: 700;
-    font-size: 1rem;
-    letter-spacing: -0.02em;
     box-shadow: var(--shadow-ring-default);
     position: relative;
+  }
+  .brand-mark > svg {
+    border-radius: calc(var(--radius-md) - 2px);
   }
   .brand-mark::after {
     content: '';

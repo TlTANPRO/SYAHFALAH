@@ -21,7 +21,6 @@
   <rect width="64" height="64" rx="16" fill="url(#brand-blue)"/>
 
   <!-- Cascade ribbons — 3 pillars (Blue + Aurum + Verdigris) -->
-  <rect x="0" y="0" width="64" height="64" rx="16" fill="url(#brand-blue)"/>
   <path d="M0 38 L64 38 L64 40 L0 40 Z" fill="url(#brand-aurum)" opacity="0.95"/>
   <path d="M0 50 L64 50 L64 51 L0 51 Z" fill="url(#brand-verdigris)" opacity="0.85"/>
 
