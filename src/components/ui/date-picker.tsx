@@ -8,7 +8,10 @@ import * as React from 'react'
 import { format, parseISO } from 'date-fns'
 import { id as idLocale } from 'date-fns/locale'
 import { DayPicker } from 'react-day-picker'
-import 'react-day-picker/style.css'
+// NOTE: don't import 'react-day-picker/style.css' here. It's already loaded
+// via `src/app/globals.css` (single source of truth). Re-importing here
+// creates an orphan CSS chunk that Next.js auto-preloads but never uses.
+// import 'react-day-picker/style.css'
 import { Calendar as CalendarIcon, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from './button'
