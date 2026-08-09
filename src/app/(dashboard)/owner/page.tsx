@@ -1,6 +1,10 @@
 // app/owner/page.tsx
-// Owner executive overview. Hero + 4 KPI ribbon + 4 sections.
-// All data fetched from Supabase; safe fallbacks when tables aren't ready.
+// Owner executive overview. Morning Brief + 4 KPI ribbon + sections.
+// Auto-update: di-render pada setiap request (force-dynamic + revalidate=0).
+// Date counts (today, week) dihitung ulang dari server setiap render.
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
@@ -15,6 +19,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
+import { MorningBrief } from '@/components/owner/MorningBrief'
 import { KpiTrendChart } from '@/components/charts/KpiTrendChart'
 import { PipelineFunnel } from '@/components/owner/PipelineFunnel'
 import { ClusterGrid } from '@/components/owner/ClusterGrid'
@@ -147,19 +152,53 @@ export default async function Page() {
   const conversionRate = totalLeads > 0 ? (closedCount / totalLeads) * 100 : 0
 
   // Construction metrics
+  const totalProjects = projects.length
   const totalUnits = (projects as any[]).reduce((s, p) => s + (p.total_units || 0), 0)
   const completedUnits = (projects as any[]).reduce((s, p) => s + (p.units_completed || 0), 0)
   const totalBudget = (projects as any[]).reduce((s, p) => s + (p.budget_rupiah || 0), 0)
   const totalSpent = (projects as any[]).reduce((s, p) => s + (p.spent_rupiah || 0), 0)
   const budgetVariance = totalBudget > 0 ? ((totalSpent - totalBudget) / totalBudget) * 100 : 0
 
+  // Morning Brief computations (today's activity)
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const overdueConsumer = (consumerCases as any[]).filter((c: any) => c.is_overdue).length
+  const completedToday = (kpiTrend as any[]).filter((k: any) =>
+    String(k.completed_at ?? '').startsWith(todayStr)
+  ).length
+  const pendingToday = (leads as any[]).filter((l: any) =>
+    l.stage !== 'closed' && l.stage !== 'closing' && l.stage !== 'batal'
+  ).length
+  const newLeadsToday = (leads as any[]).filter((l: any) =>
+    String(l.created_at ?? '').startsWith(todayStr)
+  ).length
+  const pendingApprovalsCount = (consumerCases as any[]).filter((c: any) =>
+    c.stage === 'pending_approval' || c.stage === 'review'
+  ).length
+
+  // Top 3 action items — on-point, prioritized
+  const topActions: { label: string; href: string; tone?: 'default' | 'warning' | 'success' }[] = []
+  if (overdueConsumer > 0) {
+    topActions.push({ label: `${overdueConsumer} SP3K lewat tempo — review sekarang`, href: '/owner', tone: 'warning' })
+  }
+  if (pendingApprovalsCount > 0) {
+    topActions.push({ label: `${pendingApprovalsCount} approval menunggu`, href: '/owner/approvals', tone: 'warning' })
+  }
+  if (newLeadsToday > 0) {
+    topActions.push({ label: `${newLeadsToday} lead baru hari ini — assign surveyor`, href: '/owner/marketing', tone: 'success' })
+  }
+  if (topActions.length < 3 && totalBudget > 0 && budgetVariance > 10) {
+    topActions.push({ label: `Budget proyek over ${budgetVariance.toFixed(0)}% dari RAP`, href: '/owner/projects', tone: 'warning' })
+  }
+  while (topActions.length < 3) {
+    topActions.push({ label: 'Lihat Flow Kerja 2026', href: '/owner/projects/flow' })
+  }
+
   // Cluster metrics
   const clusterUnits = (clusters as any[]).reduce((s, c) => s + (c.total_units || 0), 0)
   const clusterSold = (clusters as any[]).reduce((s, c) => s + (c.units_sold || 0), 0)
   const sellThrough = clusterUnits > 0 ? Math.round((clusterSold / clusterUnits) * 100) : 0
 
-  // Consumer cases
-  const overdueConsumer = (consumerCases as any[]).filter((c: any) => c.is_overdue).length
+// Consumer cases (overdueConsumer now computed above for MorningBrief)
 
   const today = new Date().toLocaleDateString('id-ID', {
     weekday: 'long',
@@ -172,37 +211,40 @@ export default async function Page() {
     <div className="space-y-8">
       <Breadcrumbs crumbs={[{ label: 'Executive overview' }]} />
 
-      {/* ==================== HERO ==================== */}
-      <section className="hero">
-        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-3">
-            <p className="eyebrow eyebrow-brand">
-              <Sparkles className="inline h-3 w-3 mr-1" aria-hidden />
-              Ringkasan Owner · {today}
-            </p>
+      {/* ==================== BRIEF ==================== */}
+      <section
+        aria-label="Morning brief"
+        className="hero"
+      >
+        <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="space-y-2">
+            <p className="eyebrow eyebrow-brand">Syahfalah · {today}</p>
             <h1 className="display-xl">
               Syahfalah<span className="aurum-text">.</span>
             </h1>
             <p className="text-sm text-[var(--color-text-secondary)] max-w-xl">
-              Makassar · Operasional harian tim, pipeline calon buyer,
-              konstruksi, dan berkas konsumen.
+              Makassar · {totalProjects} proyek · {clusterUnits} unit rumah · {totalLeads} leads aktif
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="pill" data-variant="brand">
-              <span
-                className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-500)]"
-                aria-hidden
-              />
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-500)]" aria-hidden />
               Live · realtime
-            </span>
-            <span className="pill" data-variant="aurum">
-              <TrendingUp className="h-3 w-3" aria-hidden />
-              {totalLeads > 0 ? `${totalLeads} leads aktif` : 'Menunggu data'}
             </span>
           </div>
         </div>
       </section>
+
+      <MorningBrief
+        today={today}
+        completedTasks={completedToday}
+        pendingTasks={pendingToday}
+        newLeads={newLeadsToday}
+        pendingApprovals={pendingApprovalsCount}
+        overdueSp3k={overdueConsumer}
+        pipelineValue={totalLeadValue}
+        topActionItems={topActions}
+      />
 
       {/* ==================== KPI RIBBON (4 tiles) ==================== */}
       <section

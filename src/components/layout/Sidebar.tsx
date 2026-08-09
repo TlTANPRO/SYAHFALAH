@@ -11,8 +11,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useUIStore } from '@/stores/uiStore'
-import {
-  BarChart3,
+import {BarChart3,
   Calendar,
   CheckSquare,
   ClipboardCheck,
@@ -38,7 +37,9 @@ import {
   ChevronRight,
   CheckCircle2,
   CalendarOff,
-  Network,} from 'lucide-react'
+  Network,
+  Hammer
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Logo } from '@/components/brand/Logo'
 import { useAuthStore } from '@/stores/authStore'
@@ -60,6 +61,7 @@ const ownerNav: NavItem[] = [
   { name: 'Target Cascade', href: '/owner/targets', icon: GitBranch, roles: ['owner'] },
   { name: 'Marketing CRM', href: '/owner/marketing?tab=customers', icon: Megaphone, roles: ['owner'] },
   { name: 'Project Mgmt', href: '/owner/projects?tab=projects', icon: Building2, roles: ['owner'] },
+  { name: 'Flow Kerja 2026', href: '/owner/projects/flow', icon: Hammer, roles: ['owner', 'kepala_kantor', 'pic_divisi'] },
   { name: 'Purchasing', href: '/owner/purchasing?tab=suppliers', icon: ShoppingCart, roles: ['owner'] },
   { name: 'Maintenance', href: '/owner/maintenance?tab=tickets', icon: Wrench, roles: ['owner'] },
   { name: 'Performance', href: '/owner/performance', icon: TrendingUp, roles: ['owner'] },
