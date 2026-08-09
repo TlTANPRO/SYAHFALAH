@@ -1,11 +1,17 @@
 // divisi/[divisionId]/page.tsx
-// Halaman divisi untuk PIC / Kepala Kantor / Owner. Query division_name
-// dari Supabase berdasarkan divisionId di URL.
+// Halaman divisi untuk PIC / Kepala Kantor / Owner.
+// Server-side fetch (via service_role) supaya query `divisions`, `kpis`, dan
+// `team_personal_kpis` (view) return data despite RLS deny untuk anon role.
+//
+// VIEW COLUMN NOTES (refactored 2026-08-09):
+// - kpis view: target_value (bukan target), actual_value (bukan actual)
+// - sow_with_tasks view: id, title, description, tags, progress, status
+//   (sebelumnya pakai position_name, tujuan_posisi, tools, task_count, kpi_ringkasan
+//    yang tidak exist — schema sudah berubah)
 
-'use client'
-
-import { useParams } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
+import { createClient } from '@supabase/supabase-js'
+import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import {
   Target,
   TrendingUp,
@@ -13,143 +19,88 @@ import {
   ClipboardList,
   FileText,
   ArrowRight,
-  AlertTriangle,
   Building2,
 } from 'lucide-react'
 import { formatCurrency, formatPercent } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
-import Link from 'next/link'
 import { HeroSection } from '@/components/layout/HeroSection'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { StatCard } from '@/components/layout/StatCard'
 import { KpiTile } from '@/components/layout/KpiTile'
 import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
 import { EmptyState } from '@/components/ui/empty-state'
-import { ErrorState } from '@/components/ui/error-state'
-import {
-  SkeletonKpiGrid,
-  SkeletonCardGrid,
-  SkeletonTable,
-} from '@/components/ui/loading-skeleton'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
-export default function DivisionDashboard() {
-  const params = useParams()
-  const divisionId = params.divisionId as string
-  const supabase = createClient()
+interface PageProps {
+  params: Promise<{ divisionId: string }>
+}
 
-  // 1. Fetch division meta by ID
-  const {
-    data: division,
-    isLoading: divLoading,
-    error: divError,
-  } = useQuery({
-    queryKey: ['division', divisionId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('divisions')
-        .select('id, name, code, description, head_user_id')
-        .eq('id', divisionId)
-        .eq('is_active', true)
-        .maybeSingle()
-      if (error) throw error
-      return data
-    },
-    enabled: !!divisionId,
-  })
+async function load(divisionId: string) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) {
+    return { division: null, divisionKPIs: [], teamKPIs: [], taskSummary: null, sows: [], error: 'config' as const }
+  }
+  const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+  const year = new Date().getFullYear()
+  const [divRes, kpiRes, teamRes, taskRes, sowRes] = await Promise.all([
+    supabase.from('divisions').select('id, name, code, description, head_user_id').eq('id', divisionId).maybeSingle(),
+    supabase
+      .from('kpis')
+      .select('id, code, name, target_value, actual_value, progress, status, unit, period_start')
+      .eq('division_id', divisionId)
+      .eq('level', 'division')
+      .gte('period_start', `${year}-01-01`)
+      .lte('period_start', `${year}-12-31`)
+      .order('period_start', { ascending: false })
+      .limit(12),
+    supabase
+      .from('team_personal_kpis')
+      .select('user_id, name, position, kpi_count, avg_progress, achieved_count, on_track_count, at_risk_count, off_track_count')
+      .eq('division_id', divisionId)
+      .neq('division_name', 'Test Seed')
+      .order('avg_progress', { ascending: false }),
+    supabase
+      .from('division_task_summary')
+      .select('division_id, division_name, completion_rate, completed_count, pending_count, in_progress_count, overdue_count, carry_over_count')
+      .eq('division_id', divisionId)
+      .maybeSingle(),
+    supabase
+      .from('sow_with_tasks')
+      .select('id, title, description, tags, progress, status')
+      .eq('division_id', divisionId)
+      .order('status'),
+  ])
+  return {
+    division: divRes.data,
+    divisionKPIs: kpiRes.data ?? [],
+    teamKPIs: teamRes.data ?? [],
+    taskSummary: taskRes.data,
+    sows: sowRes.data ?? [],
+    error: null,
+  }
+}
 
-  // 2. Fetch division KPIs (current year)
-  const { data: divisionKPIs } = useQuery({
-    queryKey: ['kpis', { division: divisionId, level: 'division' }],
-    queryFn: async () => {
-      const year = new Date().getFullYear()
-      const { data, error } = await supabase
-        .from('kpis')
-        .select('id, code, name, target, actual, progress, status, unit, period_start')
-        .eq('division_id', divisionId)
-        .eq('level', 'division')
-        .gte('period_start', `${year}-01-01`)
-        .lte('period_start', `${year}-12-31`)
-        .order('period_start', { ascending: false })
-        .limit(12)
-      if (error) throw error
-      return data ?? []
-    },
-    enabled: !!divisionId,
-  })
+function renderKpiValue(value: any, unit: string | null): string {
+  if (value === null || value === undefined) return '—'
+  if (unit === 'IDR') return formatCurrency(Number(value))
+  if (unit === '%') return formatPercent(Number(value))
+  return `${value}${unit ? ' ' + unit : ''}`
+}
 
-  // 3. Fetch team personal KPIs (current)
-  const { data: teamKPIs } = useQuery({
-    queryKey: ['team-kpis', divisionId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('team_personal_kpis')
-        .select('user_id, name, position, kpi_count, avg_progress, achieved_count, on_track_count, at_risk_count, off_track_count')
-        .eq('division_id', divisionId)
-        .neq('division_name', 'Test Seed')
-        .order('avg_progress', { ascending: false })
-      if (error) throw error
-      return data ?? []
-    },
-    enabled: !!divisionId,
-  })
+export default async function DivisionDashboard({ params }: PageProps) {
+  const { divisionId } = await params
+  const { division, divisionKPIs, teamKPIs, taskSummary, sows, error } = await load(divisionId)
 
-  // 4. Fetch task summary
-  const { data: taskSummary } = useQuery({
-    queryKey: ['division-task-summary', divisionId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('division_task_summary')
-        .select('division_id, division_name, completion_rate, completed_count, pending_count, in_progress_count, overdue_count, carry_over_count')
-        .eq('division_id', divisionId)
-        .maybeSingle()
-      if (error) throw error
-      return data
-    },
-    enabled: !!divisionId,
-  })
-
-  // 5. Fetch SOW
-  const { data: sows } = useQuery({
-    queryKey: ['sows', divisionId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sow_with_tasks')
-        .select('id, position_name, tujuan_posisi, tools, task_count, kpi_ringkasan, status')
-        .eq('division_id', divisionId)
-        .order('status')
-      if (error) throw error
-      return data ?? []
-    },
-    enabled: !!divisionId,
-  })
-
-  if (divError) {
+  if (error === 'config') {
     return (
       <div className="space-y-6">
         <Breadcrumbs crumbs={[{ label: 'Divisi' }, { label: 'Overview' }]} />
-        <ErrorState
-          title="Gagal memuat divisi"
-          description="Terjadi kesalahan saat memuat data divisi. Coba lagi atau kembali ke dashboard."
-          error={divError instanceof Error ? divError.message : 'Unknown error'}
+        <EmptyState
+          icon={Building2}
+          eyebrow="Konfigurasi"
+          title="Server belum dikonfigurasi"
+          description="SUPABASE_SERVICE_ROLE_KEY tidak ditemukan. Hubungi admin."
         />
-      </div>
-    )
-  }
-
-  if (divLoading) {
-    return (
-      <div className="space-y-8">
-        <Breadcrumbs crumbs={[{ label: 'Divisi' }, { label: 'Overview' }]} />
-        <div className="hero">
-          <div className="relative z-10">
-            <div className="skeleton h-3 w-32 mb-3" />
-            <div className="skeleton h-10 w-1/2 mb-2" />
-            <div className="skeleton h-4 w-2/3" />
-          </div>
-        </div>
-        <SkeletonKpiGrid count={4} />
-        <SkeletonCardGrid count={6} />
       </div>
     )
   }
@@ -170,7 +121,7 @@ export default function DivisionDashboard() {
     )
   }
 
-  const completionRate = taskSummary?.completion_rate ?? 0
+  const completionRate = Number(taskSummary?.completion_rate ?? 0)
 
   return (
     <div className="space-y-8">
@@ -186,7 +137,7 @@ export default function DivisionDashboard() {
         title={<h1 className="display-lg">{division.name}</h1>}
         subtitle={division.description || 'Ringkasan divisi, target, dan tim.'}
         pills={
-          <>
+          <div className="flex items-center gap-2">
             <span className="cluster-badge">{division.code}</span>
             <Link
               href={`/divisi/${divisionId}/kpi`}
@@ -196,11 +147,11 @@ export default function DivisionDashboard() {
             >
               Lihat KPI <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
-          </>
+          </div>
         }
       />
 
-      {/* Stats — task progress + team size + KPI count */}
+      {/* Stats */}
       <section
         aria-label="Statistik utama"
         className="grid grid-cols-2 md:grid-cols-4 gap-4 stagger-item"
@@ -222,12 +173,12 @@ export default function DivisionDashboard() {
         />
         <StatCard
           label="KPI divisi aktif"
-          value={divisionKPIs?.length ?? 0}
+          value={divisionKPIs.length}
           accent="info"
         />
         <StatCard
           label="Anggota tim"
-          value={teamKPIs?.length ?? 0}
+          value={teamKPIs.length}
           accent="neutral"
         />
       </section>
@@ -239,28 +190,16 @@ export default function DivisionDashboard() {
           title={<h2 className="display-md">Target KPI Divisi</h2>}
           subtitle={`Level 3 — apa yang harus dicapai divisi ${division.name} di tahun ini.`}
         />
-        {divisionKPIs && divisionKPIs.length > 0 ? (
+        {divisionKPIs.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {divisionKPIs.map((kpi: any) => (
               <KpiTile
                 key={kpi.id}
                 code={kpi.code}
                 name={kpi.name}
-                target={
-                  kpi.unit === 'IDR'
-                    ? formatCurrency(Number(kpi.target))
-                    : kpi.unit === '%'
-                    ? formatPercent(Number(kpi.target))
-                    : `${kpi.target}${kpi.unit ? ' ' + kpi.unit : ''}`
-                }
-                actual={
-                  kpi.unit === 'IDR'
-                    ? formatCurrency(Number(kpi.actual))
-                    : kpi.unit === '%'
-                    ? formatPercent(Number(kpi.actual))
-                    : `${kpi.actual}${kpi.unit ? ' ' + kpi.unit : ''}`
-                }
-                progress={Number(kpi.progress)}
+                target={renderKpiValue(kpi.target_value, kpi.unit)}
+                actual={renderKpiValue(kpi.actual_value, kpi.unit)}
+                progress={Number(kpi.progress) || 0}
                 status={kpi.status}
               />
             ))}
@@ -281,7 +220,7 @@ export default function DivisionDashboard() {
         <PageHeader
           eyebrow="Tim"
           title={<h2 className="display-md">Performa Tim</h2>}
-          subtitle={`${teamKPIs?.length ?? 0} anggota dengan KPI personal aktif.`}
+          subtitle={`${teamKPIs.length} anggota dengan KPI personal aktif.`}
           actions={
             <Link
               href={`/divisi/${divisionId}/team`}
@@ -293,7 +232,7 @@ export default function DivisionDashboard() {
             </Link>
           }
         />
-        {teamKPIs && teamKPIs.length > 0 ? (
+        {teamKPIs.length > 0 ? (
           <PersonalKpiTable members={teamKPIs as any} />
         ) : (
           <EmptyState
@@ -341,13 +280,13 @@ export default function DivisionDashboard() {
           title={<h2 className="display-md">Scope of Work</h2>}
           subtitle={`SOW aktif di divisi ${division.name}.`}
         />
-        {sows && sows.length > 0 ? (
+        {sows.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {sows.map((sow: any) => (
               <div key={sow.id} className="card">
                 <div className="card-body space-y-3">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-heading text-base font-semibold">{sow.position_name}</p>
+                    <p className="font-heading text-base font-semibold">{sow.title}</p>
                     <span
                       className="pill"
                       data-variant={
@@ -362,20 +301,20 @@ export default function DivisionDashboard() {
                     </span>
                   </div>
                   <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2">
-                    {sow.tujuan_posisi}
+                    {sow.description}
                   </p>
-                  {sow.tools && sow.tools.length > 0 && (
+                  {sow.tags && sow.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1">
-                      {sow.tools.slice(0, 4).map((tool: string) => (
-                        <span key={tool} className="pill" data-variant="neutral">
-                          {tool}
+                      {sow.tags.slice(0, 4).map((tag: string) => (
+                        <span key={tag} className="pill" data-variant="neutral">
+                          {tag}
                         </span>
                       ))}
                     </div>
                   )}
                   <div className="pt-2 border-t border-[var(--color-border-default)] flex items-center justify-between">
                     <p className="text-xs text-[var(--color-text-tertiary)] font-mono">
-                      {sow.task_count} tasks
+                      Progress {Number(sow.progress ?? 0).toFixed(0)}%
                     </p>
                     <Link
                       href={`/divisi/${divisionId}/kpi`}
