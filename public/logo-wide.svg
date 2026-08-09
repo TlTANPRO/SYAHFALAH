@@ -1,29 +1,15 @@
 <!-- Brand logo: Syahfalah wordmark (square + name) -->
-<!-- For sidebar, header, watermarks. Logo on left, wordmark on right. -->
+<!-- For sidebar, header, watermarks. Clean blue square + wordmark. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64" fill="none" role="img" aria-label="Syahfalah">
   <defs>
-    <linearGradient id="brand-blue" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+    <linearGradient id="syahfalah-blue" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="oklch(0.55 0.20 260)"/>
       <stop offset="100%" stop-color="oklch(0.38 0.18 260)"/>
     </linearGradient>
-    <linearGradient id="brand-aurum" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="oklch(0.78 0.15 75)"/>
-      <stop offset="100%" stop-color="oklch(0.62 0.16 75)"/>
-    </linearGradient>
-    <linearGradient id="brand-verdigris" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="oklch(0.65 0.13 175)"/>
-      <stop offset="100%" stop-color="oklch(0.50 0.12 175)"/>
-    </linearGradient>
   </defs>
-
-  <!-- Square plate -->
-  <rect width="64" height="64" rx="16" fill="url(#brand-blue)"/>
-  <path d="M0 38 L64 38 L64 40 L0 40 Z" fill="url(#brand-aurum)" opacity="0.95"/>
-  <path d="M0 50 L64 50 L64 51 L0 51 Z" fill="url(#brand-verdigris)" opacity="0.85"/>
+  <rect width="64" height="64" rx="16" fill="url(#syahfalah-blue)"/>
   <path d="M44 22 Q44 14 32 14 Q20 14 20 22 Q20 30 32 30 Q44 30 44 38 Q44 50 32 50 Q20 50 20 42"
         stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-
-  <!-- Wordmark -->
   <text x="80" y="40" font-family="Inter, sans-serif" font-size="22" font-weight="700"
         letter-spacing="-0.02em" fill="currentColor">Syahfalah</text>
   <text x="80" y="55" font-family="JetBrains Mono, ui-monospace, monospace" font-size="9"
