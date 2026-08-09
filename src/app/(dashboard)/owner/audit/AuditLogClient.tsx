@@ -148,7 +148,7 @@ export function AuditLogClient({ initialRows, initialTotal, knownActions, knownT
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border-default)]">
-                  <th className="text-left p-3 font-medium text-[var(--color-text-secondary)] w-8" aria-label="Expand" />
+                  <th className="text-left p-3 font-medium text-[var(--color-text-secondary)] w-8" aria-label="Expand"><span className="sr-only">Expand</span></th>
                   <th className="text-left p-3 font-medium text-[var(--color-text-secondary)]">Waktu</th>
                   <th className="text-left p-3 font-medium text-[var(--color-text-secondary)]">Aksi</th>
                   <th className="text-left p-3 font-medium text-[var(--color-text-secondary)]">Tabel</th>

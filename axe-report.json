@@ -128,16 +128,9 @@
         "help": "Alternative text of images should not be repeated as text",
         "nodes": 1,
         "description": "Ensure image alternative is not repeated as text"
-      },
-      {
-        "id": "page-has-heading-one",
-        "impact": "moderate",
-        "help": "Page should contain a level-one heading",
-        "nodes": 1,
-        "description": "Ensure that the page, or at least one of its frames contains a level-one heading"
       }
     ],
-    "totalViolations": 5
+    "totalViolations": 4
   },
   {
     "path": "/owner/audit",
@@ -200,13 +193,6 @@
         "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
       },
       {
-        "id": "heading-order",
-        "impact": "moderate",
-        "help": "Heading levels should only increase by one",
-        "nodes": 1,
-        "description": "Ensure the order of headings is semantically correct"
-      },
-      {
         "id": "image-redundant-alt",
         "impact": "minor",
         "help": "Alternative text of images should not be repeated as text",
@@ -214,7 +200,7 @@
         "description": "Ensure image alternative is not repeated as text"
       }
     ],
-    "totalViolations": 5
+    "totalViolations": 4
   },
   {
     "path": "/personal/kpi",
@@ -282,23 +268,9 @@
         "help": "Alternative text of images should not be repeated as text",
         "nodes": 1,
         "description": "Ensure image alternative is not repeated as text"
-      },
-      {
-        "id": "page-has-heading-one",
-        "impact": "moderate",
-        "help": "Page should contain a level-one heading",
-        "nodes": 1,
-        "description": "Ensure that the page, or at least one of its frames contains a level-one heading"
-      },
-      {
-        "id": "select-name",
-        "impact": "critical",
-        "help": "Select element must have an accessible name",
-        "nodes": 2,
-        "description": "Ensure select element has an accessible name"
       }
     ],
-    "totalViolations": 5
+    "totalViolations": 2
   },
   {
     "path": "/attendance",
@@ -317,16 +289,9 @@
         "help": "Alternative text of images should not be repeated as text",
         "nodes": 1,
         "description": "Ensure image alternative is not repeated as text"
-      },
-      {
-        "id": "page-has-heading-one",
-        "impact": "moderate",
-        "help": "Page should contain a level-one heading",
-        "nodes": 1,
-        "description": "Ensure that the page, or at least one of its frames contains a level-one heading"
       }
     ],
-    "totalViolations": 3
+    "totalViolations": 2
   },
   {
     "path": "/leave",
@@ -345,16 +310,9 @@
         "help": "Alternative text of images should not be repeated as text",
         "nodes": 1,
         "description": "Ensure image alternative is not repeated as text"
-      },
-      {
-        "id": "page-has-heading-one",
-        "impact": "moderate",
-        "help": "Page should contain a level-one heading",
-        "nodes": 1,
-        "description": "Ensure that the page, or at least one of its frames contains a level-one heading"
       }
     ],
-    "totalViolations": 3
+    "totalViolations": 2
   },
   {
     "path": "/documents",
@@ -373,23 +331,9 @@
         "help": "Alternative text of images should not be repeated as text",
         "nodes": 1,
         "description": "Ensure image alternative is not repeated as text"
-      },
-      {
-        "id": "page-has-heading-one",
-        "impact": "moderate",
-        "help": "Page should contain a level-one heading",
-        "nodes": 1,
-        "description": "Ensure that the page, or at least one of its frames contains a level-one heading"
-      },
-      {
-        "id": "select-name",
-        "impact": "critical",
-        "help": "Select element must have an accessible name",
-        "nodes": 1,
-        "description": "Ensure select element has an accessible name"
       }
     ],
-    "totalViolations": 4
+    "totalViolations": 2
   },
   {
     "path": "/org-chart",
@@ -408,16 +352,9 @@
         "help": "Alternative text of images should not be repeated as text",
         "nodes": 1,
         "description": "Ensure image alternative is not repeated as text"
-      },
-      {
-        "id": "page-has-heading-one",
-        "impact": "moderate",
-        "help": "Page should contain a level-one heading",
-        "nodes": 1,
-        "description": "Ensure that the page, or at least one of its frames contains a level-one heading"
       }
     ],
-    "totalViolations": 3
+    "totalViolations": 2
   },
   {
     "path": "/sow",
