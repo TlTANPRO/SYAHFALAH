@@ -268,15 +268,17 @@ export default async function MarketingPage({ searchParams }: PageProps) {
                   }
                 />
               ) : (
-                <ul className="divide-y divide-[var(--color-border-subtle)]">
-                  {rows.map((r: any) => (
-                    <li key={r.id} className="flex items-start gap-3 px-4 py-3">
-                      <div className="flex-1 min-w-0">
-                        <RowFields row={r} tab={activeTab} />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <ul className="divide-y divide-[var(--color-border-subtle)]">
+                    {rows.map((r: any) => (
+                      <li key={r.id} className="flex items-start gap-3 px-4 py-3">
+                        <div className="flex-1 min-w-0">
+                          <RowFields row={r} tab={activeTab} />
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </>
               )}
             </CardContent>
           </Card>
