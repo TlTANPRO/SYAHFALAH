@@ -1,6 +1,6 @@
 // admin/sow/page.tsx
 // Owner-only SOW editor view. Lists all SOW tasks with editing surface
-// (TODO: wire up real mutations via /api/admin/sow/[id] when needed).
+// (Read-only admin SOW overview view. Mutations happen on /personal/sow which uses /api/sow-tasks/[id].)
 
 import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'

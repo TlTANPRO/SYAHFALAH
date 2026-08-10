@@ -199,29 +199,38 @@ export function detectLLMProvider(): LLMConfig | null {
 export async function callLLM(
   config: LLMConfig,
   messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
-  opts?: { maxTokens?: number; temperature?: number }
+  opts?: { maxTokens?: number; temperature?: number; timeoutMs?: number }
 ): Promise<string> {
-  const res = await fetch(`${config.baseURL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${config.apiKey}`,
-    },
-    body: JSON.stringify({
-      model: config.model,
-      messages,
-      max_tokens: opts?.maxTokens ?? config.maxTokens,
-      temperature: opts?.temperature ?? config.temperature,
-    }),
-  })
+  const timeoutMs = opts?.timeoutMs ?? 8000  // 8s default timeout per call
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+  
+  try {
+    const res = await fetch(`${config.baseURL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: config.model,
+        messages,
+        max_tokens: opts?.maxTokens ?? config.maxTokens,
+        temperature: opts?.temperature ?? config.temperature,
+      }),
+      signal: controller.signal,
+    })
 
-  if (!res.ok) {
-    const errText = await res.text().catch(() => 'unknown')
-    throw new Error(`LLM call failed: ${res.status} ${errText.slice(0, 200)}`)
+    if (!res.ok) {
+      const errText = await res.text().catch(() => 'unknown')
+      throw new Error(`LLM call failed: ${res.status} ${errText.slice(0, 200)}`)
+    }
+
+    const body = await res.json().catch(() => ({}))
+    return body.choices?.[0]?.message?.content ?? ''
+  } finally {
+    clearTimeout(timeoutId)
   }
-
-  const body = await res.json().catch(() => ({}))
-  return body.choices?.[0]?.message?.content ?? ''
 }
 
 /**

@@ -51,8 +51,7 @@ const PHASE_ACCENT: Record<FlowPhase, string> = {
 }
 
 function stepStatus(n: number): 'planned' | 'in_progress' | 'done' {
-  // Pseudo state for visual layout. Real state akan disimpan di tabel
-  // 'flow_step_status' (TODO migration). Untuk sekarang rotasi round-robin.
+  // Pseudo state for visual layout. Real state akan disimpan di tabel 'flow_step_status' (table to be added in a later migration). Untuk sekarang rotasi round-robin.
   const mod = (n * 7) % 3
   return mod === 0 ? 'done' : mod === 1 ? 'in_progress' : 'planned'
 }
