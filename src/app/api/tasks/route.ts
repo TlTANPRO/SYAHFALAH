@@ -103,3 +103,46 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: err?.message ?? 'internal' }, { status: 500 })
   }
 }
+
+
+export async function POST(req: NextRequest) {
+  try {
+    const cookieStore = await cookies()
+    const accessToken = cookieStore.get('access_token')?.value
+    if (!accessToken) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 })
+    const payload = await verifyAccessToken(accessToken)
+    if (!payload) return NextResponse.json({ error: 'invalid session' }, { status: 401 })
+
+    const body = await req.json().catch(() => ({}))
+    if (!body.title) return NextResponse.json({ error: 'title wajib diisi' }, { status: 400 })
+
+    // Whitelist fields
+    const ALLOWED = ['title', 'description', 'status', 'priority', 'scheduled_date', 'due_date', 'division_id', 'sow_task_id', 'kpi_target_id', 'parent_task_id', 'is_carry_over', 'estimated_hours', 'actual_hours', 'sort_order']
+    const insert: Record<string, unknown> = { user_id: payload.userId }
+    for (const k of ALLOWED) {
+      if (body[k] !== undefined) insert[k] = body[k]
+    }
+    // Defaults + map invalid enum values
+    insert.status = insert.status ?? 'pending'
+    insert.priority = insert.priority ?? 'medium'
+    insert.scheduled_date = insert.scheduled_date ?? new Date().toISOString().slice(0, 10)
+    if (!['low','medium','high','critical'].includes(insert.priority as string)) insert.priority = 'medium'
+    if (!['pending','in_progress','completed','overdue','cancelled'].includes(insert.status as string)) insert.status = 'pending'
+    // required type field
+    insert.type = 'ad_hoc'
+
+    const serviceClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    const { data, error } = await serviceClient
+      .from('tasks')
+      .insert(insert)
+      .select('id, title, status, priority, scheduled_date, user_id, created_at')
+      .single()
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data, { status: 201 })
+  } catch (err: any) {
+    return NextResponse.json({ error: err?.message ?? 'internal' }, { status: 500 })
+  }
+}

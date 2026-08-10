@@ -162,7 +162,8 @@ export const SCHEMAS: Record<string, TableSchema> = {
     fields: [
       { name: 'title', kind: 'text', required: true, label: 'Judul', showInline: true, order: 1, width: 8,
         permissions: { staff: 'rw', pic_divisi: 'rw', kepala_kantor: 'rw', owner: 'rw' } },
-      { name: 'description', kind: 'longtext', label: 'Deskripsi', order: 2, width: 12 },
+      { name: 'description', kind: 'longtext', label: 'Deskripsi', order: 2, width: 12,
+        permissions: { staff: 'rw', pic_divisi: 'rw', kepala_kantor: 'rw', owner: 'rw' } },
       { name: 'status', kind: 'select', label: 'Status', required: true, showInline: true, order: 3, width: 4,
         options: [
           { value: 'pending', label: 'Pending' },
@@ -171,6 +172,7 @@ export const SCHEMAS: Record<string, TableSchema> = {
           { value: 'cancelled', label: 'Cancelled' },
           { value: 'overdue', label: 'Overdue' },
         ],
+        permissions: { staff: 'rw', pic_divisi: 'rw', kepala_kantor: 'rw', owner: 'rw' },
       },
       { name: 'priority', kind: 'select', label: 'Prioritas', showInline: true, order: 4, width: 4,
         options: [
@@ -179,6 +181,7 @@ export const SCHEMAS: Record<string, TableSchema> = {
           { value: 'high', label: 'Tinggi' },
           { value: 'urgent', label: 'Mendesak' },
         ],
+        permissions: { staff: 'rw', pic_divisi: 'rw', kepala_kantor: 'rw', owner: 'rw' },
       },
       { name: 'scheduled_date', kind: 'date', label: 'Tanggal', showInline: true, order: 5, width: 4 },
       { name: 'due_date', kind: 'datetime', label: 'Deadline', order: 6, width: 4 },

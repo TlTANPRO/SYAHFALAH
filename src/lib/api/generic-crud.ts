@@ -81,7 +81,7 @@ export interface CrudConfig {
   table: string
   /** Whitelist of fields allowed for PATCH (fallback when no schema or no permission set) */
   allowedFields: readonly string[]
-  /** 
+  /**
    * Optional: enable role-based field-level permissions from schema registry.
    * Defaults to true. When enabled, fields are filtered by:
    * 1. Field existence in schema
@@ -89,6 +89,12 @@ export interface CrudConfig {
    * Falls back to allowedFields whitelist if schema not found.
    */
   useFieldPermissions?: boolean
+  /**
+   * Optional default values applied on POST when not provided by client.
+   * Useful for NOT NULL DB columns that should auto-fill from server (e.g.
+   * start_date, target_completion_date, code, author_id from session, etc.)
+   */
+  defaults?: (body: Record<string, unknown>, session: { userId: string; role: string }) => Record<string, unknown>
 }
 
 /**
@@ -206,6 +212,25 @@ export function makePostHandler(cfg: CrudConfig) {
             }
             return f
           })()
+
+      // Apply defaults. Two-tier:
+      // 1. Filled values (set by defaults() if body field is empty) — fill in only.
+      // 2. Override values (mapped values from invalid enum) — replace body value.
+      if (cfg.defaults) {
+        const session = { userId: payload.userId, role: payload.role, divisionId: payload.divisionId }
+        const result = cfg.defaults(filtered, session) || {}
+        const overrides = (result as any).__overrides || {}
+        for (const [k, v] of Object.entries(result)) {
+          if (k === '__overrides') continue
+          if (filtered[k] === undefined || filtered[k] === null || filtered[k] === '') {
+            filtered[k] = v
+          }
+        }
+        // Apply overrides (e.g. invalid enum → valid enum)
+        for (const [k, v] of Object.entries(overrides)) {
+          filtered[k] = v
+        }
+      }
 
       if (Object.keys(filtered).length === 0) {
         return NextResponse.json({ 

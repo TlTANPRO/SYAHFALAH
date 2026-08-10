@@ -63,6 +63,7 @@ export const QUICK_ADD_ACTIONS: QuickAddAction[] = [
       source: 'walk_in',
       stage: 'new',
     },
+    endpoint: '/api/marketing/leads',
   },
   {
     id: 'new-project',

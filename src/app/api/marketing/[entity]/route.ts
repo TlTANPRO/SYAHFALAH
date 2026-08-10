@@ -97,6 +97,12 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ entity: st
     const cfg = ENTITY_CONFIG[rawEntity]
 
     const body = await req.json().catch(() => ({}))
+    // Apply server-side defaults for required NOT NULL fields when client omits them
+    if (!body.source) body.source = 'walk_in'
+    if (!body.stage) body.stage = 'new'
+    if (rawEntity === 'leads' && !body.code) {
+      body.code = `LEAD-${Date.now().toString(36).toUpperCase()}`
+    }
     // Validate required fields
     for (const r of cfg.required) {
       if (!body[r]) return NextResponse.json({ error: `${r} wajib diisi` }, { status: 400 })

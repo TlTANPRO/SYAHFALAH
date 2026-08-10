@@ -20,6 +20,19 @@ const config = {
     'total_units',
     'units_completed',
   ],
+  defaults: (body: Record<string, unknown>, session: { userId: string; role: string; divisionId?: string }) => {
+    const overrides: Record<string, unknown> = {}
+    if (!body.target_completion_date) {
+      const startStr = typeof body.start_date === 'string' ? body.start_date : null
+      const start = startStr ? new Date(startStr) : new Date()
+      start.setDate(start.getDate() + 90)
+      overrides.target_completion_date = start.toISOString().slice(0, 10)
+    }
+    if (!body.start_date) {
+      overrides.start_date = new Date().toISOString().slice(0, 10)
+    }
+    return { __overrides: overrides }
+  },
 }
 
 export const POST = makePostHandler(config)
