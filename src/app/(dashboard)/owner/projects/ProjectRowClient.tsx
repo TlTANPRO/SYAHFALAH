@@ -2,22 +2,42 @@
 'use client'
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { InlineEdit } from '@/components/ui/inline-edit'
+import { SmartInlineEdit } from '@/components/ui/smart-inline-edit'
 import { DetailSheet } from '@/components/ui/detail-sheet'
 import { useQueryClient } from '@tanstack/react-query'
+import { useUndoToast } from '@/hooks/use-undo-toast'
 
 export function ProjectRowClient({ row }: { row: any }) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [open, setOpen] = React.useState(false)
-  
+  const showUndoToast = useUndoToast()
+
   return (
     <>
-      <InlineEdit
+      <SmartInlineEdit
         value={row.name}
         type="text"
+        entity="projects"
+        field="name"
         aria-label="Nama project"
         validate={(v) => !String(v).trim() ? 'Nama project tidak boleh kosong' : null}
+        onUndo={(oldName, newName) => {
+          showUndoToast({
+            title: 'Nama project diperbarui',
+            message: `${oldName} → ${newName}`,
+            onUndo: async () => {
+              await fetch(`/api/projects/projects/${row.id}`, {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: oldName }),
+              })
+              queryClient.invalidateQueries({ queryKey: ['projects'] })
+              router.refresh()
+            },
+          })
+        }}
         onSave={async (newName) => {
           await fetch(`/api/projects/projects/${row.id}`, {
             method: 'PATCH',

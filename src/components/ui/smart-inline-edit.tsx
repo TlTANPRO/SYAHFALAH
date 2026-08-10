@@ -31,6 +31,16 @@ interface Props {
   className?: string
   /** Read-only */
   readOnly?: boolean
+  /** Optional callback after save (receives old + new value) - for undo */
+  onUndo?: (oldValue: string | number, newValue: string | number) => void
+  /** Base row snapshot for conflict detection */
+  baseRow?: Record<string, unknown> | null
+  /** Conflict handler */
+  onConflict?: (info: {
+    serverRow: Record<string, unknown>
+    baseRow: Record<string, unknown> | null
+    draft: string | number
+  }) => Promise<boolean> | boolean
 }
 
 export function SmartInlineEdit({
@@ -43,6 +53,9 @@ export function SmartInlineEdit({
   validate,
   className,
   readOnly,
+  onUndo,
+  baseRow,
+  onConflict,
   'aria-label': ariaLabel,
 }: Props) {
   const [editing, setEditing] = React.useState(false)
@@ -76,6 +89,9 @@ export function SmartInlineEdit({
         aria-label={ariaLabel}
         className={className}
         readOnly={readOnly}
+        onUndo={onUndo}
+        baseRow={baseRow}
+        onConflict={onConflict}
       />
       {showSuggestions && (
         <span

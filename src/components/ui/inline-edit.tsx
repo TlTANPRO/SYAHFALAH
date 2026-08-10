@@ -42,6 +42,20 @@ export interface InlineEditProps {
   /** Auto-save on blur (default true) */
   /** Optional callback after save (receives old value + new value) - for undo */
   onUndo?: (oldValue: string | number, newValue: string | number) => void
+  /** 
+   * Optional: when saving, the parent passes the current server row.
+   * The InlineEdit will then call onConflict(serverRow, currentDraft, baseRow) 
+   * if the server row's updated_at differs from baseRow's updated_at.
+   * The conflict resolution happens in the parent; if it returns a Promise,
+   * InlineEdit waits for resolution before saving.
+   */
+  onConflict?: (info: {
+    serverRow: Record<string, unknown>
+    baseRow: Record<string, unknown> | null
+    draft: string | number
+  }) => Promise<boolean> | boolean
+  /** Base row (snapshot when edit started) for conflict detection */
+  baseRow?: Record<string, unknown> | null
   autoSave?: boolean
 }
 
@@ -61,6 +75,8 @@ export function InlineEdit({
   emptyText = '—',
   autoSave = true,
   onUndo,
+  onConflict,
+  baseRow,
 }: InlineEditProps) {
   const [editing, setEditing] = React.useState(false)
   const [draft, setDraft] = React.useState<string | number>(
@@ -107,6 +123,41 @@ export function InlineEdit({
         return
       }
     }
+    
+    // Conflict detection: if parent provided onConflict + baseRow,
+    // re-fetch latest server row + let parent decide
+    if (onConflict && baseRow) {
+      setSaving(true)
+      try {
+        const response = await fetch(`/api/${baseRow._table ?? 'inline'}/${baseRow.id}`, {
+          credentials: 'include',
+        })
+        if (response.ok) {
+          const body = await response.json().catch(() => ({}))
+          const serverRow = body.data ?? body
+          // If server updated_at != baseRow updated_at → potential conflict
+          if (
+            serverRow?.updated_at &&
+            baseRow?.updated_at &&
+            serverRow.updated_at !== baseRow.updated_at
+          ) {
+            const shouldProceed = await onConflict({
+              serverRow,
+              baseRow,
+              draft,
+            })
+            if (!shouldProceed) {
+              setSaving(false)
+              setError('Disimpan ditunda (konflik). Lihat dialog resolusi.')
+              return
+            }
+          }
+        }
+      } catch {
+        // If conflict check fails, proceed with save anyway
+      }
+    }
+    
     setSaving(true)
     setError(null)
     const previousValue = value

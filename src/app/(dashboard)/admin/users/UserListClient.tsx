@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { Search, Filter, X, ChevronRight, Users, Mail, Phone, CheckSquare, Edit3 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { BulkActionBar } from '@/components/ui/BulkActionBar'
+import { UserCardList } from '@/components/admin/user-card-list'
 import { Card, CardContent } from '@/components/ui/card'
 import { Pagination } from '@/components/ui/Pagination'
 import { InlineEdit } from '@/components/ui/inline-edit'
@@ -170,6 +171,22 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
 
       <Card>
         <CardContent className="p-0">
+          <UserCardList
+            users={rows}
+            divisions={divisions}
+            onEdit={(user) => {
+              setEditingUser(user as unknown as UserRow)
+            }}
+            onSave={async (userId, field, value) => {
+              await fetch(`/api/users/${userId}`, {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ [field]: value }),
+              })
+              queryClient.invalidateQueries({ queryKey: ['users'] })
+            }}
+          />
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
