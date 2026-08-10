@@ -77,6 +77,8 @@ export async function POST(
         updated: data?.length ?? 0,
         ids,
         fields: filtered,
+        audit: ids.length, // audit entries logged
+        auditIds: ids,
       } 
     })
   } catch (err: any) {

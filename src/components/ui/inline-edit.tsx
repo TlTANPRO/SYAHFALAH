@@ -9,6 +9,7 @@ import * as React from 'react'
 import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Input } from './input'
+import { getSchema } from '@/lib/schema/registry'
 
 export type InlineEditType = 'text' | 'number' | 'date' | 'textarea' | 'select'
 
@@ -187,11 +188,24 @@ export function InlineEdit({
     }
   }
 
+  // Resolve enum label for select type
+  const resolveEnumLabel = (val: unknown): string => {
+    if (!val) return String(val ?? '')
+    // If options provided, find label
+    if (options && options.length > 0) {
+      const opt = options.find((o) => String(o.value) === String(val))
+      if (opt) return opt.label
+    }
+    return String(val)
+  }
+  
   const displayValue = format
     ? format(value as string | number)
-    : value === null || value === undefined || value === ''
-      ? emptyText
-      : String(value)
+    : type === 'select'
+      ? resolveEnumLabel(value)
+      : value === null || value === undefined || value === ''
+        ? emptyText
+        : String(value)
 
   // Read-only or disabled display
   if (readOnly || (disabled && !editing)) {

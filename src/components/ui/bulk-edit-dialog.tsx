@@ -130,10 +130,23 @@ export function BulkEditDialog({
       if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`)
       
       const updated = body.data?.updated ?? ids.length
+      const auditInfo = body.data?.audit
+      const auditSummary = auditInfo 
+        ? ` · ${auditInfo} audit entries` 
+        : ''
+      const fieldNames = Object.keys(fields).join(', ')
       addToast({
-        title: `Berhasil`,
-        message: `${updated} baris diperbarui (${Object.keys(fields).length} field)`,
+        title: `${updated} baris diperbarui`,
+        message: `Field: ${fieldNames}${auditSummary}`,
         type: 'success',
+        duration: 8000,
+        action: auditInfo ? {
+          label: 'Lihat Audit',
+          onClick: () => {
+            // Open audit log for this entity filtered to recent changes
+            window.open(`/admin/audit?entity=${entity}&ids=${ids.join(',')}`, '_blank')
+          },
+        } : undefined,
       })
       onComplete?.(updated)
       onClose()
