@@ -84,16 +84,17 @@ function filterByPartial(suggestions: string[], partial?: string): string[] {
   return suggestions.filter((s) => s.toLowerCase().includes(p)).slice(0, 6)
 }
 
-import { detectLLMProvider, listAvailableProviders, callLLM, parseJSON } from './llm-env'
+import { detectLLMProvider, listAvailableProviders, listCascadeModels, callLLM, parseJSON } from './llm-env'
 
 async function llmSuggest(ctx: SuggestContext): Promise<string[]> {
-  const providers = listAvailableProviders()
-  if (providers.length === 0) return []
+  // Try cascade: best quality model first, fallback to faster models
+  const cascade = listCascadeModels()
+  if (cascade.length === 0) return []
 
   const messages = [
     {
       role: 'system' as const,
-      content: 'You are a CRM/operations assistant. Generate 3-5 short value suggestions (max 3 words each) for a database field. Respond with JSON array only, no other text.',
+      content: 'You are a CRM/operations assistant for a property development company. Generate 3-5 short value suggestions (max 3 words each) for a database field. Respond with JSON array only, no other text.',
     },
     {
       role: 'user' as const,
@@ -101,8 +102,8 @@ async function llmSuggest(ctx: SuggestContext): Promise<string[]> {
     },
   ]
 
-  // Try each provider in priority order, fall back to next on failure
-  for (const config of providers) {
+  // Try each (key, model) pair in priority order, fall back on failure
+  for (const config of cascade) {
     try {
       const text = await callLLM(config, messages, { maxTokens: 100, temperature: 0.3 })
       const parsed = parseJSON<string[]>(text)
@@ -110,7 +111,7 @@ async function llmSuggest(ctx: SuggestContext): Promise<string[]> {
         return parsed.filter((v) => typeof v === 'string').slice(0, 5)
       }
     } catch {
-      // Try next provider
+      // Try next config (key or model)
       continue
     }
   }

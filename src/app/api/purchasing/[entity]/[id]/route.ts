@@ -29,7 +29,7 @@ export async function PATCH(
   }
   const config = ENTITY_CONFIG[entity as Entity]
   const handler = makePatchHandler({
-    table: entity,
+    table: entity,  // used to look up schema registry automatically
     allowedFields: config.allowedFields,
   })
   return handler(req, ctx)
