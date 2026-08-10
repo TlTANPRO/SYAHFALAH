@@ -8,13 +8,17 @@ import { cn } from '@/lib/utils'
 import { useSelectableRows } from '@/hooks/use-selectable-rows'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
-import { Search, Filter, X, ChevronRight, Users, Mail, Phone, CheckSquare } from 'lucide-react'
+import { Search, Filter, X, ChevronRight, Users, Mail, Phone, CheckSquare, Edit3 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { BulkActionBar } from '@/components/ui/BulkActionBar'
 import { Card, CardContent } from '@/components/ui/card'
 import { Pagination } from '@/components/ui/Pagination'
 import { InlineEdit } from '@/components/ui/inline-edit'
+import { SmartInlineEdit } from '@/components/ui/smart-inline-edit'
 import { DetailSheet } from '@/components/ui/detail-sheet'
+import { SwipeableRow } from '@/components/ui/swipeable-row'
+import { BulkEditDialog } from '@/components/ui/bulk-edit-dialog'
+import { useUndoToast } from '@/hooks/use-undo-toast'
 
 interface UserRow {
   id: string
@@ -84,6 +88,20 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
 
   const rowIds = useMemo(() => rows.map((u) => u.id), [rows])
   const selection = useSelectableRows(rowIds)
+  const showUndoToast = useUndoToast()
+  const [bulkEditOpen, setBulkEditOpen] = useState(false)
+
+  // Available fields for bulk edit (from users schema)
+  const bulkEditFields = [
+    { name: 'is_active', label: 'Status Aktif', options: [
+      { value: 'true', label: 'Aktif' },
+      { value: 'false', label: 'Nonaktif' },
+    ]},
+    { name: 'division_id', label: 'Divisi' },
+    { name: 'position', label: 'Posisi' },
+    { name: 'phone', label: 'No HP' },
+    { name: 'email', label: 'Email' },
+  ]
 
   return (
     <div className="space-y-3">
@@ -281,6 +299,15 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
       >
         <button
           type="button"
+          onClick={() => setBulkEditOpen(true)}
+          className="px-3 py-1.5 text-xs font-medium rounded-full bg-white/15 hover:bg-white/25 transition flex items-center gap-1.5"
+          aria-label="Bulk edit banyak field"
+        >
+          <Edit3 className="h-3.5 w-3.5" />
+          Edit Banyak
+        </button>
+        <button
+          type="button"
           onClick={async () => {
             const ids = Array.from(selectedIds)
             if (!confirm(`Set ${ids.length} user ke status aktif?`)) return
@@ -304,6 +331,18 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
           Set Aktif
         </button>
       </BulkActionBar>
+
+      <BulkEditDialog
+        open={bulkEditOpen}
+        onClose={() => setBulkEditOpen(false)}
+        entity="users"
+        ids={Array.from(selectedIds)}
+        availableFields={bulkEditFields}
+        onComplete={() => {
+          setSelectedIds(new Set())
+          queryClient.invalidateQueries({ queryKey: ['users'] })
+        }}
+      />
 
       <DetailSheet
         table="users"

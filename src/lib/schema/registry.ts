@@ -296,8 +296,10 @@ export const SCHEMAS: Record<string, TableSchema> = {
       { name: 'full_name', kind: 'text', required: true, label: 'Nama Lengkap', showInline: true, order: 1, width: 8 },
       { name: 'email', kind: 'email', label: 'Email', order: 2, width: 6 },
       { name: 'phone', kind: 'phone', label: 'No HP', order: 3, width: 6 },
-      { name: 'pin', kind: 'text', label: 'PIN (4 digit)', order: 4, width: 4 },
+      { name: 'pin', kind: 'text', label: 'PIN (4 digit)', order: 4, width: 4,
+        permissions: { staff: 'none', pic_divisi: 'none', kepala_kantor: 'none' } },
       { name: 'role', kind: 'select', label: 'Role', required: true, showInline: true, order: 5, width: 4,
+        permissions: { staff: 'none', pic_divisi: 'none', kepala_kantor: 'none' },
         options: [
           { value: 'owner', label: 'Owner' },
           { value: 'kepala_kantor', label: 'Kepala Kantor' },
