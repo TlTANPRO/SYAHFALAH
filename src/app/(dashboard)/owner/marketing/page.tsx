@@ -19,6 +19,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ErrorState } from '@/components/ui/error-state'
 import { SkeletonKpiGrid } from '@/components/ui/loading-skeleton'
+import { MarketingRow } from './MarketingRow'
 
 const TABS = ['customers', 'surveys', 'bookings', 'sp3k', 'akad'] as const
 type Tab = typeof TABS[number]
@@ -290,7 +291,7 @@ function RowFields({ row, tab }: { row: any; tab: Tab }) {
     return (
       <>
         <div className="flex items-center gap-2 flex-wrap">
-          <p className="font-medium">{row.full_name}</p>
+          <MarketingRow row={row} tab={tab} displayField="full_name" />
           {row.code && <Badge variant="outline">{row.code}</Badge>}
         </div>
         <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
@@ -315,6 +316,7 @@ function RowFields({ row, tab }: { row: any; tab: Tab }) {
         <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1 font-mono">
           lead {row.lead_id?.slice(0, 8)} · dibuat {fmtTs(row.created_at)}
         </p>
+        <MarketingRow row={row} tab={tab} displayField="result" />
       </>
     )
   }
@@ -334,6 +336,7 @@ function RowFields({ row, tab }: { row: any; tab: Tab }) {
         <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1 font-mono">
           lead {row.lead_id?.slice(0, 8)} · dibuat {fmtTs(row.created_at)}
         </p>
+        <MarketingRow row={row} tab={tab} displayField="status" />
       </>
     )
   }
@@ -350,6 +353,7 @@ function RowFields({ row, tab }: { row: any; tab: Tab }) {
         <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1 font-mono">
           booking {row.booking_id?.slice(0, 8)} · dibuat {fmtTs(row.created_at)}
         </p>
+        <MarketingRow row={row} tab={tab} displayField="status" />
       </>
     )
   }
@@ -361,6 +365,7 @@ function RowFields({ row, tab }: { row: any; tab: Tab }) {
         <Badge variant={row.status === 'signed' ? 'success' : row.status === 'cancelled' ? 'destructive' : 'info'}>
           {row.status}
         </Badge>
+        <MarketingRow row={row} tab={tab} displayField="status" />
         {row.scheduled_date && <span className="text-xs">jadwal: {fmtTs(row.scheduled_date)}</span>}
         {row.signed_date && <span className="text-xs">ttd: {fmtTs(row.signed_date)}</span>}
         {row.notary_name && <Badge variant="outline">{row.notary_name}</Badge>}

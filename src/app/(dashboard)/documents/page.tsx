@@ -19,6 +19,7 @@ import { HeroSection } from "@/components/layout/HeroSection"
 import { PageHeader } from "@/components/layout/PageHeader"
 import { EmptyState } from "@/components/ui/empty-state"
 import { requireRole } from "@/lib/auth/role-guard"
+import { DocumentRowClient } from './DocumentRowClient'
 
 export const dynamic = "force-dynamic"
 
@@ -155,7 +156,7 @@ export default async function DocumentsPage({
                               <FileIco className="h-5 w-5 text-[var(--color-brand-500)]" aria-hidden />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold truncate" title={d.title}>{d.title}</p>
+                              <DocumentRowClient doc={d} />
                               {d.description && (
                                 <p className="text-xs text-[var(--color-text-tertiary)] mt-1 line-clamp-2">{d.description}</p>
                               )}

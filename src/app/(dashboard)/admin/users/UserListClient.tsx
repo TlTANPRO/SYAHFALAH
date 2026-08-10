@@ -4,13 +4,15 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { Search, Filter, X, ChevronRight, Users, Mail, Phone, CheckSquare } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { BulkActionBar } from '@/components/ui/BulkActionBar'
 import { Card, CardContent } from '@/components/ui/card'
 import { Pagination } from '@/components/ui/Pagination'
+import { InlineEdit } from '@/components/ui/inline-edit'
+import { DetailSheet } from '@/components/ui/detail-sheet'
 
 interface UserRow {
   id: string
@@ -50,6 +52,9 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
   const [page, setPage] = useState(1)
   const pageSize = 25
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const queryClient = useQueryClient()
+
+  const [editingUser, setEditingUser] = useState<any>(null)
 
   const divName = useMemo(
     () => new Map(divisions.map(d => [d.id, d.name])),
@@ -173,7 +178,11 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
                   rows.map(u => {
                     const r = ROLE_LABELS[u.role] || { label: u.role, variant: 'default' as const }
                     return (
-                      <tr key={u.id} className="border-b border-[var(--color-border-default)]/50 hover:bg-[var(--color-surface-2)]/50 transition-colors">
+                      <tr key={u.id} className="border-b border-[var(--color-border-default)]/50 hover:bg-[var(--color-surface-2)]/50 transition-colors cursor-pointer" onClick={(e) => {
+                            // Don't open if clicking InlineEdit
+                            if ((e.target as HTMLElement).closest('[data-inline-edit]')) return
+                            setEditingUser(u)
+                          }}>
                         <td className="p-3">
                           <Link
                             href={`/admin/users/${u.id}`}
@@ -181,7 +190,22 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
                             aria-label={`Buka detail ${u.full_name}`}
                           >
                             <div className="font-medium text-[var(--color-brand-500)] group-hover:underline inline-flex items-center gap-1">
-                              {u.full_name}
+                              <InlineEdit
+                                value={u.full_name}
+                                type="text"
+                                aria-label="Nama user"
+                                validate={(v) => !String(v).trim() ? 'Nama tidak boleh kosong' : null}
+                                onSave={async (newName) => {
+                                  await fetch(`/api/users/${u.id}`, {
+                                    method: 'PATCH',
+                                    credentials: 'include',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ full_name: newName }),
+                                  })
+                                  queryClient.invalidateQueries({ queryKey: ['users'] })
+                                }}
+                                className="font-medium text-[var(--color-brand-500)]"
+                              />
                               <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                             <div className="text-xs text-[var(--color-text-secondary)]">{u.position || '—'}</div>
@@ -237,6 +261,22 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
           Set Aktif
         </button>
       </BulkActionBar>
+
+      <DetailSheet
+        table="users"
+        rowId={editingUser?.id ?? null}
+        data={editingUser}
+        open={!!editingUser}
+        onOpenChange={(o) => !o && setEditingUser(null)}
+        mode="edit"
+        onSaved={() => {
+          queryClient.invalidateQueries({ queryKey: ['users'] })
+        }}
+        onDeleted={() => {
+          queryClient.invalidateQueries({ queryKey: ['users'] })
+          setEditingUser(null)
+        }}
+      />
 
       <Pagination
             page={page}

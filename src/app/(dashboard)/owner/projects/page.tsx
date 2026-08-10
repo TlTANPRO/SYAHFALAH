@@ -13,6 +13,7 @@ import { BlockCreateForm } from './BlockCreateForm'
 import { HouseUnitCreateForm } from './HouseUnitCreateForm'
 import { HeroSection } from '@/components/layout/HeroSection'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ProjectRowClient } from './ProjectRowClient'
 
 type Tab = 'projects' | 'blocks' | 'house_units'
 const TABS: readonly Tab[] = ['projects', 'blocks', 'house_units'] as const
@@ -273,7 +274,7 @@ function ProjectRow({ r }: { r: any }) {
   return (
     <>
       <div className="flex items-center gap-2 flex-wrap">
-        <p className="font-medium">{r.name}</p>
+        <ProjectRowClient row={r} />
         {r.code && <Badge variant="outline">{r.code}</Badge>}
         {r.cabang_id && (
           <Badge variant="info" className="text-xs" title="Cabang proyek">
@@ -298,7 +299,7 @@ function BlockRow({ r }: { r: any }) {
   return (
     <>
       <div className="flex items-center gap-2 flex-wrap">
-        <p className="font-medium">{r.name}</p>
+        <ProjectRowClient row={r} />
         {r.code && <Badge variant="outline">{r.code}</Badge>}
         <Badge variant="info">{r.total_units} units</Badge>
       </div>

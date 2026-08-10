@@ -13,6 +13,7 @@ import { FileText, Clock, ChevronRight } from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { HeroSection } from '@/components/layout/HeroSection'
 import { EmptyState } from '@/components/ui/empty-state'
+import { SowRowClient } from './SowRowClient'
 
 interface SowTask {
   id: string
@@ -104,7 +105,7 @@ export default async function Page() {
                       <FileText className="h-4 w-4 text-[var(--color-text-secondary)] flex-shrink-0" />
                       <span className="font-mono text-xs text-[var(--color-text-secondary)]">{s.code}</span>
                     </div>
-                    <h3 className="text-base font-medium">{s.title}</h3>
+                    <SowRowClient sow={s} />
                   </div>
                   <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                 </Link>
