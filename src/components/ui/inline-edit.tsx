@@ -135,16 +135,22 @@ export function InlineEdit({
   // Read-only or disabled display
   if (readOnly || (disabled && !editing)) {
     return (
-      <span
-        className={cn(
-          'text-sm',
-          !value && 'text-[var(--color-text-tertiary)]',
-          className
-        )}
-        aria-label={ariaLabel}
-      >
-        {displayValue}
-      </span>
+      <>
+        <span
+          className={cn(
+            'text-sm',
+            !value && 'text-[var(--color-text-tertiary)]',
+            className
+          )}
+          aria-label={ariaLabel}
+        >
+          {displayValue}
+        </span>
+        {/* aria-live region for screen reader announcements */}
+        <span className="sr-only" role="status" aria-live="polite">
+          {saving ? 'Menyimpan...' : error ? `Gagal menyimpan: ${error}` : ''}
+        </span>
+      </>
     )
   }
 

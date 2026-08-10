@@ -5,11 +5,12 @@
 'use client'
 
 import * as React from 'react'
-import { Loader2, Trash2, Save, X } from 'lucide-react'
+import { Loader2, Trash2, Save, X, Pencil, History } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetBody, SheetFooter, SheetTitle, SheetDescription, SheetClose } from './sheet'
 import { Button } from './button'
 import { FieldForm } from './field-form'
 import { getSchema } from '@/lib/schema/registry'
+import { AuditHistory } from './audit-history'
 import { useUIStore } from '@/stores/uiStore'
 import { cn } from '@/lib/utils'
 
@@ -61,8 +62,14 @@ export function DetailSheet({
   const [activeTab, setActiveTab] = React.useState<string>(
     schema?.tabs?.[0]?.id ?? '__all__'
   )
+  const hasHistory = mode === 'edit' && !!rowId
   const [saving, setSaving] = React.useState(false)
+  const [internalEditing, setInternalEditing] = React.useState(false)
   const addToast = useUIStore((s) => s.addToast)
+  
+  // When readOnly=true (default), show Edit button to toggle to edit mode
+  // When readOnly=false, always show form (caller controls editability)
+  const showAsReadOnly = readOnly && !internalEditing && mode === 'edit'
 
   React.useEffect(() => {
     if (open && schema?.tabs?.[0]?.id) {
@@ -159,10 +166,10 @@ export function DetailSheet({
         </SheetHeader>
 
         {/* Tabs (if defined) */}
-        {schema.tabs && schema.tabs.length > 1 && (
+        {(schema.tabs && schema.tabs.length > 1) || hasHistory ? (
           <div className="px-6 border-b border-[var(--color-border-default)]">
             <div role="tablist" className="flex gap-1 overflow-x-auto -mb-px">
-              {schema.tabs.map((tab) => (
+              {schema.tabs && schema.tabs.length > 1 && schema.tabs.map((tab) => (
                 <button
                   key={tab.id}
                   role="tab"
@@ -178,12 +185,30 @@ export function DetailSheet({
                   {tab.label}
                 </button>
               ))}
+              {hasHistory && (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === '__history__'}
+                  onClick={() => setActiveTab('__history__')}
+                  className={cn(
+                    'px-3 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors flex items-center gap-1',
+                    activeTab === '__history__'
+                      ? 'border-[var(--color-brand-500)] text-[var(--color-brand-500)]'
+                      : 'border-transparent text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
+                  )}
+                >
+                  <History className="h-3 w-3" /> Riwayat
+                </button>
+              )}
             </div>
           </div>
-        )}
+        ) : null}
 
         <SheetBody className="flex-1">
-          {readOnly ? (
+          {activeTab === '__history__' && hasHistory ? (
+            <AuditHistory table={table} rowId={rowId!} />
+          ) : showAsReadOnly ? (
             <ReadOnlyView table={table} data={data ?? {}} activeFields={activeFields} />
           ) : (
             <FieldForm
@@ -198,10 +223,9 @@ export function DetailSheet({
           )}
         </SheetBody>
 
-        {!readOnly && (
-          <SheetFooter className="flex items-center justify-between">
+        <SheetFooter className="flex items-center justify-between">
             <div>
-              {onDelete && mode === 'edit' && (
+              {onDelete && mode === 'edit' && !showAsReadOnly && (
                 <Button
                   type="button"
                   variant="ghost"
@@ -215,19 +239,46 @@ export function DetailSheet({
               )}
             </div>
             <div className="flex items-center gap-2">
-              <SheetClose asChild>
-                <Button type="button" variant="ghost" disabled={saving}>
-                  Batal
-                </Button>
-              </SheetClose>
-              <Button type="submit" form="detail-sheet-form" disabled={saving}>
-                {saving && <Loader2 className="h-3 w-3 animate-spin mr-1.5" />}
-                <Save className="h-3 w-3 mr-1.5" />
-                {mode === 'create' ? 'Buat' : 'Simpan'}
-              </Button>
+              {showAsReadOnly ? (
+                <>
+                  <SheetClose asChild>
+                    <Button type="button" variant="ghost" disabled={saving}>
+                      Tutup
+                    </Button>
+                  </SheetClose>
+                  <Button 
+                    type="button" 
+                    onClick={() => setInternalEditing(true)}
+                    disabled={saving}
+                    aria-label="Edit data"
+                  >
+                    <Pencil className="h-3 w-3 mr-1.5" /> Edit
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    onClick={() => setInternalEditing(false)}
+                    disabled={saving}
+                  >
+                    Batal Edit
+                  </Button>
+                  <SheetClose asChild>
+                    <Button type="button" variant="ghost" disabled={saving}>
+                      Tutup
+                    </Button>
+                  </SheetClose>
+                  <Button type="submit" form="detail-sheet-form" disabled={saving}>
+                    {saving && <Loader2 className="h-3 w-3 animate-spin mr-1.5" />}
+                    <Save className="h-3 w-3 mr-1.5" />
+                    {mode === 'create' ? 'Buat' : 'Simpan'}
+                  </Button>
+                </>
+              )}
             </div>
           </SheetFooter>
-        )}
       </SheetContent>
     </Sheet>
   )

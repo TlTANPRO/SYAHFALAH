@@ -21,11 +21,22 @@ export type FieldKind =
   | 'currency'
   | 'hidden'
 
+export type AccessLevel = 'r' | 'rw' | 'none'
+
+export type FieldPermissions = Partial<Record<string, AccessLevel>>
+
 export interface FieldSchema {
   /** DB column name */
   name: string
   /** Form field type */
   kind: FieldKind
+  /**
+   * Field-level permissions by role.
+   * Keys are roles: 'owner' | 'kepala_kantor' | 'pic_divisi' | 'staff' | 'system'.
+   * Values: 'r' (read-only), 'rw' (read-write), 'none' (hidden).
+   * If a role is not listed, defaults to 'rw' for owner/kepala_kantor, 'r' for others.
+   */
+  permissions?: FieldPermissions
   /** Required (NOT NULL + no default) */
   required?: boolean
   /** UI label (Indonesian) */
@@ -402,4 +413,44 @@ export const SCHEMAS: Record<string, TableSchema> = {
 
 export function getSchema(table: string): TableSchema | null {
   return SCHEMAS[table] || null
+}
+
+/**
+ * Check if a field can be read/written by the given role.
+ * Returns: { readable, writable }
+ */
+export function checkFieldAccess(
+  field: FieldSchema,
+  role: string
+): { readable: boolean; writable: boolean } {
+  const explicit = field.permissions?.[role]
+  if (explicit === 'none') return { readable: false, writable: false }
+  if (explicit === 'r') return { readable: true, writable: false }
+  if (explicit === 'rw') return { readable: true, writable: true }
+
+  // Default: owner + kepala_kantor have full access, others read-only
+  if (role === 'owner' || role === 'kepala_kantor') {
+    return { readable: true, writable: true }
+  }
+  return { readable: true, writable: false }
+}
+
+/**
+ * Filter a list of fields by current user's read access.
+ */
+export function filterReadableFields(
+  fields: FieldSchema[],
+  role: string
+): FieldSchema[] {
+  return fields.filter((f) => checkFieldAccess(f, role).readable)
+}
+
+/**
+ * Filter a list of fields by current user's write access (editable in form).
+ */
+export function filterWritableFields(
+  fields: FieldSchema[],
+  role: string
+): FieldSchema[] {
+  return fields.filter((f) => checkFieldAccess(f, role).writable)
 }

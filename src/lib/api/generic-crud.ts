@@ -7,6 +7,37 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { verifyAccessToken } from '@/lib/auth/jwt'
 
+/**
+ * Log a CRUD action to api_audit_log (best-effort).
+ * Failures silently dropped so audit never blocks the main operation.
+ */
+async function logAudit(
+  sb: any, // generic Supabase client (type varies by table)
+  userId: string,
+  table: string,
+  rowId: string,
+  action: 'INSERT' | 'UPDATE' | 'DELETE',
+  before: Record<string, unknown> | null,
+  after: Record<string, unknown> | null
+): Promise<void> {
+  try {
+    // api_audit_log is optional (table may not exist yet). Cast to any to
+    // bypass strict table-name inference for not-yet-migrated table.
+    await (sb.from('api_audit_log') as any).insert({
+      user_id: userId,
+      table_name: table,
+      row_id: rowId,
+      action,
+      before: before ?? null,
+      after: after ?? null,
+    })
+  } catch {
+    // intentional no-op — table may not exist
+  }
+}
+
+
+
 export interface CrudConfig {
   /** DB table name */
   table: string
@@ -52,6 +83,10 @@ export function makePatchHandler(cfg: CrudConfig) {
         .single()
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      
+      // Audit log — fire-and-forget
+      await logAudit(serviceClient, payload.userId, cfg.table, id, 'UPDATE', null, data)
+      
       return NextResponse.json({ data })
     } catch (err: any) {
       return NextResponse.json({ error: err?.message ?? 'internal' }, { status: 500 })
@@ -81,6 +116,10 @@ export function makeDeleteHandler(cfg: CrudConfig) {
 
       const { error } = await serviceClient.from(cfg.table).delete().eq('id', id)
       if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      
+      // Audit log
+      await logAudit(serviceClient, payload.userId, cfg.table, id, 'DELETE', null, null)
+      
       return NextResponse.json({ data: { id, deleted: true } })
     } catch (err: any) {
       return NextResponse.json({ error: err?.message ?? 'internal' }, { status: 500 })
@@ -123,6 +162,10 @@ export function makePostHandler(cfg: CrudConfig) {
         .single()
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      
+      // Audit log
+      await logAudit(serviceClient, payload.userId, cfg.table, String(data?.id ?? ''), 'INSERT', null, data)
+      
       return NextResponse.json({ data }, { status: 201 })
     } catch (err: any) {
       return NextResponse.json({ error: err?.message ?? 'internal' }, { status: 500 })
