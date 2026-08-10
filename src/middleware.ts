@@ -73,6 +73,35 @@ export async function middleware(request: NextRequest) {
     return applyNoStore(NextResponse.redirect(url))
   }
 
+  // Role-level gates: ensure user has appropriate role for path prefix.
+  // Defense in depth — defense in case per-segment layouts fail to compile.
+  if (user && isProtectedPath) {
+    const pathname = request.nextUrl.pathname
+    const ROLE_GATES: { prefix: string; roles: string[] }[] = [
+      { prefix: '/owner', roles: ['owner'] },
+      { prefix: '/admin', roles: ['owner'] },
+      { prefix: '/kepala-kantor', roles: ['kepala_kantor', 'owner'] },
+      { prefix: '/divisi', roles: ['pic_divisi', 'kepala_kantor', 'owner'] },
+      { prefix: '/sow', roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },
+      { prefix: '/kpi', roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },
+      { prefix: '/raci', roles: ['pic_divisi', 'kepala_kantor', 'owner'] },
+      { prefix: '/rewards', roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },
+      { prefix: '/calendar', roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },
+      { prefix: '/settings', roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },
+    ]
+    for (const gate of ROLE_GATES) {
+      if (pathname === gate.prefix || pathname.startsWith(gate.prefix + '/')) {
+        if (!gate.roles.includes(user.role)) {
+          const url = request.nextUrl.clone()
+          url.pathname = '/forbidden'
+          url.search = `?reason=role&from=${encodeURIComponent(pathname)}`
+          return applyNoStore(NextResponse.redirect(url))
+        }
+        break
+      }
+    }
+  }
+
   // Redirect to dashboard if accessing login while authenticated
     if (request.nextUrl.pathname === '/login' && user) {
       // Redirect by role so user lands on the right dashboard,
