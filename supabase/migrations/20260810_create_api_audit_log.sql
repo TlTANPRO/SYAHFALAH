@@ -1,35 +1,94 @@
--- 20260810_create_api_audit_log.sql
--- Audit trail for all CRUD operations via generic-crud helper.
--- Best-effort: missing table won't block operations (see logAudit in generic-crud.ts).
+-- Migration: Create api_audit_log table
+-- Date: 2026-08-10
+-- Purpose: Track all CRUD operations across entities for audit trail UI
+-- Used by: /api/audit/[table]/[id] (GET), inline-crud PATCH/DELETE/POST handlers,
+--          /api/bulk-update/[entity] (one entry per row)
+
+-- ============================================================================
+-- TABLE
+-- ============================================================================
 
 CREATE TABLE IF NOT EXISTS public.api_audit_log (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  
+  -- Who did the action (nullable for system-initiated ops)
   user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  
+  -- What entity + row was affected
   table_name TEXT NOT NULL,
-  row_id TEXT NOT NULL,
+  row_id TEXT NOT NULL,  -- TEXT (not FK) to allow flexibility across entities
+  
+  -- What kind of change
   action TEXT NOT NULL CHECK (action IN ('INSERT', 'UPDATE', 'DELETE')),
-  before JSONB,
-  after JSONB,
+  
+  -- Diff snapshots for UPDATE actions
+  before JSONB,  -- previous row state
+  after JSONB,   -- new row state
+  
+  -- Optional metadata
+  ip_address INET,
+  user_agent TEXT,
+  
+  -- Timestamps
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_api_audit_log_table_row
-  ON public.api_audit_log(table_name, row_id);
+-- ============================================================================
+-- INDEXES
+-- ============================================================================
 
-CREATE INDEX IF NOT EXISTS idx_api_audit_log_user
-  ON public.api_audit_log(user_id);
+-- Most common query: recent activity for a row
+CREATE INDEX IF NOT EXISTS idx_audit_log_table_row_created
+  ON public.api_audit_log (table_name, row_id, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_api_audit_log_created_at
-  ON public.api_audit_log(created_at DESC);
+-- Audit by user
+CREATE INDEX IF NOT EXISTS idx_audit_log_user_created
+  ON public.api_audit_log (user_id, created_at DESC);
 
--- RLS: only service role can write; all authenticated users can read their own audit entries
+-- Audit by action type
+CREATE INDEX IF NOT EXISTS idx_audit_log_action_created
+  ON public.api_audit_log (action, created_at DESC);
+
+-- ============================================================================
+-- ROW LEVEL SECURITY
+-- ============================================================================
+
+-- Enable RLS
 ALTER TABLE public.api_audit_log ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "audit_log_read_own" ON public.api_audit_log
-  FOR SELECT TO authenticated
-  USING (user_id = auth.uid());
+-- Service role can do everything (used by API routes)
+-- No explicit policy needed; service role bypasses RLS
 
--- Service role bypasses RLS so generic-crud can insert.
+-- Authenticated users can READ audit logs (for /admin/audit page)
+-- Restrict to owner + kepala_kantor via app-side check (since RLS can't easily
+-- reference user.role without a function)
+CREATE POLICY "Authenticated users can read audit logs"
+  ON public.api_audit_log
+  FOR SELECT
+  TO authenticated
+  USING (true);
 
--- Grant read to anon for the api route (uses service role, but RLS still applies)
-GRANT SELECT ON public.api_audit_log TO anon, authenticated;
+-- No INSERT/UPDATE/DELETE policy for authenticated (only service role can write)
+-- This prevents users from forging audit entries
+
+-- ============================================================================
+-- GRANTS
+-- ============================================================================
+
+-- Authenticated users need SELECT for /admin/audit page
+GRANT SELECT ON public.api_audit_log TO authenticated;
+
+-- Anon role: nothing (audit data is sensitive)
+-- (No GRANT statement needed; default is no access)
+
+-- Service role: full access (default for service_role)
+-- (No GRANT statement needed)
+
+-- ============================================================================
+-- COMMENTS
+-- ============================================================================
+
+COMMENT ON TABLE public.api_audit_log IS 'Audit trail for all CRUD operations. Populated by generic-crud.ts logAudit() helper.';
+COMMENT ON COLUMN public.api_audit_log.before IS 'Pre-update row snapshot (for UPDATE actions). NULL for INSERT.';
+COMMENT ON COLUMN public.api_audit_log.after IS 'Post-update row snapshot (for UPDATE actions). NULL for DELETE.';
+COMMENT ON COLUMN public.api_audit_log.row_id IS 'Text (not FK) to support audit across heterogeneous entity types.';

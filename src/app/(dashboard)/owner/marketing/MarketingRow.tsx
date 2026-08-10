@@ -10,6 +10,7 @@ import { InlineEdit } from '@/components/ui/inline-edit'
 import { SmartInlineEdit } from '@/components/ui/smart-inline-edit'
 import { DetailSheet } from '@/components/ui/detail-sheet'
 import { useQueryClient } from '@tanstack/react-query'
+import { useConflictResolver } from '@/hooks/use-conflict-resolver'
 
 interface Props {
   row: Record<string, any>
@@ -37,6 +38,7 @@ export function MarketingRow({ row, tab, displayField }: Props) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [sheetOpen, setSheetOpen] = React.useState(false)
+  const { handleConflict } = useConflictResolver()
   const entity = TAB_TO_ENTITY[tab]
   const schemaEntity = TAB_TO_SCHEMA[tab]
   
@@ -64,6 +66,22 @@ export function MarketingRow({ row, tab, displayField }: Props) {
           field={displayField}
           aria-label={`Edit ${displayField}`}
           validate={(v) => !String(v).trim() ? 'Nama tidak boleh kosong' : null}
+          baseRow={row}
+          onConflict={handleConflict({
+            table: entity,
+            rowLabel: displayValue,
+            baseRow: row as unknown as Parameters<typeof handleConflict>[0]['baseRow'],
+            save: async (values) => {
+              await fetch(`/api/marketing/${entity}/${row.id}`, {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(values),
+              })
+              queryClient.invalidateQueries({ queryKey: ['marketing'] })
+              router.refresh()
+            },
+          })}
           onSave={async (newValue) => {
             await fetch(`/api/marketing/${entity}/${row.id}`, {
               method: 'PATCH',

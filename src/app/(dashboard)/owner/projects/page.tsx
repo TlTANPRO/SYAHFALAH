@@ -14,6 +14,7 @@ import { HouseUnitCreateForm } from './HouseUnitCreateForm'
 import { HeroSection } from '@/components/layout/HeroSection'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ProjectRowClient } from './ProjectRowClient'
+import { ProjectsMobileView } from './ProjectsMobileView'
 
 type Tab = 'projects' | 'blocks' | 'house_units'
 const TABS: readonly Tab[] = ['projects', 'blocks', 'house_units'] as const
@@ -247,7 +248,11 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
                   }
                 />
               ) : (
-                <ul className="divide-y divide-[var(--color-border-subtle)]">
+                <>
+                  {activeTab === 'projects' && (
+                    <ProjectsMobileView rows={rows as any} />
+                  )}
+                  <ul className="divide-y divide-[var(--color-border-subtle)]">
                   {rows.map((r: any) => (
                     <li key={r.id} className="flex items-start gap-3 px-4 py-3">
                       <div className="flex-1 min-w-0">
@@ -258,6 +263,7 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
                     </li>
                   ))}
                 </ul>
+                </>
               )}
             </CardContent>
           </Card>

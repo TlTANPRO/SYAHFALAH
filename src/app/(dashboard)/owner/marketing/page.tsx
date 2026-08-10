@@ -20,6 +20,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { ErrorState } from '@/components/ui/error-state'
 import { SkeletonKpiGrid } from '@/components/ui/loading-skeleton'
 import { MarketingRow } from './MarketingRow'
+import { MarketingMobileView } from './MarketingMobileView'
 
 const TABS = ['customers', 'surveys', 'bookings', 'sp3k', 'akad'] as const
 type Tab = typeof TABS[number]
@@ -269,6 +270,7 @@ export default async function MarketingPage({ searchParams }: PageProps) {
                 />
               ) : (
                 <>
+                  <MarketingMobileView tab={activeTab} rows={rows as any} />
                   <ul className="divide-y divide-[var(--color-border-subtle)]">
                     {rows.map((r: any) => (
                       <li key={r.id} className="flex items-start gap-3 px-4 py-3">

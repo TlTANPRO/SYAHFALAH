@@ -20,6 +20,7 @@ import { DetailSheet } from '@/components/ui/detail-sheet'
 import { SwipeableRow } from '@/components/ui/swipeable-row'
 import { BulkEditDialog } from '@/components/ui/bulk-edit-dialog'
 import { useUndoToast } from '@/hooks/use-undo-toast'
+import { useConflictResolver } from '@/hooks/use-conflict-resolver'
 
 interface UserRow {
   id: string
@@ -90,6 +91,7 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
   const rowIds = useMemo(() => rows.map((u) => u.id), [rows])
   const selection = useSelectableRows(rowIds)
   const showUndoToast = useUndoToast()
+  const { handleConflict } = useConflictResolver()
   const [bulkEditOpen, setBulkEditOpen] = useState(false)
 
   // Available fields for bulk edit (from users schema)
@@ -252,11 +254,43 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
                             aria-label={`Buka detail ${u.full_name}`}
                           >
                             <div className="font-medium text-[var(--color-brand-500)] group-hover:underline inline-flex items-center gap-1">
-                              <InlineEdit
+                              <SmartInlineEdit
                                 value={u.full_name}
                                 type="text"
+                                entity="users"
+                                field="full_name"
                                 aria-label="Nama user"
                                 validate={(v) => !String(v).trim() ? 'Nama tidak boleh kosong' : null}
+                                baseRow={u as unknown as Record<string, unknown>}
+                                onConflict={handleConflict({
+                                  table: 'users',
+                                  rowLabel: u.full_name,
+                                  baseRow: u as unknown as Parameters<typeof handleConflict>[0]['baseRow'],
+                                  save: async (values) => {
+                                    await fetch(`/api/users/${u.id}`, {
+                                      method: 'PATCH',
+                                      credentials: 'include',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify(values),
+                                    })
+                                    queryClient.invalidateQueries({ queryKey: ['users'] })
+                                  },
+                                })}
+                                onUndo={(oldName, newName) => {
+                                  showUndoToast({
+                                    title: 'Nama user diperbarui',
+                                    message: `${oldName} → ${newName}`,
+                                    onUndo: async () => {
+                                      await fetch(`/api/users/${u.id}`, {
+                                        method: 'PATCH',
+                                        credentials: 'include',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ full_name: oldName }),
+                                      })
+                                      queryClient.invalidateQueries({ queryKey: ['users'] })
+                                    },
+                                  })
+                                }}
                                 onSave={async (newName) => {
                                   await fetch(`/api/users/${u.id}`, {
                                     method: 'PATCH',
