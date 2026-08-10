@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ListFilters } from '@/components/ui/ListFilters'
 import { TicketCreateForm } from './TicketCreateForm'
+import { MaintenanceRowClient } from './MaintenanceRowClient'
 import { HeroSection } from '@/components/layout/HeroSection'
 import { EmptyState } from '@/components/ui/empty-state'
 
@@ -177,7 +178,7 @@ export default async function MaintenancePage({ searchParams }: PageProps) {
                       <div className="flex items-center gap-2 flex-wrap">
                         {activeTab === 'tickets' && (
                           <>
-                            <p className="font-medium">{r.title}</p>
+                            <MaintenanceRowClient row={r} tab="tickets" />
                             {r.code && <Badge variant="outline">{r.code}</Badge>}
                             <Badge variant={
                               r.status === 'resolved' || r.status === 'closed' ? 'success' :
@@ -195,6 +196,7 @@ export default async function MaintenancePage({ searchParams }: PageProps) {
                         )}
                         {activeTab === 'logs' && (
                           <>
+                            <MaintenanceRowClient row={r} tab="logs" />
                             <Badge variant="outline">{r.action}</Badge>
                             {r.from_status && r.to_status && (
                               <span className="text-xs">{r.from_status} → {r.to_status}</span>

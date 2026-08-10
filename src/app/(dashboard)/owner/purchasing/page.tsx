@@ -16,6 +16,7 @@ import { PurchaseOrderCreateForm } from './PurchaseOrderCreateForm'
 import { HeroSection } from '@/components/layout/HeroSection'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ShoppingCart as CartIcon } from 'lucide-react'
+import { PurchasingRowClient } from './PurchasingRowClient'
 
 type Tab = 'suppliers' | 'materials' | 'purchase_requests' | 'purchase_orders'
 const TABS: readonly Tab[] = ['suppliers', 'materials', 'purchase_requests', 'purchase_orders'] as const
@@ -191,7 +192,7 @@ export default async function PurchasingPage({ searchParams }: PageProps) {
                       <div className="flex items-center gap-2 flex-wrap">
                         {activeTab === 'suppliers' && (
                           <>
-                            <p className="font-medium">{r.name}</p>
+                            <PurchasingRowClient row={r} tab="suppliers" />
                             {r.code && <Badge variant="outline">{r.code}</Badge>}
                             <Badge variant={r.is_active ? 'success' : 'default'}>
                               {r.is_active ? 'aktif' : 'nonaktif'}
@@ -201,7 +202,7 @@ export default async function PurchasingPage({ searchParams }: PageProps) {
                         )}
                         {activeTab === 'materials' && (
                           <>
-                            <p className="font-medium">{r.name}</p>
+                            <PurchasingRowClient row={r} tab="materials" />
                             {r.code && <Badge variant="outline">{r.code}</Badge>}
                             <Badge variant="info">{r.unit}</Badge>
                             {r.category && <Badge variant="outline">{r.category}</Badge>}
@@ -212,7 +213,7 @@ export default async function PurchasingPage({ searchParams }: PageProps) {
                         )}
                         {activeTab === 'purchase_requests' && (
                           <>
-                            <p className="font-medium">{r.title}</p>
+                            <PurchasingRowClient row={r} tab="purchase_requests" />
                             {r.code && <Badge variant="outline">{r.code}</Badge>}
                             <Badge variant={r.status === 'approved' ? 'success' : r.status === 'rejected' ? 'destructive' : 'warning'}>
                               {r.status}
@@ -221,7 +222,7 @@ export default async function PurchasingPage({ searchParams }: PageProps) {
                         )}
                         {activeTab === 'purchase_orders' && (
                           <>
-                            <p className="font-medium">{r.code ?? r.id.slice(0, 8)}</p>
+                            <PurchasingRowClient row={r} tab="purchase_orders" />
                             <Badge variant={r.status === 'received' ? 'success' : r.status === 'cancelled' ? 'destructive' : 'info'}>
                               {r.status}
                             </Badge>

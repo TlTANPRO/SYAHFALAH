@@ -20,6 +20,7 @@ import { PageHeader } from "@/components/layout/PageHeader"
 import { EmptyState } from "@/components/ui/empty-state"
 import { requireRole } from "@/lib/auth/role-guard"
 import { DocumentRowClient } from './DocumentRowClient'
+import { DocumentsMobileView } from './DocumentsMobileView'
 
 export const dynamic = "force-dynamic"
 
@@ -134,6 +135,8 @@ export default async function DocumentsPage({
         />
       ) : (
         <div className="space-y-8">
+          {/* Mobile-only flat list (hidden on sm+) */}
+          <DocumentsMobileView rows={docs as any} />
           {Object.entries(grouped).map(([cat, items]) => {
             const catMeta = CATEGORIES[cat as keyof typeof CATEGORIES] || CATEGORIES.other
             const CatIcon = catMeta.icon

@@ -7,6 +7,7 @@ import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { MessageCircle, AlertCircle, CheckCircle2, Clock, ChevronRight, Database } from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
+import { CoachingRowClient } from './CoachingRowClient'
 
 interface CoachingEntry {
   id: string
@@ -148,7 +149,9 @@ export default async function Page() {
                       <MessageCircle className="h-3.5 w-3.5 text-[var(--color-text-tertiary)] mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="text-xs text-[var(--color-text-tertiary)]">Pembuka</p>
-                        <p className="text-sm mt-0.5">{entry.pembuka}</p>
+                                         <p className="text-sm mt-0.5">
+                   <CoachingRowClient taskId={entry.id} title={entry.pembuka} />
+                 </p>
                       </div>
                     </div>
                   </div>

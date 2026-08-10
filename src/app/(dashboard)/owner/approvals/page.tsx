@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { ListFilters } from '@/components/ui/ListFilters'
 import { ApprovalRequestForm } from './ApprovalRequestForm'
 import { ApprovalDecisionActions } from './ApprovalDecisionActions'
+import { ApprovalsRowClient } from './ApprovalsRowClient'
 
 export interface ApprovalRow {
   id: string
@@ -184,7 +185,7 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
                 <li key={a.id} className="flex items-start gap-3 px-4 py-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-medium">{a.title}</p>
+                      <ApprovalsRowClient approval={a} />
                       <Badge variant="outline">{KIND_LABEL[a.kind] ?? a.kind}</Badge>
                       <Badge variant={STATUS_VARIANT[a.status]}>{STATUS_LABEL[a.status]}</Badge>
                       {a.amount != null && <Badge variant="outline">{fmtAmount(a.amount)}</Badge>}
@@ -229,7 +230,7 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-medium">{a.title}</p>
+                      <ApprovalsRowClient approval={a} />
                       <Badge variant={STATUS_VARIANT[a.status]}>{STATUS_LABEL[a.status]}</Badge>
                       <Badge variant="outline">{KIND_LABEL[a.kind] ?? a.kind}</Badge>
                     </div>

@@ -43,8 +43,8 @@ async function main() {
     },
   };
 
-  // Get user agent from Puppeteer
-  const userAgent = await browser.userAgent();
+  // Puppeteer user agent available if needed for impersonation
+  // const userAgent = await browser.userAgent();
 
   // Use lighthouse with the existing browser
   for (const path of PAGES) {
