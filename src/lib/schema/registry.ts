@@ -160,7 +160,8 @@ export const SCHEMAS: Record<string, TableSchema> = {
       { id: 'relations', label: 'Relations', fields: ['user_id', 'division_id', 'sow_task_id', 'kpi_target_id', 'parent_task_id'] },
     ],
     fields: [
-      { name: 'title', kind: 'text', required: true, label: 'Judul', showInline: true, order: 1, width: 8 },
+      { name: 'title', kind: 'text', required: true, label: 'Judul', showInline: true, order: 1, width: 8,
+        permissions: { staff: 'rw', pic_divisi: 'rw', kepala_kantor: 'rw', owner: 'rw' } },
       { name: 'description', kind: 'longtext', label: 'Deskripsi', order: 2, width: 12 },
       { name: 'status', kind: 'select', label: 'Status', required: true, showInline: true, order: 3, width: 4,
         options: [

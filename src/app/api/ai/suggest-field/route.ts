@@ -1,11 +1,12 @@
 // src/app/api/ai/suggest-field/route.ts
 // AI-assisted field suggestions for InlineEdit / FieldForm.
 // POST { entity: string, field: string, context: object, partial?: string }
-// Returns: { suggestions: string[] } or { suggestion: string }
+// Returns: { suggestions: string[], source: 'pattern' | 'llm' | 'hybrid' }
 
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyAccessToken } from '@/lib/auth/jwt'
+import { suggestField } from '@/lib/ai/field-suggester'
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,50 +28,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'entity + field required' }, { status: 400 })
     }
 
-    // Smart suggestions based on field name + entity context
-    const suggestions: string[] = []
+    // Delegate to AI suggester (pattern → LLM cascade)
+    const result = await suggestField({
+      entity,
+      field,
+      partial,
+      context: context as Record<string, unknown> | undefined,
+    })
 
-    // Status field suggestions
-    if (field === 'status') {
-      suggestions.push('on_track', 'at_risk', 'blocked', 'completed', 'pending', 'in_progress')
-    }
-    // Priority field
-    else if (field === 'priority' || field === 'priority_level') {
-      suggestions.push('low', 'medium', 'high', 'urgent')
-    }
-    // Outcome/result
-    else if (field === 'result' || field === 'outcome') {
-      if (entity === 'surveys') {
-        suggestions.push('Tertarik', 'Tidak tertarik', 'Akan follow up', 'Sudah closing', 'Tidak response')
-      } else if (entity === 'sp3k') {
-        suggestions.push('Disetujui', 'Ditolak', 'Menunggu review', 'Revisi')
-      } else {
-        suggestions.push('Berhasil', 'Sebagian', 'Gagal', 'Ditunda')
-      }
-    }
-    // Category
-    else if (field === 'category' || field === 'kategori') {
-      suggestions.push('Internal', 'Eksternal', 'Klien', 'Vendor', 'Pemeliharaan')
-    }
-    // Notes
-    else if (field === 'notes' || field === 'catatan') {
-      // Don't pre-fill notes — they should be free-form
-      return NextResponse.json({ suggestions: [] })
-    }
-    // Title / name — return null (free-form)
-    else if (field === 'title' || field === 'name' || field === 'full_name') {
-      return NextResponse.json({ suggestions: [] })
-    }
-
-    // Filter by partial if provided
-    let filtered = suggestions
-    if (partial && typeof partial === 'string' && partial.trim()) {
-      const p = partial.toLowerCase()
-      filtered = suggestions.filter((s) => s.toLowerCase().includes(p))
-    }
-
-    return NextResponse.json({ 
-      suggestions: filtered.slice(0, 6),
+    return NextResponse.json({
+      suggestions: result.suggestions,
+      source: result.source,
       field,
       entity,
     })

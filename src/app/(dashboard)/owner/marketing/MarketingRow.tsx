@@ -7,6 +7,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { InlineEdit } from '@/components/ui/inline-edit'
+import { SmartInlineEdit } from '@/components/ui/smart-inline-edit'
 import { DetailSheet } from '@/components/ui/detail-sheet'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -56,9 +57,11 @@ export function MarketingRow({ row, tab, displayField }: Props) {
         }}
         aria-label={`Lihat detail ${tab} ${displayValue}`}
       >
-        <InlineEdit
+        <SmartInlineEdit
           value={displayValue}
           type="text"
+          entity={schemaEntity}
+          field={displayField}
           aria-label={`Edit ${displayField}`}
           validate={(v) => !String(v).trim() ? 'Nama tidak boleh kosong' : null}
           onSave={async (newValue) => {

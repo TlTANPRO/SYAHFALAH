@@ -65,7 +65,14 @@ export function BulkEditDialog({
     setChanges((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)))
   }
 
-  const apply = async () => {
+  // Preview state
+  const [previewing, setPreviewing] = React.useState(false)
+  const [previewData, setPreviewData] = React.useState<{
+    fields: Record<string, string>
+    sampleRows: Array<Record<string, unknown>>
+  } | null>(null)
+
+  const handlePreview = async () => {
     const fields: Record<string, string> = {}
     for (const c of changes) {
       if (c.field && c.value !== '') {
@@ -76,6 +83,41 @@ export function BulkEditDialog({
       addToast({ title: 'Tambahkan minimal 1 perubahan', type: 'destructive' })
       return
     }
+
+    // Fetch up to 3 sample rows from the selected IDs
+    const sampleIds = ids.slice(0, 3)
+    try {
+      // Get current state of sample rows for diff display
+      // (using schema lookup via entity name)
+      const res = await fetch(`/api/bulk-update/${entity}`, {
+        method: 'OPTIONS',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      })
+      const sampleRows: Array<Record<string, unknown>> = []
+      // Try to fetch each row via generic GET endpoint
+      await Promise.all(
+        sampleIds.map(async (id) => {
+          try {
+            const rowRes = await fetch(`/api/${entity}/${id}`, { credentials: 'include' })
+            if (rowRes.ok) {
+              const body = await rowRes.json().catch(() => ({}))
+              sampleRows.push(body.data ?? body)
+            }
+          } catch {
+            // Silently skip
+          }
+        })
+      )
+      setPreviewData({ fields, sampleRows })
+      setPreviewing(true)
+    } catch {
+      // If preview fails, just apply directly
+      await applyWithFields(fields)
+    }
+  }
+
+  const applyWithFields = async (fields: Record<string, string>) => {
     setBusy(true)
     try {
       const res = await fetch(`/api/bulk-update/${entity}`, {
@@ -214,6 +256,34 @@ export function BulkEditDialog({
           })}
         </div>
 
+        {previewing && previewData && (
+          <div className="px-4 py-3 bg-[var(--color-info)]/5 border-t border-[var(--color-border-default)]">
+            <p className="text-xs font-medium text-[var(--color-info)] mb-2">
+              Preview perubahan ({previewData.sampleRows.length} dari {ids.length} baris):
+            </p>
+            <div className="space-y-1 text-xs">
+              {previewData.sampleRows.map((row, i) => (
+                <div key={i} className="flex flex-wrap gap-x-3 gap-y-0.5">
+                  <span className="font-mono text-[var(--color-text-tertiary)]">
+                    #{String(row.id ?? '').slice(0, 8)}
+                  </span>
+                  {Object.entries(previewData.fields).map(([k, newVal]) => {
+                    const oldVal = row[k]
+                    const changed = String(oldVal) !== String(newVal)
+                    return (
+                      <span key={k} className={changed ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-tertiary)]'}>
+                        {k}: <span className="line-through opacity-70">{String(oldVal ?? '—')}</span>
+                        {' → '}
+                        <strong>{String(newVal)}</strong>
+                      </span>
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between p-4 border-t border-[var(--color-border-default)] bg-[var(--color-surface-2)]">
           <Button
             type="button"
@@ -228,10 +298,21 @@ export function BulkEditDialog({
             <Button variant="ghost" onClick={onClose} disabled={busy}>
               Batal
             </Button>
-            <Button onClick={apply} disabled={busy || changes.length === 0}>
-              {busy && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
-              Terapkan
-            </Button>
+            {previewing ? (
+              <>
+                <Button variant="ghost" onClick={() => setPreviewing(false)} disabled={busy}>
+                  Kembali
+                </Button>
+                <Button onClick={() => applyWithFields(previewData?.fields ?? {})} disabled={busy}>
+                  {busy && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
+                  Konfirmasi ({ids.length})
+                </Button>
+              </>
+            ) : (
+              <Button onClick={handlePreview} disabled={busy || changes.length === 0}>
+                Preview ({ids.length})
+              </Button>
+            )}
           </div>
         </div>
       </div>
