@@ -72,8 +72,10 @@ export async function GET(req: NextRequest) {
     const start = rangeStart(range)
     if (start) query = query.gte('created_at', start)
     if (q) {
+      // Free-text search across table_name / action. row_id is uuid;
+      // users wanting row-specific search should use the row_id param.
       query = query.or(
-        `table_name.ilike.%${q}%,action.ilike.%${q}%,row_id::text.ilike.%${q}%`
+        `table_name.ilike.%${q}%,action.ilike.%${q}%`
       )
     }
 
