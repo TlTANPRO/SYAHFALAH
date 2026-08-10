@@ -8,6 +8,7 @@ import { AuthProvider } from './AuthProvider'
 import { SupabaseProvider } from './SupabaseProvider'
 import { RealtimeProvider } from './RealtimeProvider'
 import { ThemeProvider } from './ThemeProvider'
+import { ConflictProvider } from '@/hooks/use-conflict-resolver'
 import { Toaster } from 'sonner'
 import { type ReactNode } from 'react'
 
@@ -19,6 +20,7 @@ export function Providers({ children }: { children: ReactNode }) {
           <AuthProvider>
             <RealtimeProvider>
               {children}
+              <ConflictProvider />
               <Toaster
                 position="top-right"
                 toastOptions={{
