@@ -4,6 +4,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { cn } from '@/lib/utils'
+import { useSelectableRows } from '@/hooks/use-selectable-rows'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { Search, Filter, X, ChevronRight, Users, Mail, Phone, CheckSquare } from 'lucide-react'
@@ -54,7 +56,7 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const queryClient = useQueryClient()
 
-  const [editingUser, setEditingUser] = useState<any>(null)
+  const [editingUser, setEditingUser] = useState<UserRow | null>(null)
 
   const divName = useMemo(
     () => new Map(divisions.map(d => [d.id, d.name])),
@@ -79,6 +81,9 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
 
   const rows = data?.data ?? initialData
   const total = data?.total ?? initialTotal
+
+  const rowIds = useMemo(() => rows.map((u) => u.id), [rows])
+  const selection = useSelectableRows(rowIds)
 
   return (
     <div className="space-y-3">
@@ -151,6 +156,18 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border-default)]">
+                  <th className="p-3 w-8">
+                    <input
+                      type="checkbox"
+                      checked={selection.allSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = selection.someSelected
+                      }}
+                      onChange={selection.toggleAll}
+                      aria-label="Pilih semua"
+                      className="h-4 w-4 rounded border-[var(--color-border-default)] text-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20"
+                    />
+                  </th>
                   <th className="text-left p-3 font-medium text-[var(--color-text-secondary)]">Nama</th>
                   <th className="text-left p-3 font-medium text-[var(--color-text-secondary)]">Role</th>
                   <th className="text-left p-3 font-medium text-[var(--color-text-secondary)]">Divisi</th>
@@ -162,14 +179,14 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="border-b border-[var(--color-border-default)]/50">
-                      <td colSpan={5} className="p-3">
+                      <td colSpan={6} className="p-3">
                         <div className="h-4 bg-[var(--color-surface-2)] rounded animate-pulse" />
                       </td>
                     </tr>
                   ))
                 ) : rows.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-8 text-center text-sm text-[var(--color-text-tertiary)]">
+                    <td colSpan={6} className="p-8 text-center text-sm text-[var(--color-text-tertiary)]">
                       <Users className="h-8 w-8 mx-auto mb-2 opacity-50" aria-hidden="true" />
                       Tidak ada user yang cocok dengan filter.
                     </td>
@@ -178,11 +195,21 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
                   rows.map(u => {
                     const r = ROLE_LABELS[u.role] || { label: u.role, variant: 'default' as const }
                     return (
-                      <tr key={u.id} className="border-b border-[var(--color-border-default)]/50 hover:bg-[var(--color-surface-2)]/50 transition-colors cursor-pointer" onClick={(e) => {
-                            // Don't open if clicking InlineEdit
-                            if ((e.target as HTMLElement).closest('[data-inline-edit]')) return
+                      <tr key={u.id} className={cn("border-b border-[var(--color-border-default)]/50 hover:bg-[var(--color-surface-2)]/50 transition-colors cursor-pointer", selection.isSelected(u.id) && 'bg-[var(--color-brand-500)]/5')} onClick={(e) => {
+                            // Don't open if clicking InlineEdit or checkbox
+                            const t = e.target as HTMLElement
+                            if (t.closest('[data-inline-edit]') || t.closest('[data-bulk-checkbox]')) return
                             setEditingUser(u)
                           }}>
+                        <td className="p-3" data-bulk-checkbox onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={selection.isSelected(u.id)}
+                            onChange={() => selection.toggle(u.id)}
+                            aria-label={`Pilih ${u.full_name}`}
+                            className="h-4 w-4 rounded border-[var(--color-border-default)] text-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20 cursor-pointer"
+                          />
+                        </td>
                         <td className="p-3">
                           <Link
                             href={`/admin/users/${u.id}`}
@@ -254,7 +281,23 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
       >
         <button
           type="button"
-          onClick={() => alert(`Set ${selectedIds.size} user aktif (TODO: bulk update)`)}
+          onClick={async () => {
+            const ids = Array.from(selectedIds)
+            if (!confirm(`Set ${ids.length} user ke status aktif?`)) return
+            const res = await fetch('/api/bulk-update/users', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ ids, fields: { is_active: true } }),
+            })
+            if (res.ok) {
+              queryClient.invalidateQueries({ queryKey: ['users'] })
+              setSelectedIds(new Set())
+            } else {
+              const body = await res.json().catch(() => ({}))
+              alert(`Gagal: ${body.error || res.statusText}`)
+            }
+          }}
           className="px-3 py-1.5 text-xs font-medium rounded-full bg-white/15 hover:bg-white/25 transition flex items-center gap-1.5"
         >
           <CheckSquare className="h-3.5 w-3.5" />
@@ -265,7 +308,7 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
       <DetailSheet
         table="users"
         rowId={editingUser?.id ?? null}
-        data={editingUser}
+        data={editingUser as unknown as Record<string, unknown>}
         open={!!editingUser}
         onOpenChange={(o) => !o && setEditingUser(null)}
         mode="edit"

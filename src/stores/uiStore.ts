@@ -35,6 +35,7 @@ interface UIState {
   toasts: Toast[]
   addToast: (toast: Omit<Toast, 'id'>) => string
   removeToast: (id: string) => void
+  updateToast: (id: string, patch: Partial<Omit<Toast, 'id'>>) => void
   
   // Mobile
   isMobile: boolean
@@ -128,6 +129,9 @@ export const useUIStore = create<UIState>((set, get) => ({
   },
   removeToast: (id) => set((state) => ({ 
     toasts: state.toasts.filter((t) => t.id !== id) 
+  })),
+  updateToast: (id, patch) => set((s) => ({
+    toasts: s.toasts.map((t) => (t.id === id ? { ...t, ...patch } : t)),
   })),
   
   // Mobile

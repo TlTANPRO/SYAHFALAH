@@ -8,6 +8,44 @@ import { cookies } from 'next/headers'
 import { verifyAccessToken } from '@/lib/auth/jwt'
 
 /**
+ * Filter incoming fields based on user's role + schema permissions.
+ * Returns only fields the user is allowed to write.
+ */
+function filterFieldsByRole(
+  schemaName: string,
+  userRole: string,
+  requested: Record<string, unknown>,
+  fallbackWhitelist: readonly string[]
+): Record<string, unknown> {
+  const schema = getSchema(schemaName)
+  const filtered: Record<string, unknown> = {}
+
+  // If schema found, use field-level permissions
+  if (schema) {
+    for (const [key, value] of Object.entries(requested)) {
+      // First check if field exists in schema
+      const field = schema.fields.find((f) => f.name === key)
+      if (!field) continue
+
+      // Check role-based access
+      const access = checkFieldAccess(field, userRole)
+      if (access.writable) {
+        filtered[key] = value
+      }
+    }
+    return filtered
+  }
+
+  // Fallback: use static whitelist
+  for (const key of fallbackWhitelist) {
+    if (key in requested) filtered[key] = requested[key]
+  }
+  return filtered
+}
+
+import { getSchema, checkFieldAccess } from '@/lib/schema/registry'
+
+/**
  * Log a CRUD action to api_audit_log (best-effort).
  * Failures silently dropped so audit never blocks the main operation.
  */
@@ -41,8 +79,16 @@ async function logAudit(
 export interface CrudConfig {
   /** DB table name */
   table: string
-  /** Whitelist of fields allowed for PATCH */
+  /** Whitelist of fields allowed for PATCH (fallback when no schema or no permission set) */
   allowedFields: readonly string[]
+  /** 
+   * Optional: enable role-based field-level permissions from schema registry.
+   * Defaults to true. When enabled, fields are filtered by:
+   * 1. Field existence in schema
+   * 2. User role permission (checkFieldAccess)
+   * Falls back to allowedFields whitelist if schema not found.
+   */
+  useFieldPermissions?: boolean
 }
 
 /**
@@ -61,13 +107,23 @@ export function makePatchHandler(cfg: CrudConfig) {
       const { id } = await ctx.params
       const body = await req.json().catch(() => ({}))
 
-      const filtered: Record<string, unknown> = {}
-      for (const key of cfg.allowedFields) {
-        if (key in body) filtered[key] = body[key]
-      }
+      // Filter fields by role permissions
+      const filtered = (cfg.useFieldPermissions ?? true)
+        ? filterFieldsByRole(cfg.table, payload.role, body, cfg.allowedFields)
+        : (() => {
+            const f: Record<string, unknown> = {}
+            for (const key of cfg.allowedFields) {
+              if (key in body) f[key] = body[key]
+            }
+            return f
+          })()
 
       if (Object.keys(filtered).length === 0) {
-        return NextResponse.json({ error: 'no valid fields to update' }, { status: 400 })
+        return NextResponse.json({ 
+          error: (cfg.useFieldPermissions ?? true) 
+            ? 'tidak ada field yang boleh diubah untuk role ini' 
+            : 'no valid fields to update' 
+        }, { status: 400 })
       }
 
       const serviceClient = createClient(
@@ -141,13 +197,22 @@ export function makePostHandler(cfg: CrudConfig) {
       if (!payload) return NextResponse.json({ error: 'invalid session' }, { status: 401 })
 
       const body = await req.json().catch(() => ({}))
-      const filtered: Record<string, unknown> = {}
-      for (const key of cfg.allowedFields) {
-        if (key in body) filtered[key] = body[key]
-      }
+      const filtered = (cfg.useFieldPermissions ?? true)
+        ? filterFieldsByRole(cfg.table, payload.role, body, cfg.allowedFields)
+        : (() => {
+            const f: Record<string, unknown> = {}
+            for (const key of cfg.allowedFields) {
+              if (key in body) f[key] = body[key]
+            }
+            return f
+          })()
 
       if (Object.keys(filtered).length === 0) {
-        return NextResponse.json({ error: 'no valid fields' }, { status: 400 })
+        return NextResponse.json({ 
+          error: (cfg.useFieldPermissions ?? true) 
+            ? 'tidak ada field yang boleh diisi untuk role ini' 
+            : 'no valid fields' 
+        }, { status: 400 })
       }
 
       const serviceClient = createClient(

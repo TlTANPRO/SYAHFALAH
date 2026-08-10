@@ -14,7 +14,7 @@ export type InlineEditType = 'text' | 'number' | 'date' | 'textarea' | 'select'
 
 export interface InlineEditProps {
   /** Current value (controlled) */
-  value: string | number | null | undefined
+  value?: string | number | null | undefined
   /** Called when user saves a new value */
   onSave: (newValue: string | number) => Promise<void> | void
   /** Field type for input rendering */
@@ -40,6 +40,8 @@ export interface InlineEditProps {
   /** Empty placeholder */
   emptyText?: string
   /** Auto-save on blur (default true) */
+  /** Optional callback after save (receives old value + new value) - for undo */
+  onUndo?: (oldValue: string | number, newValue: string | number) => void
   autoSave?: boolean
 }
 
@@ -58,6 +60,7 @@ export function InlineEdit({
   inputClassName,
   emptyText = '—',
   autoSave = true,
+  onUndo,
 }: InlineEditProps) {
   const [editing, setEditing] = React.useState(false)
   const [draft, setDraft] = React.useState<string | number>(
@@ -65,6 +68,7 @@ export function InlineEdit({
   )
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const previousValueRef = React.useRef<string | number | null>(null)
   const inputRef = React.useRef<HTMLInputElement>(null)
 
   React.useEffect(() => {
@@ -105,8 +109,14 @@ export function InlineEdit({
     }
     setSaving(true)
     setError(null)
+    const previousValue = value
+    previousValueRef.current = previousValue ?? null
     try {
       await onSave(draft)
+      // Fire undo callback if provided
+      if (onUndo) {
+        onUndo(previousValue ?? draft, draft)
+      }
       setEditing(false)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Gagal menyimpan'
