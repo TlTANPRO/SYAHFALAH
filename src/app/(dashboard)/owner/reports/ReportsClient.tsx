@@ -8,6 +8,10 @@ import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { Search, X, Building2, ChevronRight, BarChart3 } from 'lucide-react'
 import { Pagination } from '@/components/ui/Pagination'
+import { ReportsRowClient } from './ReportsRowClient'
+import { SmartInlineEdit } from '@/components/ui/smart-inline-edit'
+import { DetailSheet } from '@/components/ui/detail-sheet'
+import { useConflictResolver } from '@/hooks/use-conflict-resolver'
 
 interface ReportCard {
   id: string
@@ -25,6 +29,25 @@ export function ReportsClient({ initialData, total: initialTotal }: Props) {
   const [q, setQ] = useState('')
   const [page, setPage] = useState(1)
   const pageSize = 12
+  const { handleConflict } = useConflictResolver()
+  const handleDivSave = async (id: string, field: string, value: string) => {
+    const resp = await fetch(`/api/divisions/${id}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: value }),
+    })
+    if (!resp.ok) throw new Error('Gagal menyimpan')
+  }
+  const handleDivConflictSave = async (id: string, values: Record<string, unknown>) => {
+    const resp = await fetch(`/api/divisions/${id}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(values),
+    })
+    if (!resp.ok) throw new Error('Gagal menyimpan')
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ['owner-reports', q, page],
@@ -103,9 +126,9 @@ export function ReportsClient({ initialData, total: initialTotal }: Props) {
             >
               <div className="card-body p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
                     <Building2 className="h-4 w-4 text-[var(--color-brand-500)] flex-shrink-0" aria-hidden="true" />
-                    <h3 className="font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-brand-500)]">{r.name}</h3>
+                    <ReportsRowClient division={r} />
                   </div>
                   <ChevronRight className="h-4 w-4 text-[var(--color-text-tertiary)] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                 </div>

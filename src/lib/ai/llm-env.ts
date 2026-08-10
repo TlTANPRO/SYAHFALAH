@@ -37,7 +37,7 @@ const CONFIGS: Record<LLMConfig['provider'], Omit<LLMConfig, 'provider' | 'apiKe
 
 const KEY_NAMES: Record<LLMConfig['provider'], string> = {
   groq: 'GROQ_API_KEY',
-  nim: 'NVIDIA_NIM_API_KEY',
+  nim: 'NIM_API_KEY',
   openai: 'OPENAI_API_KEY',
 }
 

@@ -84,84 +84,38 @@ function filterByPartial(suggestions: string[], partial?: string): string[] {
   return suggestions.filter((s) => s.toLowerCase().includes(p)).slice(0, 6)
 }
 
-interface LLMConfig {
-  apiKey: string
-  baseURL: string
-  model: string
-}
-
-function getLLMConfig(): LLMConfig | null {
-  if (process.env.GROQ_API_KEY) {
-    return {
-      apiKey: process.env.GROQ_API_KEY,
-      baseURL: 'https://api.groq.com/openai/v1',
-      model: 'llama-3.1-8b-instant',
-    }
-  }
-  if (process.env.NVIDIA_NIM_API_KEY) {
-    return {
-      apiKey: process.env.NVIDIA_NIM_API_KEY,
-      baseURL: 'https://integrate.api.nvidia.com/v1',
-      model: 'meta/llama-3.1-8b-instruct',
-    }
-  }
-  if (process.env.OPENAI_API_KEY) {
-    return {
-      apiKey: process.env.OPENAI_API_KEY,
-      baseURL: 'https://api.openai.com/v1',
-      model: 'gpt-4o-mini',
-    }
-  }
-  return null
-}
+import { detectLLMProvider, listAvailableProviders, callLLM, parseJSON } from './llm-env'
 
 async function llmSuggest(ctx: SuggestContext): Promise<string[]> {
-  const config = getLLMConfig()
-  if (!config) return []
+  const providers = listAvailableProviders()
+  if (providers.length === 0) return []
 
-  try {
-    const res = await fetch(`${config.baseURL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: config.model,
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a CRM/operations assistant. Generate 3-5 short value suggestions (max 3 words each) for a database field. Respond with JSON array only, no other text.',
-          },
-          {
-            role: 'user',
-            content: `Entity: ${ctx.entity}\nField: ${ctx.field}\nPartial input: "${ctx.partial ?? ''}"\nContext: ${JSON.stringify(ctx.context ?? {}).slice(0, 200)}\n\nSuggest 3-5 values (max 30 chars each) as JSON array.`,
-          },
-        ],
-        max_tokens: 100,
-        temperature: 0.3,
-      }),
-    })
+  const messages = [
+    {
+      role: 'system' as const,
+      content: 'You are a CRM/operations assistant. Generate 3-5 short value suggestions (max 3 words each) for a database field. Respond with JSON array only, no other text.',
+    },
+    {
+      role: 'user' as const,
+      content: `Entity: ${ctx.entity}\nField: ${ctx.field}\nPartial input: "${ctx.partial ?? ''}"\nContext: ${JSON.stringify(ctx.context ?? {}).slice(0, 200)}\n\nSuggest 3-5 values (max 30 chars each) as JSON array.`,
+    },
+  ]
 
-    if (!res.ok) return []
-    const body = await res.json().catch(() => ({}))
-    const text = body.choices?.[0]?.message?.content ?? '[]'
-
+  // Try each provider in priority order, fall back to next on failure
+  for (const config of providers) {
     try {
-      const parsed = JSON.parse(text)
-      if (Array.isArray(parsed)) {
+      const text = await callLLM(config, messages, { maxTokens: 100, temperature: 0.3 })
+      const parsed = parseJSON<string[]>(text)
+      if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed.filter((v) => typeof v === 'string').slice(0, 5)
       }
     } catch {
-      const match = text.match(/\[[\s\S]*?\]/)
-      if (match) {
-        const parsed = JSON.parse(match[0])
-        if (Array.isArray(parsed)) return parsed.filter((v) => typeof v === 'string').slice(0, 5)
-      }
+      // Try next provider
+      continue
     }
-  } catch {
-    // Silent fail — pattern only
   }
 
   return []
 }
+
+
