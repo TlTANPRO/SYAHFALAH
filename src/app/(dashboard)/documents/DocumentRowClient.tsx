@@ -2,22 +2,42 @@
 'use client'
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { InlineEdit } from '@/components/ui/inline-edit'
+import { SmartInlineEdit } from '@/components/ui/smart-inline-edit'
 import { DetailSheet } from '@/components/ui/detail-sheet'
 import { useQueryClient } from '@tanstack/react-query'
+import { useConflictResolver } from '@/hooks/use-conflict-resolver'
 
 export function DocumentRowClient({ doc }: { doc: any }) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [open, setOpen] = React.useState(false)
-  
+  const { handleConflict } = useConflictResolver()
+
   return (
     <div className="flex items-center gap-2">
-      <InlineEdit
+      <SmartInlineEdit
         value={doc.title}
         type="text"
+        entity="documents"
+        field="title"
         aria-label="Judul dokumen"
         validate={(v) => !String(v).trim() ? 'Judul tidak boleh kosong' : null}
+        baseRow={doc}
+        onConflict={handleConflict({
+          table: 'documents',
+          rowLabel: doc.title,
+          baseRow: doc as unknown as Parameters<typeof handleConflict>[0]['baseRow'],
+          save: async (values) => {
+            await fetch(`/api/documents/${doc.id}`, {
+              method: 'PATCH',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(values),
+            })
+            queryClient.invalidateQueries({ queryKey: ['documents'] })
+            router.refresh()
+          },
+        })}
         onSave={async (newTitle) => {
           await fetch(`/api/documents/${doc.id}`, {
             method: 'PATCH',

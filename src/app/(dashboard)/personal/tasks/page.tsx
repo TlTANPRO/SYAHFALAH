@@ -25,6 +25,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { HeroSection } from '@/components/layout/HeroSection'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SkeletonRow } from '@/components/ui/loading-skeleton'
+import { TasksMobileView } from './TasksMobileView'
 
 type TaskTab = 'all' | 'pending' | 'in_progress' | 'overdue' | 'carry_over' | 'completed'
 
@@ -292,7 +293,9 @@ export default function PersonalTasksPage() {
             }
           />
         ) : (
-          filteredTasks.map((task) => (
+          <>
+            <TasksMobileView rows={filteredTasks as any} />
+            {filteredTasks.map((task) => (
             <Card key={task.id} className={`group ${task.status === 'overdue' ? 'border-[var(--color-danger)]/30 bg-[var(--color-danger)]/5' : ''}`}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
@@ -411,8 +414,8 @@ export default function PersonalTasksPage() {
                 </div>
               </CardContent>
             </Card>
-          ))
-        )}
+          ))}
+        </>)}
       </div>
 
       {/* Pagination — page-based, real total from /api/tasks */}
