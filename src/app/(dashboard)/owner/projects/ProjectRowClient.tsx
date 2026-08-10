@@ -6,12 +6,14 @@ import { SmartInlineEdit } from '@/components/ui/smart-inline-edit'
 import { DetailSheet } from '@/components/ui/detail-sheet'
 import { useQueryClient } from '@tanstack/react-query'
 import { useUndoToast } from '@/hooks/use-undo-toast'
+import { useConflictResolver } from '@/hooks/use-conflict-resolver'
 
 export function ProjectRowClient({ row }: { row: any }) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [open, setOpen] = React.useState(false)
   const showUndoToast = useUndoToast()
+  const { handleConflict } = useConflictResolver()
 
   return (
     <>
@@ -38,6 +40,22 @@ export function ProjectRowClient({ row }: { row: any }) {
             },
           })
         }}
+        baseRow={row}
+        onConflict={handleConflict({
+          table: 'projects',
+          rowLabel: row.name,
+          baseRow: row,
+          save: async (values) => {
+            await fetch(`/api/projects/projects/${row.id}`, {
+              method: 'PATCH',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(values),
+            })
+            queryClient.invalidateQueries({ queryKey: ['projects'] })
+            router.refresh()
+          },
+        })}
         onSave={async (newName) => {
           await fetch(`/api/projects/projects/${row.id}`, {
             method: 'PATCH',

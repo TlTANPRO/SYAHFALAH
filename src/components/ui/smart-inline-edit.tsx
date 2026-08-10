@@ -70,9 +70,27 @@ export function SmartInlineEdit({
     enabled: showSuggestions,
   })
 
-  // If AI provided suggestions and no explicit options, use AI as the select options
-  const effectiveType = suggestions.length > 0 && showSuggestions ? 'select' : type
-  const effectiveOptions = options ?? (
+  // Auto-lookup enum options from schema registry
+  // Schema fields with kind='select' have options[] — use them
+  const schemaOptions = React.useMemo(() => {
+    if (options) return options
+    if (!entity || !field) return undefined
+    try {
+      const { getSchema } = require('@/lib/schema/registry')
+      const schema = getSchema(entity)
+      const fieldDef = schema?.fields.find((f: { name: string }) => f.name === field)
+      if (fieldDef?.kind === 'select' && fieldDef.options) {
+        return fieldDef.options
+      }
+    } catch {
+      // Schema not available, fall through
+    }
+    return undefined
+  }, [options, entity, field])
+
+  // If schema has options or AI provided suggestions, use as select
+  const effectiveType = (schemaOptions || (suggestions.length > 0 && showSuggestions)) ? 'select' : type
+  const effectiveOptions = schemaOptions ?? options ?? (
     suggestions.length > 0
       ? suggestions.map((s) => ({ value: s, label: s }))
       : undefined
