@@ -74,6 +74,10 @@ export interface CrudConfig<T extends string = string> {
   listFilters?: Record<string, unknown>
   /** Extra filters that can be overridden via query params (key = query name, value = column) */
   queryFilters?: Record<string, string>
+  /** Like filters (case-insensitive partial match). Key = query name, value = column */
+  queryLikeFilters?: Record<string, string>
+  /** Extra filter to always apply (key = column, value = value) - used for `.neq`, `.gt`, etc. */
+  listExtraFilters?: Array<{ column: string; op: 'eq' | 'neq' | 'gt' | 'lt' | 'gte' | 'lte'; value: unknown }>
 }
 
 interface ParsedPagination {
@@ -131,6 +135,18 @@ export async function handleList<T extends string>(
     for (const [queryName, column] of Object.entries(config.queryFilters ?? {})) {
       const v = url.searchParams.get(queryName)
       if (v !== null && v !== '') query = query.eq(column, v)
+    }
+
+    // Apply query-param like filters (case-insensitive partial match)
+    for (const [queryName, column] of Object.entries(config.queryLikeFilters ?? {})) {
+      const v = url.searchParams.get(queryName)
+      if (v !== null && v !== '') query = query.ilike(column, `%${v}%`)
+    }
+
+    // Apply extra filters (always-on neq, gt, etc.)
+    for (const f of config.listExtraFilters ?? []) {
+      // @ts-expect-error - dynamic method name
+      query = query[f.op](f.column, f.value)
     }
 
     // Order + pagination
