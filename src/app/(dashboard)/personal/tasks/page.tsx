@@ -290,8 +290,9 @@ export default function PersonalTasksPage() {
         ) : (
           <>
             <TasksMobileView rows={filteredTasks as any} />
-            {filteredTasks.map((task) => (
-            <Card key={task.id} className={`group ${task.status === 'overdue' ? 'border-[var(--color-danger)]/30 bg-[var(--color-danger)]/5' : ''}`}>
+            <div className="hidden md:block space-y-3">
+              {filteredTasks.map((task) => (
+              <Card key={task.id} className={`group ${task.status === 'overdue' ? 'border-[var(--color-danger)]/30 bg-[var(--color-danger)]/5' : ''}`}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
                   {/* Status Toggle */}
@@ -408,10 +409,11 @@ export default function PersonalTasksPage() {
                   </DropdownMenu>
                 </div>
               </CardContent>
-            </Card>
-          ))}
-        </>)}
-      </div>
+              </Card>
+              ))}
+              </div>
+              </>)}
+              </div>
 
       {/* Pagination — page-based, real total from /api/tasks */}
       <Pagination

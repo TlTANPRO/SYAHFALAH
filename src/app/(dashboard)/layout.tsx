@@ -41,10 +41,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return () => window.removeEventListener('keydown', onKey, { capture: true } as EventListenerOptions)
   }, [openQuickAdd])
 
-  // Handle mobile sidebar behavior
+  // Handle responsive sidebar behavior
   useEffect(() => {
     const handleResize = () => {
-      const mobile = window.innerWidth < 1024
+      // < 768 = mobile (sidebar overlays), >= 768 = sidebar pushes main
+      const mobile = window.innerWidth < 768
       useUIStore.getState().setIsMobile(mobile)
       if (mobile) {
         useUIStore.getState().setSidebarOpen(false)
