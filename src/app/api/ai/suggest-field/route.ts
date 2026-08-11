@@ -29,12 +29,23 @@ export async function POST(req: NextRequest) {
     }
 
     // Delegate to AI suggester (pattern → LLM cascade)
-    const result = await suggestField({
-      entity,
-      field,
-      partial,
-      context: context as Record<string, unknown> | undefined,
-    })
+    // Hard ceiling: 22s (under Vercel 30s maxDuration)
+    const controller = new AbortController()
+    const ceiling = setTimeout(() => controller.abort(), 22_000)
+    let result
+    try {
+      result = await Promise.race([
+        suggestField({
+          entity,
+          field,
+          partial,
+          context: context as Record<string, unknown> | undefined,
+        }),
+        new Promise<never>((_, rej) => controller.signal.addEventListener('abort', () => rej(new Error('suggest-field timeout (22s)')))),
+      ])
+    } finally {
+      clearTimeout(ceiling)
+    }
 
     return NextResponse.json({
       suggestions: result.suggestions,

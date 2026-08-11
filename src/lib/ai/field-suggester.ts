@@ -71,6 +71,23 @@ function patternMatch(ctx: SuggestContext): string[] {
     suggestions.push('Internal', 'Eksternal', 'Klien', 'Vendor', 'Pemeliharaan')
   } else if (field === 'severity') {
     suggestions.push('low', 'medium', 'high', 'critical')
+  } else if (field === 'content' && entity === 'comments') {
+    // Longtext suggestions — short professional phrases
+    suggestions.push(
+      'Mohon info update terbaru',
+      'Sudah saya kerjakan, mohon dicek',
+      'Butuh approval untuk lanjut',
+      'Ada kendala di lapangan',
+      'Tolong follow up ke client',
+    )
+  } else if (field === 'description' || field === 'notes') {
+    suggestions.push(
+      'Update progress terbaru',
+      'Menunggu konfirmasi client',
+      'Sudah selesai sesuai target',
+      'Perlu diskusi lebih lanjut',
+      'Sesuai jadwal yang direncanakan',
+    )
   } else if (ctx.existingValues && ctx.existingValues.length > 0) {
     return Array.from(new Set(ctx.existingValues)).slice(0, 10)
   }

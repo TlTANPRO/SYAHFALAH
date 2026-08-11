@@ -132,9 +132,16 @@ export function DetailSheet({
     }
   }
 
+  const [confirmDelete, setConfirmDelete] = React.useState(false)
+
   const handleDelete = async () => {
     if (!onDelete || !rowId) return
-    if (!confirm(`Hapus ${schema.label} ini? Tindakan ini tidak dapat dibatalkan.`)) return
+    setConfirmDelete(true)
+  }
+
+  const confirmAndDelete = async () => {
+    if (!onDelete || !rowId) return
+    setConfirmDelete(false)
     setSaving(true)
     try {
       await onDelete()
@@ -226,17 +233,44 @@ export function DetailSheet({
         <SheetFooter className="flex items-center justify-between">
             <div>
               {onDelete && mode === 'edit' && !showAsReadOnly && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleDelete}
-                  disabled={saving}
-                  className="text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10"
-                >
-                  <Trash2 className="h-3 w-3 mr-1.5" /> Hapus
-                </Button>
-              )}
+                   confirmDelete ? (
+                     <div className="flex items-center gap-2 ml-auto">
+                       <span className="text-xs text-[var(--color-text-secondary)]">
+                         Hapus {schema.label}?
+                       </span>
+                       <Button
+                         type="button"
+                         variant="ghost"
+                         size="sm"
+                         onClick={() => setConfirmDelete(false)}
+                         disabled={saving}
+                       >
+                         Batal
+                       </Button>
+                       <Button
+                         type="button"
+                         variant="destructive"
+                         size="sm"
+                         onClick={confirmAndDelete}
+                         disabled={saving}
+                         data-testid="detail-sheet-confirm-delete"
+                       >
+                         {saving ? 'Menghapus…' : 'Ya, Hapus'}
+                       </Button>
+                     </div>
+                   ) : (
+                     <Button
+                       type="button"
+                       variant="ghost"
+                       size="sm"
+                       onClick={handleDelete}
+                       disabled={saving}
+                       className="text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10"
+                     >
+                       <Trash2 className="h-3 w-3 mr-1.5" /> Hapus
+                     </Button>
+                   )
+                 )}
             </div>
             <div className="flex items-center gap-2">
               {showAsReadOnly ? (
