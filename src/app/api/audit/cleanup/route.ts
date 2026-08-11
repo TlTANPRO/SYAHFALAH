@@ -20,6 +20,11 @@ export async function DELETE(req: NextRequest) {
     const body = await req.json().catch(() => ({}))
     const { before, ids, all } = body as { before?: string; ids?: string[]; all?: boolean }
 
+    // Validate before date format (YYYY-MM-DD)
+    if (before && !/^\d{4}-\d{2}-\d{2}$/.test(before)) {
+      return NextResponse.json({ error: 'before must be YYYY-MM-DD format' }, { status: 400 })
+    }
+
     const serviceClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
