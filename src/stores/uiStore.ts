@@ -16,6 +16,11 @@ interface UIState {
   commandPaletteQuery: string
   setCommandPaletteOpen: (open: boolean) => void
   openCommandPalette: (query?: string) => void
+
+  // Quick Add (Cmd+Shift+K)
+  quickAddOpen: boolean
+  openQuickAdd: () => void
+  setQuickAddOpen: (open: boolean) => void
   
   // Detail Panel (Right sidebar)
   detailPanelOpen: boolean
@@ -86,6 +91,11 @@ export const useUIStore = create<UIState>((set, get) => ({
   commandPaletteQuery: "",
   setCommandPaletteOpen: (open: boolean) => set({ commandPaletteOpen: open }),
   openCommandPalette: (query?: string) => set({ commandPaletteOpen: true, commandPaletteQuery: query ?? "" }),
+
+  // Quick Add (Cmd+Shift+K)
+  quickAddOpen: false,
+  openQuickAdd: () => set({ quickAddOpen: true }),
+  setQuickAddOpen: (open: boolean) => set({ quickAddOpen: open }),
   
   // Detail Panel
   detailPanelOpen: false,

@@ -3,7 +3,7 @@
 
 'use client'
 
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useEffect } from 'react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuthStore } from '@/stores/authStore'
@@ -21,8 +21,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, isLoading, isAuthenticated } = useAuthStore()
-  const { sidebarCollapsed, isMobile, commandPaletteOpen, setCommandPaletteOpen, openCommandPalette } = useUIStore()
-  const [quickAddOpen, setQuickAddOpen] = useState(false)
+  const { sidebarCollapsed, isMobile, commandPaletteOpen, setCommandPaletteOpen, openCommandPalette, quickAddOpen, setQuickAddOpen, openQuickAdd } = useUIStore()
 
   // Rehydrate persisted auth store on mount so middleware-protected pages
   // see isAuthenticated=true on the very first render after a hard nav.
@@ -35,12 +34,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'k') {
         e.preventDefault()
-        setQuickAddOpen((v) => !v)
+        openQuickAdd()
       }
     }
     window.addEventListener('keydown', onKey, { capture: true })
     return () => window.removeEventListener('keydown', onKey, { capture: true } as EventListenerOptions)
-  }, [])
+  }, [openQuickAdd])
 
   // Handle mobile sidebar behavior
   useEffect(() => {

@@ -13,6 +13,7 @@ import {
   Sparkles,
   Moon,
   Sun,
+  Plus,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUIStore } from '@/stores/uiStore'
@@ -33,7 +34,7 @@ function formatPath(pathname: string): string {
 
 export function Topbar() {
   const { user } = useAuthStore()
-  const { sidebarCollapsed, toggleSidebar, openCommandPalette } = useUIStore()
+  const { sidebarCollapsed, toggleSidebar, openCommandPalette, openQuickAdd } = useUIStore()
   const { theme, toggle: toggleTheme } = useTheme()
   const pathname = usePathname()
   const [searchQuery, setSearchQuery] = useState('')
@@ -105,6 +106,22 @@ export function Topbar() {
                   aria-keyshortcuts="Meta+K Control+K"
                 >
                   <Search className="h-4 w-4" />
+                </button>
+
+                {/* QuickAdd trigger (Cmd+Shift+K) — visible on all sizes */}
+                <button
+                  type="button"
+                  onClick={openQuickAdd}
+                  className="h-11 min-w-11 inline-flex items-center justify-center gap-1.5 px-2.5 rounded-md bg-[var(--color-brand-500)] text-white hover:bg-[var(--color-brand-600)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-500)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-0)]"
+                  aria-label="Buat Cepat (Quick Add)"
+                  aria-keyshortcuts="Meta+Shift+K Control+Shift+K"
+                  data-testid="topbar-quick-add"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden md:inline text-sm font-medium">Buat</span>
+                  <kbd className="hidden lg:inline-flex items-center gap-0.5 rounded border border-white/30 bg-white/10 px-1.5 min-h-5 text-[10px] font-mono">
+                    ⌘⇧K
+                  </kbd>
                 </button>
 
         {/* Right Side Actions */}
