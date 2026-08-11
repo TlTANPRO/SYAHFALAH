@@ -74,6 +74,13 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ entity: st
     const cfg = ENTITY_CONFIG[entity]
 
     const body = await req.json().catch(() => ({}))
+    // Apply server-side defaults for required session-derived fields
+    if (entity === 'purchase_requests' && !body.requester_id) {
+      body.requester_id = payload.userId
+    }
+    if (!body.code) {
+      body.code = `${entity.toUpperCase().slice(0,4)}-${Date.now().toString(36).toUpperCase()}`
+    }
     for (const r of cfg.required) {
       if (body[r] == null || body[r] === '') {
         return NextResponse.json({ error: `${r} wajib diisi` }, { status: 400 })
