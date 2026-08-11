@@ -6,7 +6,8 @@
 import { useState, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { useSelectableRows } from '@/hooks/use-selectable-rows'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
+import { useEntityList, type ListResponse } from '@/hooks'
 import Link from 'next/link'
 import { Search, Filter, X, ChevronRight, Users, Mail, Phone, CheckSquare, Edit3 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -40,13 +41,6 @@ const ROLE_LABELS: Record<string, { label: string; variant: 'default' | 'success
   staff: { label: 'Staff', variant: 'default' },
 }
 
-interface ApiResponse {
-  data: UserRow[]
-  total: number
-  page: number
-  pageSize: number
-}
-
 interface Props {
   divisions: { id: string; name: string }[]
   initialData: UserRow[]
@@ -69,20 +63,16 @@ export function UserListClient({ divisions, initialData, total: initialTotal }: 
     [divisions]
   )
 
-  const { data, isLoading } = useQuery<ApiResponse>({
-    queryKey: ['admin-users', q, role, division, page],
-    queryFn: async () => {
-      const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
-      if (q) params.set('q', q)
-      if (role !== 'all') params.set('role', role)
-      if (division !== 'all') params.set('division', division)
-      const res = await fetch(`/api/users?${params.toString()}`, { credentials: 'include' })
-      if (!res.ok) return { data: [], total: 0, page, pageSize }
-      return res.json()
+  // Phase 2: migrated to useEntityList (saves ~15 LOC, preserves queryKey for cache continuity)
+  const { data, isLoading } = useEntityList<UserRow>('users', {
+    page, pageSize, q, role: role === 'all' ? '' : role, division: division === 'all' ? '' : division,
+  }, {
+    queryOptions: {
+      // Preserve SSR-friendly placeholderData behavior
+      placeholderData: page === 1 && !q && role === 'all' && division === 'all'
+        ? { data: initialData, total: initialTotal, page: 1, pageSize } as ListResponse<UserRow>
+        : undefined,
     },
-    placeholderData: page === 1 && !q && role === 'all' && division === 'all'
-      ? { data: initialData, total: initialTotal, page: 1, pageSize }
-      : undefined,
   })
 
   const rows = data?.data ?? initialData
