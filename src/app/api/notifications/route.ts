@@ -3,45 +3,42 @@
 // GET: returns user's notifications (newest first), paginated by created_at.
 // POST: marks notification(s) read; optionally marks-all.
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { verifyAccessToken } from '@/lib/auth/jwt'
+import { handleList, type CrudConfig } from '@/lib/api/crud-handler'
 
-export async function GET(req: NextRequest) {
-  try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get('access_token')?.value
-    if (!token) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 })
-    const payload = await verifyAccessToken(token)
-    if (!payload) return NextResponse.json({ error: 'invalid session' }, { status: 401 })
+const NOTIFICATIONS_CONFIG: CrudConfig<'notifications'> = {
+  entity: 'notifications',
+  table: 'notifications',
+  selectFields: 'id, title, body, link, is_read, read_at, payload, created_at',
+  defaultOrder: { column: 'created_at', ascending: false },
+  scopeToUser: true,
+  defaultPageSize: 20,
+  maxPageSize: 100,
+  queryFilters: {
+    unread: 'is_read', // ?unread=1 maps to is_read=false (handled below)
+  },
+}
 
-    const url = req.nextUrl
-    const unread = url.searchParams.get('unread') === '1'
-    const rawPage = url.searchParams.get('page') ?? url.searchParams.get('pageSize') ?? url.searchParams.get('limit')
-    const page = Math.max(1, Number(url.searchParams.get('page')) || 1)
-    // Accept both pageSize and limit (clients use 'limit'); default 20 (more JSON-friendly)
-    const pageSize = Math.min(
-      Math.max(1, Number(url.searchParams.get('limit') ?? url.searchParams.get('pageSize') ?? '20')),
-      100
-    )
-    void rawPage // reserved for future use; page is computed above
-    const offset = (page - 1) * pageSize
-
-    const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } })
-    let q = sb
-      .from('notifications')
-      .select('id, title, body, link, is_read, read_at, payload, created_at', { count: 'exact' })
-      .eq('user_id', payload.userId)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + pageSize - 1)
-    if (unread) q = q.eq('is_read', false)
-    const { data, error, count } = await q
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json({ data: data ?? [], total: count ?? 0, page, pageSize })
-  } catch (err: any) {
-    return NextResponse.json({ error: err?.message ?? 'internal' }, { status: 500 })
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  // The "unread=1" param needs special handling: equal false instead of string '1'
+  const url = req.nextUrl
+  const unreadFlag = url.searchParams.get('unread') === '1'
+  // Remove the param from URL searchParams before delegating to handleList
+  if (unreadFlag) {
+    url.searchParams.delete('unread')
   }
+  const res = await handleList(req, NOTIFICATIONS_CONFIG)
+  if (unreadFlag && res.ok) {
+    const body = await res.clone().json()
+    body.data = (body.data ?? []).filter((n: { is_read: boolean }) => !n.is_read)
+    body.total = body.data.length
+    return NextResponse.json(body, { status: 200, headers: res.headers })
+  }
+  return res
 }
 
 export async function POST(req: NextRequest) {
