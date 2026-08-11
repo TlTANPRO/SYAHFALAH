@@ -1,6 +1,6 @@
 // app/api/approvals/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { makePatchHandler } from '@/lib/api/generic-crud'
+import { makePatchHandler, makeDeleteHandler } from '@/lib/api/generic-crud'
 
 const config = {
   table: 'approvals',
@@ -8,3 +8,5 @@ const config = {
 }
 
 export const PATCH = makePatchHandler(config)
+
+export const DELETE = makeDeleteHandler(config)
