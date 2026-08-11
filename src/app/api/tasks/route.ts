@@ -25,7 +25,12 @@ const TASKS_CONFIG: CrudConfig<'tasks'> = {
   },
   enumFields: {
     status: ['pending', 'in_progress', 'completed', 'overdue', 'cancelled'],
-    priority: ['low', 'medium', 'high', 'critical'],
+    priority: ['low', 'medium', 'high', 'critical', 'normal', 'urgent'],
+  },
+  enumAliases: {
+    // QuickAdd sends 'normal'/'urgent' (from schema registry), DB expects
+    // 'medium'/'critical'. Normalize at API boundary.
+    priority: { normal: 'medium', urgent: 'critical' },
   },
   requiredCreateFields: ['title'],
   defaults: {

@@ -32,6 +32,27 @@ function formatPath(pathname: string): string {
     .replace(/\b\w/g, c => c.toUpperCase())
 }
 
+/**
+ * Contextual placeholder for the global search bar.
+ * Changes based on current page so users know what they can search for.
+ * Falls back to a clean generic hint on pages without specific entities.
+ */
+function searchPlaceholder(pathname: string): string {
+  // Map of pathname patterns → search hint (singular noun, brief).
+  // Keep hints under 30 chars for visual balance.
+  if (pathname.startsWith('/personal/tasks')) return 'Cari task…'
+  if (pathname.startsWith('/owner/marketing')) return 'Cari lead…'
+  if (pathname.startsWith('/admin/users')) return 'Cari user…'
+  if (pathname.startsWith('/admin/divisions')) return 'Cari divisi…'
+  if (pathname.startsWith('/admin/audit')) return 'Cari audit log…'
+  if (pathname.startsWith('/owner/projects')) return 'Cari project…'
+  if (pathname.startsWith('/kepala-kantor')) return 'Cari laporan…'
+  if (pathname.startsWith('/personal')) return 'Cari data pribadi…'
+  if (pathname.startsWith('/owner')) return 'Cari di seluruh data…'
+  if (pathname.startsWith('/admin')) return 'Cari data admin…'
+  return 'Cari…'
+}
+
 export function Topbar() {
   const { user } = useAuthStore()
   const { sidebarCollapsed, toggleSidebar, openCommandPalette, openQuickAdd } = useUIStore()
@@ -78,7 +99,7 @@ export function Topbar() {
                       name="global-search"
                       type="text"
                       autoComplete="off"
-                      placeholder="Cari task, KPI, leads, nama…"
+                      placeholder={searchPlaceholder(pathname)}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onFocus={() => openCommandPalette()}

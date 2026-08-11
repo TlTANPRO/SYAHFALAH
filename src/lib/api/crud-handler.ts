@@ -66,8 +66,10 @@ export interface CrudConfig<T extends string = string> {
   writableFields?: readonly string[]
   /** Required fields on create */
   requiredCreateFields?: readonly string[]
-  /** Field-level enum validation (e.g. { status: ['pending','done'], priority: ['low','high'] }) */
+  /** Enum validation (e.g. { status: ['pending','done'], priority: ['low','high'] }) */
   enumFields?: Record<string, readonly string[]>
+  /** Value aliases: accept incoming value X, persist as Y (e.g. { priority: { normal: 'medium', urgent: 'critical' } }) */
+  enumAliases?: Record<string, Record<string, string>>
   /** Default values applied on create if field is missing */
   defaults?: Record<string, unknown>
   /** Extra filters applied to list queries */
@@ -217,10 +219,17 @@ export async function handleCreate<T extends string>(
     if (insert[k] === undefined) insert[k] = v
   }
 
-  // Enum validation
+  // Enum validation + value aliasing
   for (const [field, allowedValues] of Object.entries(config.enumFields ?? {})) {
-    if (insert[field] !== undefined && !allowedValues.includes(insert[field] as string)) {
-      return apiError.badRequest(`${field} harus salah satu dari: ${allowedValues.join(', ')}`)
+    if (insert[field] !== undefined) {
+      const v = insert[field] as string
+      const aliases = config.enumAliases?.[field] ?? {}
+      // Alias incoming value if mapped, e.g. 'normal' -> 'medium'
+      if (aliases[v] !== undefined) {
+        insert[field] = aliases[v]
+      } else if (!allowedValues.includes(v)) {
+        return apiError.badRequest(`${field} harus salah satu dari: ${allowedValues.join(', ')}`)
+      }
     }
   }
 
