@@ -37,7 +37,15 @@ export function InlineNewTaskForm({ onCreated }: InlineNewTaskFormProps) {
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        throw new Error(err.error || 'Gagal membuat task')
+        const message =
+          err?.error?.message ??
+          (typeof err?.error === 'string' ? err.error : null) ??
+          `HTTP ${res.status}`
+        // Log full body to console so devs can see exact reason
+        if (typeof console !== 'undefined') {
+          console.error('[InlineNewTaskForm] POST /api/tasks failed', { status: res.status, body: err })
+        }
+        throw new Error(message)
       }
       return res.json()
     },
@@ -127,6 +135,7 @@ export function InlineNewTaskForm({ onCreated }: InlineNewTaskFormProps) {
           </label>
           <select
             id="new-task-priority"
+            name="new-task-priority"
             value={priority}
             onChange={(e) => setPriority(e.target.value as 'low' | 'medium' | 'high' | 'critical')}
             disabled={create.isPending}
