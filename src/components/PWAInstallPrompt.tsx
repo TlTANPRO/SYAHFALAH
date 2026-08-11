@@ -90,14 +90,14 @@ export function PWAInstallPrompt() {
             <button
               type="button"
               onClick={accept}
-              className="rounded-md bg-[var(--color-brand-500)] px-3 py-1.5 text-xs font-medium text-white hover:bg-[var(--color-brand-600)] dark:hover:bg-[var(--color-brand-400)]"
+              className="rounded-md bg-[var(--color-brand-500)] px-3 min-h-8 py-1.5 text-xs font-medium text-white hover:bg-[var(--color-brand-600)] dark:hover:bg-[var(--color-brand-400)]"
             >
               Pasang
             </button>
             <button
               type="button"
               onClick={close}
-              className="rounded-md border border-[var(--color-border-default)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
+              className="rounded-md border border-[var(--color-border-default)] px-3 min-h-8 py-1.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]"
               aria-label="Dismiss install prompt"
             >
               Nanti

@@ -23,7 +23,7 @@ import { Pagination } from '@/components/ui/Pagination'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { HeroSection } from '@/components/layout/HeroSection'
-import { EmptyState } from '@/components/ui/empty-state'
+import { EntityEmptyState } from '@/components/ui/entity-empty-state'
 import { SkeletonRow } from '@/components/ui/loading-skeleton'
 import { TasksMobileView } from './TasksMobileView'
 
@@ -268,29 +268,24 @@ export default function PersonalTasksPage() {
       {/* Task List */}
       <div className="space-y-3">
         {filteredTasks.length === 0 ? (
-          <EmptyState
+          <EntityEmptyState
+            entity="tasks"
             icon={CheckCircle}
-            variant={searchQuery ? 'search-empty' : 'no-data'}
-            eyebrow={activeTab === 'all' ? 'Tugas' : tabs.find(t => t.id === activeTab)?.label ?? 'Tugas'}
-            title={
-              searchQuery
+            variant={searchQuery ? 'searchEmpty' : 'noData'}
+            override={{
+              eyebrow: activeTab === 'all' ? 'Tugas' : tabs.find(t => t.id === activeTab)?.label ?? 'Tugas',
+              title: searchQuery
                 ? `Tidak ada hasil untuk "${searchQuery}"`
                 : activeTab === 'overdue'
                   ? 'Tidak ada tugas overdue'
-                  : 'Belum ada tugas'
-            }
-            description={
-              searchQuery
+                  : 'Belum ada tugas',
+              description: searchQuery
                 ? 'Coba kata kunci lain atau bersihkan pencarian.'
                 : activeTab === 'overdue'
                   ? 'Bagus! Tetap jaga ritme kerja Anda.'
-                  : 'Tugas baru akan muncul di sini.'
-            }
-            action={
-              searchQuery
-                ? { label: 'Hapus pencarian', onClick: () => { setSearchQuery(''); setPage(1) } }
-                : undefined
-            }
+                  : 'Tugas baru akan muncul di sini.',
+            }}
+            onAction={searchQuery ? () => { setSearchQuery(''); setPage(1) } : undefined}
           />
         ) : (
           <>
