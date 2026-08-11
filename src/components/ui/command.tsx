@@ -99,7 +99,19 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     <Command shouldFilter={false} label="Command palette">
       <CommandInput
         ref={inputRef}
-        placeholder="Cari tugas, lead, proyek, SOW, nama orang..."
+        placeholder={(() => {
+          // Contextual hint inside the command palette too. Short + clean.
+          if (typeof window === 'undefined') return 'Cari…'
+          const p = window.location.pathname
+          if (p.startsWith('/personal/tasks')) return 'Cari task…'
+          if (p.startsWith('/owner/marketing')) return 'Cari lead…'
+          if (p.startsWith('/admin/users')) return 'Cari user…'
+          if (p.startsWith('/admin/divisions')) return 'Cari divisi…'
+          if (p.startsWith('/admin/audit')) return 'Cari audit…'
+          if (p.startsWith('/owner/projects')) return 'Cari proyek…'
+          if (p.startsWith('/kepala-kantor')) return 'Cari laporan…'
+          return 'Cari atau ketik perintah…'
+        })()}
         value={query}
         onValueChange={setQuery}
       />

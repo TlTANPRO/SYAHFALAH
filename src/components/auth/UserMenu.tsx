@@ -65,7 +65,7 @@ export function UserMenu({ user }: { user: any }) {
 
       {open && (
         <div
-          className="absolute right-0 top-full mt-2 w-64 rounded-lg bg-[var(--color-surface-1)] shadow-[var(--shadow-elevated)] border border-[var(--color-border-subtle)] overflow-hidden animate-[slideUp_200ms_var(--ease-out-expo)]"
+          className="absolute right-0 top-full mt-2 w-64 rounded-lg bg-[var(--color-surface-1)] shadow-[var(--shadow-elevated)] border border-[var(--color-border-subtle)] overflow-hidden z-50"
           style={{ animation: "slideUp 150ms ease-out" }}
         >
           <div className="p-4 border-b border-[var(--color-border-subtle)]">
