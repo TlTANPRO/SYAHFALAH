@@ -9,7 +9,7 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle, Clock, AlertTriangle, Plus, Filter, ChevronDown, Calendar, Flag, RotateCcw, Edit3,
-  Info} from 'lucide-react'
+  Info, Sparkles} from 'lucide-react'
 import { InlineEdit } from '@/components/ui/inline-edit'
 import { DetailSheet } from '@/components/ui/detail-sheet'
 import { formatDate } from '@/lib/utils'
@@ -26,6 +26,7 @@ import { HeroSection } from '@/components/layout/HeroSection'
 import { EntityEmptyState } from '@/components/ui/entity-empty-state'
 import { SkeletonRow } from '@/components/ui/loading-skeleton'
 import { TasksMobileView } from './TasksMobileView'
+import { InlineNewTaskForm } from './InlineNewTaskForm'
 
 type TaskTab = 'all' | 'pending' | 'in_progress' | 'overdue' | 'carry_over' | 'completed'
 
@@ -212,6 +213,14 @@ export default function PersonalTasksPage() {
           </span>
         }
       />
+
+      {/* Inline new-task form — visible entry point for adding tasks without Cmd+Shift+K */}
+      <InlineNewTaskForm
+        onCreated={() => {
+          queryClient.invalidateQueries({ queryKey: ['tasks'] })
+        }}
+      />
+
       <div className="flex flex-wrap gap-2">
         <div className="relative">
           <Label htmlFor="tasks-search" className="sr-only">Cari tugas</Label>

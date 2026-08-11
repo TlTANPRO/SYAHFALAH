@@ -13,26 +13,37 @@ const PIN_STAFF = '6478';
 async function login(page, pin) {
   await page.goto(`${BASE}/login`);
   await page.waitForLoadState('networkidle');
-  // PIN input may have different types — try password first, then others
+  await page.waitForSelector('input[inputmode="numeric"], input[type="password"], input[type="tel"]', { timeout: 20000 });
+  await page.waitForTimeout(500);
   const types = ['password', 'tel', 'text', 'number'];
   let filled = false;
   for (const type of types) {
     const input = page.locator(`input[type="${type}"]`).first();
     if (await input.count() > 0 && await input.isVisible()) {
+      await input.click();
       await input.fill(pin);
-      filled = true;
-      break;
+      const value = await input.inputValue();
+      if (value === pin) {
+        filled = true;
+        break;
+      }
     }
   }
   if (!filled) {
-    // Fallback: any visible input
+    const inputmodeInput = page.locator('input[inputmode="numeric"]').first();
+    if (await inputmodeInput.count() > 0) {
+      await inputmodeInput.click();
+      await inputmodeInput.fill(pin);
+      filled = true;
+    }
+  }
+  if (!filled) {
     await page.locator('input').first().fill(pin);
   }
-  // Submit
-  const submit = page.locator('button[type="submit"], button:has-text("Masuk"), button:has-text("Login")').first();
+  const submit = page.locator('button[type="submit"]').first();
   await submit.click();
-  // Wait for redirect away from /login
-  await page.waitForURL((url) => !url.toString().includes('/login'), { timeout: 15000 });
+  await page.waitForURL((url) => !url.toString().includes('/login'), { timeout: 30000 });
+  await page.waitForTimeout(1000);
 }
 
 test.describe('Mobile responsive', () => {

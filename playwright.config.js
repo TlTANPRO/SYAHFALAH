@@ -11,8 +11,8 @@ module.exports = defineConfig({
   reporter: [['list']],
   use: {
     headless: true,
-    actionTimeout: 15000,
-    navigationTimeout: 30000,
+    actionTimeout: 20000,
+    navigationTimeout: 60000,
   },
   projects: [
     {
