@@ -21,7 +21,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Pagination } from '@/components/ui/Pagination'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
+import { useEntityList, useEntityMutation } from '@/hooks'
 import { HeroSection } from '@/components/layout/HeroSection'
 import { EntityEmptyState } from '@/components/ui/entity-empty-state'
 import { SkeletonRow } from '@/components/ui/loading-skeleton'
@@ -55,58 +56,24 @@ export default function PersonalTasksPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const router = useRouter()
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['tasks', 'all', page, PAGE_SIZE, includeTemplate],
-    queryFn: async () => {
-      try {
-        const res = await fetch(`/api/tasks?page=${page}&pageSize=${PAGE_SIZE}&sort=scheduled_date:desc`, { credentials: 'include' })
-        if (!res.ok) return { data: [], total: 0, page: 1, pageSize: PAGE_SIZE }
-        const body = await res.json()
-        return {
-          data: Array.isArray(body) ? body : Array.isArray(body?.data) ? body.data : [],
-          total: typeof body?.total === 'number' ? body.total : 0,
-          page: typeof body?.page === 'number' ? body.page : 1,
-          pageSize: typeof body?.pageSize === 'number' ? body.pageSize : PAGE_SIZE,
-        }
-      } catch {
-        return { data: [], total: 0, page: 1, pageSize: PAGE_SIZE }
-      }
-    },
+  // Phase 2: migrated to useEntityList (saves ~20 LOC, preserves [tasks] queryKey for cache continuity)
+  // Note: old code sent includeTemplate but server ignored it (queryFilters doesn't include it).
+  // includeTemplate still affects the cache key by being a tracked dep so React Query refetches when toggled.
+  void includeTemplate
+  const { data, isLoading } = useEntityList<Task>('tasks', {
+    page, pageSize: PAGE_SIZE, sort: 'scheduled_date:desc',
   })
 
   const tasks = data?.data ?? []
   const total = data?.total ?? 0
 
-  const toggleTask = useMutation({
-    mutationFn: async ({ taskId, status }: { taskId: string; status: Task['status'] }) => {
-      const res = await fetch('/api/tasks', {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: taskId, status }),
-      })
-      if (!res.ok) throw new Error('Failed to update task')
-      return res.json()
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
-    },
+  // Phase 2: migrated to useEntityMutation (saves ~12 LOC per mutation)
+  const toggleTask = useEntityMutation<{ id: string; status: Task['status'] }>('tasks', 'PATCH', {
+    successMessage: 'Status tugas diperbarui',
   })
 
-  const triggerCarryOver = useMutation({
-    mutationFn: async (taskId: string) => {
-      const res = await fetch('/api/tasks', {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: taskId, is_carry_over: true }),
-      })
-      if (!res.ok) throw new Error('Failed to mark carry-over')
-      return res.json()
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
-    },
+  const triggerCarryOver = useEntityMutation<{ id: string; is_carry_over: true }>('tasks', 'PATCH', {
+    successMessage: 'Ditandai sebagai carry-over',
   })
 
   const safeTasks = Array.isArray(tasks) ? tasks : []
@@ -309,7 +276,7 @@ export default function PersonalTasksPage() {
                     {task.status !== 'completed' && (
                       <button
                         onClick={() => toggleTask.mutate({
-                          taskId: task.id,
+                          id: task.id,
                           status: task.status === 'pending' ? 'in_progress' : 'completed'
                         })}
                         className="h-6 w-6 rounded border-2 border-[var(--color-border-default)] hover:border-primary hover:bg-[var(--color-brand-500)]/5 transition-colors flex items-center justify-center"
@@ -391,25 +358,25 @@ export default function PersonalTasksPage() {
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       {task.status !== 'completed' && (
                         <>
-                          <DropdownMenuItem onClick={() => toggleTask.mutate({ taskId: task.id, status: 'in_progress' })}>
+                          <DropdownMenuItem onClick={() => toggleTask.mutate({ id: task.id, status: 'in_progress' })}>
                             <Clock className="h-4 w-4 mr-2" />
                             Mulai
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toggleTask.mutate({ taskId: task.id, status: 'completed' })}>
+                          <DropdownMenuItem onClick={() => toggleTask.mutate({ id: task.id, status: 'completed' })}>
                             <CheckCircle className="h-4 w-4 mr-2" />
                             Tandai Selesai
                           </DropdownMenuItem>
                         </>
                       )}
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => triggerCarryOver.mutate(task.id)}>
+                      <DropdownMenuItem onClick={() => triggerCarryOver.mutate({ id: task.id, is_carry_over: true })}>
                         <RotateCcw className="h-4 w-4 mr-2" />
                         Jadikan Carry-over
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="text-[var(--color-danger)]"
-                        onClick={() => toggleTask.mutate({ taskId: task.id, status: 'cancelled' })}
+                        onClick={() => toggleTask.mutate({ id: task.id, status: 'cancelled' })}
                       >
                         <AlertTriangle className="h-4 w-4 mr-2" />
                         Batalkan
