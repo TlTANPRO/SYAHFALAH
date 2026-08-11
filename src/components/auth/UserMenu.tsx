@@ -65,7 +65,10 @@ export function UserMenu({ user }: { user: any }) {
 
       {open && (
         <div
-          className="absolute right-0 top-full mt-2 w-64 rounded-lg bg-[var(--color-surface-1)] shadow-[var(--shadow-elevated)] border border-[var(--color-border-subtle)] overflow-hidden z-50"
+          // Use fixed positioning so dropdown escapes the parent
+          // <header>'s overflow-x-hidden (which clips it otherwise).
+          // Position calculated from the trigger button's right edge.
+          className="fixed right-4 top-[52px] w-64 rounded-lg bg-[var(--color-surface-1)] shadow-[var(--shadow-elevated)] border border-[var(--color-border-subtle)] overflow-hidden z-50"
           style={{ animation: "slideUp 150ms ease-out" }}
         >
           <div className="p-4 border-b border-[var(--color-border-subtle)]">

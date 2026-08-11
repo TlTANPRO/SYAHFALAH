@@ -69,7 +69,7 @@ export function Topbar() {
   }
 
   return (
-    <header className="sticky top-0 z-30 h-16 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]/80 backdrop-blur-md">
+    <header className="sticky top-0 z-30 h-16 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]/80 backdrop-blur-md overflow-x-hidden">
       <div className="flex h-full items-center gap-3 px-4 min-w-0">
         {/* Sidebar Toggle */}
         <button
