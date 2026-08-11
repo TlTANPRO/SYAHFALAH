@@ -16,7 +16,9 @@ interface EmptyStateProps {
   /** More detailed explanation. */
   description?: React.ReactNode
   /** Action — primary CTA. */
-  action?: { label: string; href: string } | { label: string; onClick: () => void }
+  action?:
+    | { label: string; href: string; shortcut?: string }
+    | { label: string; onClick: () => void; shortcut?: string }
   /** Secondary hint (e.g. "Tambah via menu Admin > X"). */
   hint?: React.ReactNode
   /** Variant — visual treatment. */
@@ -88,7 +90,7 @@ export function EmptyState({
           </p>
         )}
         {action && (
-          <div className="pt-2">
+          <div className="pt-2 flex items-center gap-2">
             {'href' in action ? (
               <Link
                 href={action.href}
@@ -107,6 +109,11 @@ export function EmptyState({
               >
                 {action.label} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
               </button>
+            )}
+            {action.shortcut && (
+              <kbd className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-[var(--color-surface-2)] text-[var(--color-text-tertiary)] border border-[var(--color-border-default)]">
+                {action.shortcut}
+              </kbd>
             )}
           </div>
         )}

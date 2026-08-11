@@ -6,7 +6,7 @@
 'use client'
 
 import * as React from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Input } from './input'
 import { getSchema } from '@/lib/schema/registry'
@@ -315,7 +315,7 @@ export function InlineEdit({
       onClick={startEdit}
       disabled={disabled || saving}
       className={cn(
-        'inline-flex items-center gap-1 text-left rounded px-1 -mx-1',
+        'inline-flex items-center gap-1 text-left rounded px-1 -mx-1 group/edit',
         'hover:bg-[var(--color-surface-2)] hover:ring-1 hover:ring-[var(--color-border-default)]',
         'transition-colors cursor-text',
         'disabled:cursor-not-allowed disabled:opacity-50',
@@ -323,9 +323,13 @@ export function InlineEdit({
         className
       )}
       aria-label={`Edit: ${ariaLabel || placeholder || 'field'}`}
-      title="Klik untuk edit"
+      title="Klik untuk edit (Enter untuk simpan, Escape untuk batal)"
     >
-      {displayValue}
+      <span className="flex-1 min-w-0">{displayValue}</span>
+      <Pencil
+        className="h-3 w-3 text-[var(--color-text-tertiary)] opacity-0 group-hover/edit:opacity-100 transition-opacity shrink-0"
+        aria-hidden="true"
+      />
     </button>
   )
 }
