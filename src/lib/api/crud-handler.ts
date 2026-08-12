@@ -34,8 +34,30 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { revalidateTag } from 'next/cache'
 import { requireAuth, isError, type Session } from '@/lib/api/auth-guard'
 import { apiError, buildError, wrapDbError } from '@/lib/api/errors'
+
+// OPT #2: Tag-based cache invalidation.
+// When any entity is mutated, invalidate relevant dashboard caches so the next
+// page render shows fresh data (instead of waiting up to 60s for stale cache).
+// Tags follow the convention 'morning-brief' (60s TTL) and 'dashboard' (30s TTL).
+const ENTITY_TAGS: Record<string, ReadonlyArray<string>> = {
+  tasks: ['morning-brief'],
+  leads: ['morning-brief'],
+  consumer_cases: ['morning-brief'],
+  projects: ['dashboard'],
+  kpis: ['dashboard'],
+  clusters: ['dashboard'],
+  divisions: ['dashboard'],
+}
+
+function invalidateCachesFor(entity: string) {
+  const tags = ENTITY_TAGS[entity] ?? ['morning-brief', 'dashboard']
+  for (const tag of tags) {
+    try { revalidateTag(tag) } catch { /* revalidateTag throws in some contexts */ }
+  }
+}
 
 // ----------------------------------------------------------------------------
 // Types
@@ -254,6 +276,7 @@ export async function handleCreate<T extends string>(
       }
       return wrapDbError(error)
     }
+    invalidateCachesFor(config.table)
     return NextResponse.json(data, { status: 201 })
   } catch (e) {
     return wrapDbError(e)
@@ -318,6 +341,7 @@ export async function handleUpdate<T extends string>(
       }
       return wrapDbError(error)
     }
+    invalidateCachesFor(config.table)
     return NextResponse.json(data)
   } catch (e) {
     return wrapDbError(e)
@@ -356,6 +380,7 @@ export async function handleDelete<T extends string>(
     if (count === 0) {
       return apiError.notFound()
     }
+    invalidateCachesFor(config.table)
     return NextResponse.json({ ok: true, deleted: count })
   } catch (e) {
     return wrapDbError(e)

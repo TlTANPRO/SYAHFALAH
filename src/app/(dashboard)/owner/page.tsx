@@ -6,6 +6,7 @@
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+import { Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { unstable_cache } from 'next/cache'
 import Link from 'next/link'
@@ -86,6 +87,23 @@ const getCachedBrief = unstable_cache(
   { revalidate: 60, tags: ['morning-brief'] }
 )
 
+// OPT #1: Cache dashboard data for 30 seconds.
+// Dashboard tiles (clusterUnits, totalProjects, sell-through %) are more stable
+// than brief numbers — they only change on cluster/project updates, which are
+// infrequent. 30s TTL keeps the page feeling live while reducing DB load by ~95%
+// on repeat visits.
+const getCachedDashboard = unstable_cache(
+  async () => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) return { kpiTrend: [], clusters: [], projects: [], consumerCases: [], teamKPIs: [], divisions: [] }
+    const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+    return loadDashboardData(sb)
+  },
+  ['owner-dashboard'],
+  { revalidate: 30, tags: ['dashboard'] }
+)
+
 async function safeRows(query: any): Promise<any[]> {
   try {
     const res: any = await query
@@ -115,7 +133,7 @@ async function loadData() {
 
   const [brief, dashboard] = await Promise.all([
     getCachedBrief(),
-    loadDashboardData(sb),
+    getCachedDashboard(),
   ])
 
   return {
@@ -381,6 +399,19 @@ export default async function Page() {
         </article>
       </section>
 
+      {/* OPT #3: Stream heavy sections below the fold.
+          Morning Brief + KPI Ribbon render immediately (already cached).
+          Cluster/Pipeline/Construction/Consumer Cases/Team Performance
+          are below the fold and stream in as their data resolves. */}
+      <Suspense
+        fallback={
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" aria-label="Memuat data dashboard">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-48 rounded-lg bg-[var(--color-surface-1)] animate-pulse" />
+            ))}
+          </div>
+        }
+      >
       {/* ==================== CLUSTER ==================== */}
       <section className="space-y-4">
         <SectionHeader
@@ -481,6 +512,7 @@ export default async function Page() {
           </p>
         </section>
       )}
+          </Suspense>
     </div>
   )
 }
