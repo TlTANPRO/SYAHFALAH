@@ -35,9 +35,13 @@ async function loadData() {
 
   async function safe<T>(query: any, fallback: T = [] as any): Promise<T> {
     try {
-      const { data, error } = await query
-      if (error) return fallback
-      return (data ?? fallback) as T
+      // For count queries ({ count: 'exact', head: true }), supabase-js returns
+      // data=null and exposes the count via the `count` field on the response.
+      const res: any = await query
+      if (res?.error) return fallback
+      const count = typeof res?.count === 'number' ? res.count : null
+      if (count !== null) return count as unknown as T
+      return (res?.data ?? fallback) as T
     } catch {
       return fallback
     }
@@ -51,7 +55,29 @@ async function loadData() {
     .lte('period_start', '2026-07-31')
     .limit(3000)
 
-  const [kpiTrend, clusters, leads, projects, consumerCases, teamKPIs, divs] = await Promise.all([
+  // BUGFIX: completedToday was previously computed from kpiTrend.completed_at,
+  // but (a) kpis table has no completed_at column (SELECT omitted it),
+  // (b) period_start filter excluded today's date.
+  // The correct source is the tasks table. We fetch minimal fields so this stays cheap.
+  const today = new Date()
+  const todayStr = today.toISOString().slice(0, 10)
+  const tomorrowStr = new Date(today.getTime() + 86_400_000).toISOString().slice(0, 10)
+
+  const tasksCompletedToday = sb
+    .from('tasks')
+    .select('id', { count: 'exact', head: true })
+    .not('completed_at', 'is', null)
+    .gte('completed_at', `${todayStr}T00:00:00`)
+    .lt('completed_at', `${tomorrowStr}T00:00:00`)
+
+  // BUGFIX: pendingToday was mislabeled — computed from leads but UI says "Task".
+  // Now correctly counts active tasks (status in [pending, in_progress]).
+  const tasksPending = sb
+    .from('tasks')
+    .select('id', { count: 'exact', head: true })
+    .in('status', ['pending', 'in_progress'])
+
+  const [kpiTrend, clusters, leads, projects, consumerCases, teamKPIs, divs, tasksTodayCount, tasksPendingCount] = await Promise.all([
     safe<any[]>(trendQuery, []),
     safe<any[]>(sb.from('clusters').select('*').eq('is_active', true).order('name')),
     safe<any[]>(sb.from('leads').select('id, stage, source, estimated_value_rupiah, created_at, cluster_id, customer_name, assigned_to_id, contacted_at, surveyed_at')),
@@ -59,9 +85,22 @@ async function loadData() {
     safe<any[]>(sb.from('consumer_cases').select('id, code, consumer_name, unit_code, cluster_id, stage, sp3k_deadline, bast_date, amount_rupiah, is_overdue, assigned_to_id')),
     safe<any[]>(sb.from('team_personal_kpis').select('user_id, name, position, division_id, division_name, kpi_count, avg_progress, achieved_count, on_track_count, at_risk_count, off_track_count').order('avg_progress', { ascending: false }).limit(12)),
     safe<any[]>(sb.from('divisions').select('id, name').eq('is_active', true).order('sort_order')),
+    safe<number>(tasksCompletedToday, 0),
+    safe<number>(tasksPending, 0),
   ])
 
-  return { clusters, leads, projects, consumerCases, teamKPIs, divisions: divs, kpiTrend, dbReady: true }
+  return {
+    clusters,
+    leads,
+    projects,
+    consumerCases,
+    teamKPIs,
+    divisions: divs,
+    kpiTrend,
+    tasksTodayCount,
+    tasksPendingCount,
+    dbReady: true,
+  }
 }
 
 function shortNumber(n: number): string {
@@ -91,6 +130,8 @@ export default async function Page() {
     teamKPIs = [],
     divisions = [],
     kpiTrend = [],
+    tasksTodayCount = 0,
+    tasksPendingCount = 0,
   } = data
 
   // KPI trend per divisi per bulan
@@ -162,12 +203,11 @@ export default async function Page() {
   // Morning Brief computations (today's activity)
   const todayStr = new Date().toISOString().slice(0, 10)
   const overdueConsumer = (consumerCases as any[]).filter((c: any) => c.is_overdue).length
-  const completedToday = (kpiTrend as any[]).filter((k: any) =>
-    String(k.completed_at ?? '').startsWith(todayStr)
-  ).length
-  const pendingToday = (leads as any[]).filter((l: any) =>
-    l.stage !== 'closed' && l.stage !== 'closing' && l.stage !== 'batal'
-  ).length
+  // BUGFIX: completedToday and pendingToday now come from server-side COUNT queries
+  // (see tasksCompletedToday + tasksPending in loadData()). The previous JS-side
+  // filters were wrong (kpis.completed_at didn't exist; leads had wrong source).
+  const completedToday = tasksTodayCount
+  const pendingToday = tasksPendingCount
   const newLeadsToday = (leads as any[]).filter((l: any) =>
     String(l.created_at ?? '').startsWith(todayStr)
   ).length
@@ -178,7 +218,7 @@ export default async function Page() {
   // Top 3 action items — on-point, prioritized
   const topActions: { label: string; href: string; tone?: 'default' | 'warning' | 'success' }[] = []
   if (overdueConsumer > 0) {
-    topActions.push({ label: `${overdueConsumer} SP3K lewat tempo — review sekarang`, href: '/owner', tone: 'warning' })
+    topActions.push({ label: `${overdueConsumer} SP3K lewat tempo — review sekarang`, href: '/owner#consumer-cases', tone: 'warning' })
   }
   if (pendingApprovalsCount > 0) {
     topActions.push({ label: `${pendingApprovalsCount} approval menunggu`, href: '/owner/approvals', tone: 'warning' })
@@ -189,8 +229,14 @@ export default async function Page() {
   if (topActions.length < 3 && totalBudget > 0 && budgetVariance > 10) {
     topActions.push({ label: `Budget proyek over ${budgetVariance.toFixed(0)}% dari RAP`, href: '/owner/projects', tone: 'warning' })
   }
+  // Diverse fallback actions so user sees different recommendations, not 3 identical links.
+  const FALLBACK_ACTIONS = [
+    { label: 'Lihat Flow Kerja 2026', href: '/owner/projects/flow' },
+    { label: 'Audit log terbaru', href: '/owner/audit' },
+    { label: 'KPI tim bulan ini', href: '/owner/kpi' },
+  ]
   while (topActions.length < 3) {
-    topActions.push({ label: 'Lihat Flow Kerja 2026', href: '/owner/projects/flow' })
+    topActions.push(FALLBACK_ACTIONS[topActions.length - 1] ?? FALLBACK_ACTIONS[0])
   }
 
   // Cluster metrics
@@ -355,7 +401,7 @@ export default async function Page() {
       </section>
 
       {/* ==================== SP3K ==================== */}
-      <section className="space-y-4">
+      <section id="consumer-cases" className="space-y-4">
         <SectionHeader
           eyebrow="Berkas konsumen"
           title="SP3K & akad"
