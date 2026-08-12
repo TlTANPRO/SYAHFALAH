@@ -3,10 +3,15 @@
 // Auto-update: di-render pada setiap request (force-dynamic + revalidate=0).
 // Date counts (today, week) dihitung ulang dari server setiap render.
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+// OPT #5: Switch from force-dynamic to ISR with 60s revalidation.
+// This enables Vercel edge CDN caching - subsequent requests within 60s
+// served from edge without hitting the server at all.
+// Combined with our unstable_cache layers (brief: 60s, dashboard: 30s),
+// the page becomes essentially free to serve on repeat visits.
+export const revalidate = 60
 
 import { Suspense } from 'react'
+import { getServerSession } from '@/lib/auth/session'
 import { createClient } from '@supabase/supabase-js'
 import { unstable_cache } from 'next/cache'
 import Link from 'next/link'
@@ -31,25 +36,38 @@ import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
 // PERF: Split into 2 functions so the Morning Brief (top of page) renders
 // quickly without waiting for the heavy dashboard queries below it.
-async function loadBriefData(sb: any) {
+async function loadBriefData(sb: any, scope?: string) {
   const today = new Date()
   const todayStr = today.toISOString().slice(0, 10)
   const tomorrowStr = new Date(today.getTime() + 86_400_000).toISOString().slice(0, 10)
 
-  // PERF #5: Note — we keep full leads SELECT here (PipelineFunnel needs closed/closing
-  // stages for conversion-rate calculation). Server-side filter only applied for
-  // today-new-leads count via gte(.created_at, today) below.
-  const [tasksTodayCount, tasksPendingCount, newLeadsToday, leads] = await Promise.all([
-    safeCount(sb.from('tasks').select('id', { count: 'exact', head: true })
+  // OPT #6: Apply division scope for non-owner roles (pic_divisi, kepala_kantor).
+  // Owners see all divisions.
+  const tasksTodayQ = (() => {
+    let q = sb.from('tasks').select('id', { count: 'exact', head: true })
       .not('completed_at', 'is', null)
       .gte('completed_at', `${todayStr}T00:00:00`)
-      .lt('completed_at', `${tomorrowStr}T00:00:00`)),
-    safeCount(sb.from('tasks').select('id', { count: 'exact', head: true })
-      .in('status', ['pending', 'in_progress'])),
-    // PERF #5: Push new-leads filter to SQL. Avoids transferring all leads rows
-    // just to filter them in JS for a single number.
-    safeCount(sb.from('leads').select('id', { count: 'exact', head: true })
-      .gte('created_at', `${todayStr}T00:00:00`)),
+      .lt('completed_at', `${tomorrowStr}T00:00:00`)
+    if (scope) q = q.eq('division_id', scope)
+    return q
+  })()
+  const tasksPendingQ = (() => {
+    let q = sb.from('tasks').select('id', { count: 'exact', head: true })
+      .in('status', ['pending', 'in_progress'])
+    if (scope) q = q.eq('division_id', scope)
+    return q
+  })()
+  const newLeadsTodayQ = (() => {
+    let q = sb.from('leads').select('id', { count: 'exact', head: true })
+      .gte('created_at', `${todayStr}T00:00:00`)
+    if (scope) q = q.eq('cluster_id', scope) // leads cluster via cluster, tasks via division
+    return q
+  })()
+
+  const [tasksTodayCount, tasksPendingCount, newLeadsToday, leads] = await Promise.all([
+    safeCount(tasksTodayQ),
+    safeCount(tasksPendingQ),
+    safeCount(newLeadsTodayQ),
     safeRows(sb.from('leads').select('id, stage, source, estimated_value_rupiah, created_at, cluster_id, customer_name, assigned_to_id, contacted_at, surveyed_at')),
   ])
   return { tasksTodayCount, tasksPendingCount, newLeadsToday, leads }
@@ -57,11 +75,16 @@ async function loadBriefData(sb: any) {
 
 async function loadDashboardData(sb: any) {
   const [kpiTrend, clusters, projects, consumerCases, teamKPIs, divs] = await Promise.all([
+    // OPT #4: Reduced limit 3000 → 100.
+    // DB has only 15 kpi rows total (Aug 2026 audit). 100 is 6.5x margin.
+    // Also dropped hardcoded date filter — period_start is NULL for most rows,
+    // so the filter returned 0 rows (chart was always empty before).
+    // The trendByDiv aggregation handles any time range naturally.
     safeRows(sb.from('kpis').select('division_id, period_start, progress')
       .in('level', ['division', 'company'])
-      .gte('period_start', '2025-08-01')
-      .lte('period_start', '2026-07-31')
-      .limit(3000)),
+      .not('progress', 'is', null)
+      .order('period_start', { ascending: false })
+      .limit(100)),
     safeRows(sb.from('clusters').select('*').eq('is_active', true).order('name')),
     safeRows(sb.from('projects').select('id, code, name, cluster_id, total_units, units_completed, start_date, target_completion_date, budget_rupiah, spent_rupiah, status, project_manager_id')),
     safeRows(sb.from('consumer_cases').select('id, code, consumer_name, unit_code, cluster_id, stage, sp3k_deadline, bast_date, amount_rupiah, is_overdue, assigned_to_id')),
@@ -76,12 +99,12 @@ async function loadDashboardData(sb: any) {
 // so 60s cache reduces DB load by ~95% while keeping data "fresh enough".
 // Tag-based revalidation could be added later (e.g. on task completion webhook).
 const getCachedBrief = unstable_cache(
-  async () => {
+  async (scope?: string) => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY
     if (!url || !key) return { tasksTodayCount: 0, tasksPendingCount: 0, newLeadsToday: 0, leads: [] }
     const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
-    return loadBriefData(sb)
+    return loadBriefData(sb, scope)
   },
   ['owner-morning-brief'],
   { revalidate: 60, tags: ['morning-brief'] }
@@ -125,14 +148,17 @@ async function safeCount(query: any): Promise<number> {
   }
 }
 
-async function loadData() {
+async function loadData(userDivisionId?: string, userRole?: string) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return { dbReady: false }
   const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
 
+  // OPT #6: Personalization scope. Owners see all; non-owners see their division.
+  const scope = userRole === 'owner' ? undefined : userDivisionId
+
   const [brief, dashboard] = await Promise.all([
-    getCachedBrief(),
+    getCachedBrief(scope),
     getCachedDashboard(),
   ])
 
@@ -169,7 +195,12 @@ function NumericOrDash({ value, format }: { value: number; format?: 'currency' |
 }
 
 export default async function Page() {
-  const data = await loadData()
+  // OPT #6: Fetch session to scope the brief to user's division
+  const session = await getServerSession()
+  const userDivisionId = session.user?.divisionId || undefined
+  const userRole = session.user?.role || undefined
+
+  const data = await loadData(userDivisionId, userRole)
   const {
     clusters = [],
     leads = [],

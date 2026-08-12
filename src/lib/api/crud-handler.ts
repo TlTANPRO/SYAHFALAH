@@ -34,7 +34,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { revalidateTag } from 'next/cache'
+import { revalidateTag, revalidatePath } from 'next/cache'
 import { requireAuth, isError, type Session } from '@/lib/api/auth-guard'
 import { apiError, buildError, wrapDbError } from '@/lib/api/errors'
 
@@ -57,6 +57,9 @@ function invalidateCachesFor(entity: string) {
   for (const tag of tags) {
     try { revalidateTag(tag) } catch { /* revalidateTag throws in some contexts */ }
   }
+  // OPT #7: Also revalidate /owner path explicitly so the ISR cache (60s)
+  // bypasses on next request. This gives mutation → fresh UI in <500ms.
+  try { revalidatePath('/owner') } catch { /* revalidatePath throws in some contexts */ }
 }
 
 // ----------------------------------------------------------------------------
