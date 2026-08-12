@@ -4,7 +4,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useEntityList, type ListResponse } from '@/hooks'
 import Link from 'next/link'
 import { Search, X, Building2, ChevronRight, BarChart3 } from 'lucide-react'
 import { Pagination } from '@/components/ui/Pagination'
@@ -49,18 +49,15 @@ export function ReportsClient({ initialData, total: initialTotal }: Props) {
     if (!resp.ok) throw new Error('Gagal menyimpan')
   }
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['owner-reports', q, page],
-    queryFn: async () => {
-      const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
-      if (q) params.set('q', q)
-      const res = await fetch(`/api/reports?${params}`, { credentials: 'include' })
-      if (!res.ok) return { data: [], total: 0, page, pageSize }
-      return res.json()
+  // Phase 2: migrated to useEntityList (saves ~10 LOC)
+  const { data, isLoading } = useEntityList<ReportCard>('reports', {
+    page, pageSize, q,
+  }, {
+    queryOptions: {
+      placeholderData: page === 1 && !q
+        ? { data: initialData, total: initialTotal, page: 1, pageSize } as ListResponse<ReportCard>
+        : undefined,
     },
-    placeholderData: page === 1 && !q
-      ? { data: initialData, total: initialTotal, page: 1, pageSize }
-      : undefined,
   })
 
   const rows = data?.data ?? initialData

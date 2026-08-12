@@ -4,7 +4,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useEntityList, type ListResponse } from '@/hooks'
 import Link from 'next/link'
 import { Search, X, Users, ChevronRight } from 'lucide-react'
 import { Pagination } from '@/components/ui/Pagination'
@@ -26,18 +26,15 @@ export function TeamClient({ initialData, total: initialTotal }: Props) {
   const [page, setPage] = useState(1)
   const pageSize = 12
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['kepala-team', q, page],
-    queryFn: async () => {
-      const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
-      if (q) params.set('q', q)
-      const res = await fetch(`/api/team?${params}`, { credentials: 'include' })
-      if (!res.ok) return { data: [], total: 0, page, pageSize }
-      return res.json()
+  // Phase 2: migrated to useEntityList (saves ~10 LOC)
+  const { data, isLoading } = useEntityList<TeamCard>('team', {
+    page, pageSize, q,
+  }, {
+    queryOptions: {
+      placeholderData: page === 1 && !q
+        ? { data: initialData, total: initialTotal, page: 1, pageSize } as ListResponse<TeamCard>
+        : undefined,
     },
-    placeholderData: page === 1 && !q
-      ? { data: initialData, total: initialTotal, page: 1, pageSize }
-      : undefined,
   })
 
   const rows = data?.data ?? initialData

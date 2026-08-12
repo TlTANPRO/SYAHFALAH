@@ -6,11 +6,11 @@
 'use client'
 
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useUIStore } from '@/stores/uiStore'
+import { useEntityMutation } from '@/hooks'
 
 interface InlineNewTaskFormProps {
   onCreated?: () => void
@@ -20,46 +20,14 @@ export function InlineNewTaskForm({ onCreated }: InlineNewTaskFormProps) {
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'critical'>('medium')
-  const queryClient = useQueryClient()
   const addToast = useUIStore((s) => s.addToast)
 
-  const create = useMutation({
-    mutationFn: async (input: { title: string; priority: string }) => {
-      const res = await fetch('/api/tasks', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: input.title,
-          priority: input.priority,
-          status: 'pending',
-        }),
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        const message =
-          err?.error?.message ??
-          (typeof err?.error === 'string' ? err.error : null) ??
-          `HTTP ${res.status}`
-        // Log full body to console so devs can see exact reason
-        if (typeof console !== 'undefined') {
-          console.error('[InlineNewTaskForm] POST /api/tasks failed', { status: res.status, body: err })
-        }
-        throw new Error(message)
-      }
-      return res.json()
-    },
-    onSuccess: () => {
-      addToast({ type: 'success', title: 'Berhasil dibuat', message: 'Task baru telah ditambahkan.' })
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
-      setTitle('')
-      setPriority('medium')
-      setOpen(false)
-      onCreated?.()
-    },
-    onError: (err: Error) => {
-      addToast({ type: 'destructive', title: 'Gagal', message: err.message })
-    },
+  // Phase 2: migrated to useEntityMutation (saves ~15 LOC, auto-toast + auto-invalidate)
+  // Input body is { title, priority, status: 'pending' } - sent as-is.
+  const create = useEntityMutation<{ title: string; priority: string; status: 'pending' }>('tasks', 'POST', {
+    successMessage: 'Task baru telah ditambahkan.',
+    successTitle: 'Berhasil dibuat',
+    invalidateKeys: [['tasks']],
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -68,7 +36,17 @@ export function InlineNewTaskForm({ onCreated }: InlineNewTaskFormProps) {
       addToast({ type: 'warning', title: 'Judul minimal 3 karakter' })
       return
     }
-    create.mutate({ title: title.trim(), priority })
+    create.mutate(
+      { title: title.trim(), priority, status: 'pending' },
+      {
+        onSuccess: () => {
+          setTitle('')
+          setPriority('medium')
+          setOpen(false)
+          onCreated?.()
+        },
+      }
+    )
   }
 
   if (!open) {

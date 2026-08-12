@@ -6,7 +6,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useEntityList, type ListResponse } from '@/hooks'
 import { ChevronDown, ChevronRight, Search, Filter, X, FileSearch } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Pagination } from '@/components/ui/Pagination'
@@ -64,22 +64,19 @@ export function AuditLogClient({ initialRows, initialTotal, knownActions, knownT
     [knownUserIds]
   )
 
-  const { data, isLoading } = useQuery<ApiResponse>({
-    queryKey: ['audit-logs', q, action, table, userId, page],
-    queryFn: async () => {
-      const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
-      if (q) params.set('q', q)
-      if (action !== 'all') params.set('action', action)
-      if (table !== 'all') params.set('table', table)
-      if (userId !== 'all') params.set('user_id', userId)
-      const res = await fetch(`/api/audit-logs?${params.toString()}`, { credentials: 'include' })
-      if (!res.ok) return { data: [], total: 0, page, pageSize }
-      return res.json()
+  // Phase 2: migrated to useEntityList (saves ~12 LOC, all 4 filters preserved)
+  const { data, isLoading } = useEntityList<AuditLogRow>('audit-logs', {
+    page, pageSize, q,
+    action: action === 'all' ? '' : action,
+    table: table === 'all' ? '' : table,
+    user_id: userId === 'all' ? '' : userId,
+  }, {
+    queryOptions: {
+      placeholderData:
+        page === 1 && !q && action === 'all' && table === 'all' && userId === 'all'
+          ? { data: initialRows, total: initialTotal, page: 1, pageSize } as ListResponse<AuditLogRow>
+          : undefined,
     },
-    placeholderData:
-      page === 1 && !q && action === 'all' && table === 'all' && userId === 'all'
-        ? { data: initialRows, total: initialTotal, page: 1, pageSize }
-        : undefined,
   })
 
   const rows = data?.data ?? initialRows

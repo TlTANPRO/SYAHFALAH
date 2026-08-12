@@ -28,8 +28,12 @@ export interface UseEntityMutationOptions<TInput, TResponse>
   invalidateKeys?: ReadonlyArray<readonly unknown[]>
   /** Show a success toast on resolve */
   successMessage?: string | ((response: TResponse) => string)
+  /** Optional title for the success toast. Default: 'Berhasil'. */
+  successTitle?: string
   /** Show an error toast on reject */
   errorMessage?: string | ((err: Error) => string)
+  /** Optional title for the error toast. Default: 'Gagal'. */
+  errorTitle?: string
   /** Skip auto-invalidation (e.g. for bulk operations that handle their own cache) */
   skipInvalidate?: boolean
 }
@@ -83,7 +87,7 @@ export function useEntityMutation<TInput = unknown, TResponse = unknown>(
         const msg = typeof options.successMessage === 'function'
           ? options.successMessage(data)
           : options.successMessage
-        addToast({ type: 'success', title: msg, message: '' })
+        addToast({ type: 'success', title: options.successTitle ?? 'Berhasil', message: msg })
       }
       // Forward to caller's onSuccess
       if (options.onSuccess) {
@@ -97,9 +101,9 @@ export function useEntityMutation<TInput = unknown, TResponse = unknown>(
         const msg = typeof options.errorMessage === 'function'
           ? options.errorMessage(err)
           : options.errorMessage
-        addToast({ type: 'destructive', title: msg, message: '' })
+        addToast({ type: 'destructive', title: options.errorTitle ?? 'Gagal', message: msg })
       } else {
-        addToast({ type: 'destructive', title: 'Gagal', message: err.message })
+        addToast({ type: 'destructive', title: options.errorTitle ?? 'Gagal', message: err.message })
       }
       // Forward to caller's onError
       if (options.onError) {

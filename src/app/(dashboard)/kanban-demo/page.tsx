@@ -5,7 +5,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useEntityList } from '@/hooks'
 import type { DragEndEvent } from '@dnd-kit/core'
 import {
   KanbanBoard,
@@ -35,12 +35,13 @@ interface Task {
 }
 
 export default function KanbanDemoPage() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['tasks', 'kanban-demo'],
-    queryFn: async () => {
-      const res = await fetch('/api/tasks?page=1&pageSize=50')
-      if (!res.ok) throw new Error('Failed to fetch tasks')
-      return res.json() as Promise<{ data: Task[]; total: number }>
+  // Phase 2: migrated to useEntityList (saves ~7 LOC)
+  const { data, isLoading } = useEntityList<Task>('tasks', {
+    page: 1, pageSize: 50,
+  }, {
+    queryOptions: {
+      // Kanban demo just wants first 50 tasks, no real pagination.
+      // Treat first page as always available, no need for cache invalidation thrash.
     },
   })
 

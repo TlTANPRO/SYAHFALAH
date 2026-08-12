@@ -41,7 +41,8 @@ export default function Page() {
     return (localStorage.getItem('syahfalah-theme') as any) || 'dark'
   })
 
-  // Fetch prefs from DB
+  // Phase 2: kept as useQuery — endpoint is singular (/api/notifications/preferences)
+  // and doesn't follow /api/<entity>/<id> pattern that useEntityOne assumes.
   const { data: prefsData, isLoading: prefsLoading } = useQuery({
     queryKey: ['notif-prefs', user?.id],
     queryFn: fetchPrefs,

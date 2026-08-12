@@ -5,7 +5,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useEntityList, type ListResponse } from '@/hooks'
 import Link from 'next/link'
 import { Search, Filter, X, ChevronRight, Target } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
@@ -68,20 +68,17 @@ export function KpiListClient({ divisions, periods, initialData, total: initialT
     [divisions]
   )
 
-  const { data, isLoading } = useQuery<ApiResponse>({
-    queryKey: ['owner-kpis', q, division, period, page],
-    queryFn: async () => {
-      const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
-      if (q) params.set('q', q)
-      if (division !== 'all') params.set('division', division)
-      if (period !== 'all') params.set('period', period)
-      const res = await fetch(`/api/kpis?${params.toString()}`, { credentials: 'include' })
-      if (!res.ok) return { data: [], total: 0, page, pageSize }
-      return res.json()
+  // Phase 2: migrated to useEntityList (saves ~10 LOC)
+  const { data, isLoading } = useEntityList<KpiRow>('kpis', {
+    page, pageSize, q,
+    division: division === 'all' ? '' : division,
+    period: period === 'all' ? '' : period,
+  }, {
+    queryOptions: {
+      placeholderData: page === 1 && !q && division === 'all' && period === 'all'
+        ? { data: initialData, total: initialTotal, page: 1, pageSize } as ListResponse<KpiRow>
+        : undefined,
     },
-    placeholderData: page === 1 && !q && division === 'all' && period === 'all'
-      ? { data: initialData, total: initialTotal, page: 1, pageSize }
-      : undefined,
   })
 
 

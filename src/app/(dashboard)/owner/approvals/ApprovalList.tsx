@@ -6,7 +6,7 @@
 
 'use client'
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useEntityMutation } from '@/hooks'
 import { AlertTriangle, Check, CheckSquare, Clock, Loader2, X } from 'lucide-react'
 
 export interface Notif {
@@ -27,26 +27,25 @@ const PRIORITY_VARIANT: Record<string, string> = {
 }
 
 export function ApprovalList({ notifs }: { notifs: Notif[] }) {
-  const queryClient = useQueryClient()
+  // Phase 2: useEntityMutation with custom transform via mutationFn in onMutate-like wrapper.
+  // Input is { id, action }; the API body needs { id, is_read, approval_status }.
+  // We use the endpoint option and pass a transformed body via mutate args.
+  const decide = useEntityMutation<{ id: string; is_read: true; approval_status: 'approved' | 'rejected' }>(
+    'notifications',
+    'PATCH',
+    {
+      successMessage: 'Approval diperbarui',
+      invalidateKeys: [['approvals']],
+    }
+  )
 
-  const decide = useMutation({
-    mutationFn: async ({ id, action }: { id: string; action: 'approve' | 'reject' }) => {
-      const res = await fetch('/api/notifications', {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id,
-          is_read: true,
-          approval_status: action === 'approve' ? 'approved' : 'rejected',
-        }),
-      })
-      if (!res.ok) throw new Error('Failed to update notification')
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['approvals'] })
-    },
-  })
+  const handleDecide = (id: string, action: 'approve' | 'reject') => {
+    decide.mutate({
+      id,
+      is_read: true,
+      approval_status: action === 'approve' ? 'approved' : 'rejected',
+    })
+  }
 
   if (notifs.length === 0) {
     return (
@@ -87,7 +86,7 @@ export function ApprovalList({ notifs }: { notifs: Notif[] }) {
                   type="button"
                   aria-label={`Setujui ${n.title}`}
                   disabled={busy}
-                  onClick={() => decide.mutate({ id: n.id, action: 'approve' })}
+                  onClick={() => decide.mutate({ id: n.id, is_read: true, approval_status: 'approved' } as any)}
                   className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-[var(--color-success)]/40 text-[var(--color-success)] hover:bg-[var(--color-success)]/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
@@ -96,7 +95,7 @@ export function ApprovalList({ notifs }: { notifs: Notif[] }) {
                   type="button"
                   aria-label={`Tolak ${n.title}`}
                   disabled={busy}
-                  onClick={() => decide.mutate({ id: n.id, action: 'reject' })}
+                  onClick={() => decide.mutate({ id: n.id, is_read: true, approval_status: 'rejected' } as any)}
                   className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-[var(--color-danger)]/40 text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
