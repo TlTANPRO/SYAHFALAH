@@ -35,6 +35,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { revalidateTag, revalidatePath } from 'next/cache'
+import { notifyEntityChanged } from '@/lib/realtime/event-bus'
 import { requireAuth, isError, type Session } from '@/lib/api/auth-guard'
 import { apiError, buildError, wrapDbError } from '@/lib/api/errors'
 
@@ -46,20 +47,24 @@ const ENTITY_TAGS: Record<string, ReadonlyArray<string>> = {
   tasks: ['morning-brief'],
   leads: ['morning-brief'],
   consumer_cases: ['morning-brief'],
-  projects: ['dashboard'],
+  projects: ['dashboard', 'projects'],
+  blocks: ['projects'],
+  house_units: ['projects'],
   kpis: ['dashboard'],
   clusters: ['dashboard'],
   divisions: ['dashboard'],
 }
 
-function invalidateCachesFor(entity: string) {
+function invalidateCachesFor(entity: string, action: 'create' | 'update' | 'delete', userId?: string) {
   const tags = ENTITY_TAGS[entity] ?? ['morning-brief', 'dashboard']
   for (const tag of tags) {
     try { revalidateTag(tag) } catch { /* revalidateTag throws in some contexts */ }
   }
-  // OPT #7: Also revalidate /owner path explicitly so the ISR cache (60s)
-  // bypasses on next request. This gives mutation → fresh UI in <500ms.
   try { revalidatePath('/owner') } catch { /* revalidatePath throws in some contexts */ }
+  // PUSH #3: Push event to SSE subscribers for real-time UI updates.
+  for (const tag of tags) {
+    notifyEntityChanged({ entity, action, tag, timestamp: Date.now(), userId })
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -279,7 +284,7 @@ export async function handleCreate<T extends string>(
       }
       return wrapDbError(error)
     }
-    invalidateCachesFor(config.table)
+    invalidateCachesFor(config.table, 'create', session.userId)
     return NextResponse.json(data, { status: 201 })
   } catch (e) {
     return wrapDbError(e)
@@ -344,7 +349,7 @@ export async function handleUpdate<T extends string>(
       }
       return wrapDbError(error)
     }
-    invalidateCachesFor(config.table)
+    invalidateCachesFor(config.table, 'update', session.userId)
     return NextResponse.json(data)
   } catch (e) {
     return wrapDbError(e)
@@ -383,7 +388,7 @@ export async function handleDelete<T extends string>(
     if (count === 0) {
       return apiError.notFound()
     }
-    invalidateCachesFor(config.table)
+    invalidateCachesFor(config.table, 'delete', session.userId)
     return NextResponse.json({ ok: true, deleted: count })
   } catch (e) {
     return wrapDbError(e)

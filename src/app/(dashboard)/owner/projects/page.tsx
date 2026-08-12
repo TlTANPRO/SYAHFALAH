@@ -3,6 +3,7 @@
 // Tabs: projects / blocks / house_units. Each shows list + create form.
 
 import { createClient } from '@supabase/supabase-js'
+import { unstable_cache } from 'next/cache'
 import { Building2, Plus } from 'lucide-react'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,22 +21,47 @@ type Tab = 'projects' | 'blocks' | 'house_units'
 const TABS: readonly Tab[] = ['projects', 'blocks', 'house_units'] as const
 const TAB_LABEL: Record<Tab, string> = { projects: 'Projects', blocks: 'Blocks', house_units: 'House Units' }
 
+// PUSH #1: ISR caching - project data is stable (changes on project/cluster/block updates)
+// Combined with mutation-time invalidation in crud-handler, mutating any project
+// invalidates this page's cache automatically via revalidateTag.
+export const revalidate = 120
+
 interface PageProps { searchParams: Promise<{ tab?: string; cabang?: string }> }
 
+const getCachedCounts = unstable_cache(
+  async () => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) return null
+    const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+    const [p, b, h] = await Promise.all([
+      supabase.from('projects').select('id', { count: 'exact', head: true }),
+      supabase.from('blocks').select('id', { count: 'exact', head: true }),
+      supabase.from('house_units').select('id', { count: 'exact', head: true }),
+    ])
+    return { projects: p.count ?? 0, blocks: b.count ?? 0, house_units: h.count ?? 0 }
+  },
+  ['owner-projects-counts'],
+  { revalidate: 60, tags: ['projects'] }
+)
+
 async function loadCounts() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) return null
-  const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
-  const [p, b, h] = await Promise.all([
-    supabase.from('projects').select('id', { count: 'exact', head: true }),
-    supabase.from('blocks').select('id', { count: 'exact', head: true }),
-    supabase.from('house_units').select('id', { count: 'exact', head: true }),
-  ])
-  return { projects: p.count ?? 0, blocks: b.count ?? 0, house_units: h.count ?? 0 }
+  return getCachedCounts()
 }
 
+const getCachedTab = unstable_cache(
+  async (tab: string, cabangId: string | null) => {
+    return _loadTabInternal(tab as Tab, cabangId)
+  },
+  ['owner-projects-tab'],
+  { revalidate: 30, tags: ['projects'] }
+)
+
 async function loadTab(tab: Tab, cabangId: string | null = null) {
+  return getCachedTab(tab, cabangId)
+}
+
+async function _loadTabInternal(tab: Tab, cabangId: string | null = null) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return []

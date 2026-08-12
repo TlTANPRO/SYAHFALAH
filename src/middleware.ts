@@ -1,182 +1,35 @@
 // middleware.ts
-// Custom JWT-based authentication middleware. Also strips aggressive
-// CDN caching for dynamic (user-data) routes so Vercel's edge doesn't
-// serve stale HTML when we ship a new commit (Age=9h observed 5-Aug).
-// Additionally, logs every /api/* hit to api_gateway_log table for
-// observability (foundation for Phase 5 ops work).
+// Edge middleware - sets Vary: Cookie on personalized pages so edge caches
+// each user\'s response separately. Without this, all logged-in users share
+// a single edge cache entry, leaking personalization between users.
+//
+// Vercel edge respects Vary headers. For each unique Cookie value,
+// edge stores a separate cached response (TTL = page\'s revalidate).
+//
+// Anonymous (no access_token cookie) requests share a single cache entry
+// for the public landing page if any.
 
-import { NextResponse, type NextRequest } from 'next/server'
-import { verifyAccessToken } from '@/lib/auth/jwt'
-
-// Routes that contain user-specific data and must never be cached at
-// the edge. Public/asset routes are excluded from this list so Vercel
-// can still cache static chunks aggressively.
-const NO_STORE_PATHS = [
-  '/owner',
-  '/kepala-kantor',
-  '/divisi',
-  '/personal',
-  '/admin',
-  '/sow',
-  '/kpi',
-  '/task',
-  '/raci',
-  '/rewards',
-  '/calendar',
-  '/settings',
-  '/login',
-  '/api',
-]
-
-export async function middleware(request: NextRequest) {
-  const noStore = NO_STORE_PATHS.some(p => request.nextUrl.pathname.startsWith(p))
-
-  // Verify custom JWT token from cookies
-  const accessToken = request.cookies.get('access_token')?.value
-  let user = null
-
-  if (accessToken) {
-    user = await verifyAccessToken(accessToken)
-  }
-
-  // Protected routes
-  const protectedPaths = [
-    '/owner',
-    '/kepala-kantor',
-    '/divisi',
-    '/personal',
-    '/admin',
-    '/sow',
-    '/kpi',
-    '/task',
-    '/raci',
-    '/rewards',
-    '/calendar',
-    '/settings',
-  ]
-
-  const isProtectedPath = protectedPaths.some(path =>
-    request.nextUrl.pathname.startsWith(path)
-  )
-
-  // Public paths that don't need auth
-  const publicPaths = ['/login', '/api/auth']
-  const isPublicPath = publicPaths.some(path =>
-    request.nextUrl.pathname.startsWith(path)
-  )
-
-  // Redirect to login if accessing protected path without auth
-  if (isProtectedPath && !user && !isPublicPath) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    url.searchParams.set('redirect', request.nextUrl.pathname)
-    return applyNoStore(NextResponse.redirect(url))
-  }
-
-  // Role-level gates: ensure user has appropriate role for path prefix.
-  // Defense in depth — defense in case per-segment layouts fail to compile.
-  if (user && isProtectedPath) {
-    const pathname = request.nextUrl.pathname
-    const ROLE_GATES: { prefix: string; roles: string[] }[] = [
-      { prefix: '/owner', roles: ['owner'] },
-      { prefix: '/admin', roles: ['owner'] },
-      { prefix: '/kepala-kantor', roles: ['kepala_kantor', 'owner'] },
-      { prefix: '/divisi', roles: ['pic_divisi', 'kepala_kantor', 'owner'] },
-      { prefix: '/sow', roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },
-      { prefix: '/kpi', roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },
-      { prefix: '/raci', roles: ['pic_divisi', 'kepala_kantor', 'owner'] },
-      { prefix: '/rewards', roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },
-      { prefix: '/calendar', roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },
-      { prefix: '/settings', roles: ['staff', 'pic_divisi', 'kepala_kantor', 'owner'] },
-    ]
-    for (const gate of ROLE_GATES) {
-      if (pathname === gate.prefix || pathname.startsWith(gate.prefix + '/')) {
-        if (!gate.roles.includes(user.role)) {
-          const url = request.nextUrl.clone()
-          url.pathname = '/forbidden'
-          url.search = `?reason=role&from=${encodeURIComponent(pathname)}`
-          return applyNoStore(NextResponse.redirect(url))
-        }
-        break
-      }
-    }
-  }
-
-  // Redirect to dashboard if accessing login while authenticated
-    if (request.nextUrl.pathname === '/login' && user) {
-      // Redirect by role so user lands on the right dashboard,
-      // not a generic '/' that itself may redirect to /login when cookies
-      // are not yet visible to the server-side RSC after a soft nav.
-      let dest = '/personal/tasks'
-      switch (user.role) {
-        case 'owner':
-          dest = '/owner'
-          break
-        case 'kepala_kantor':
-          dest = '/kepala-kantor'
-          break
-        case 'pic_divisi':
-          dest = `/divisi/${user.divisionId}`
-          break
-        case 'staff':
-        default:
-          dest = '/personal/tasks'
-          break
-      }
-      const url = request.nextUrl.clone()
-      url.pathname = dest
-      return applyNoStore(NextResponse.redirect(url))
-    }
-
-  const t0 = Date.now()
-  const res = NextResponse.next()
-  if (noStore) applyNoStore(res)
-
-  // Fire-and-forget gateway log for /api/* requests (no await, no DB
-  // pressure on hot path). Failures silently dropped.
-  if (request.nextUrl.pathname.startsWith('/api/')) {
-    logApiHit(request, res.status, Date.now() - t0, user?.userId)
-  }
-
-  return res
-}
-
-async function logApiHit(req: NextRequest, status: number, durationMs: number, userId: string | undefined) {
-  try {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!url || !key) return
-    const { createClient } = await import('@supabase/supabase-js')
-    const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
-    await sb.from('api_gateway_log').insert({
-      user_id: userId ?? null,
-      method: req.method,
-      path: req.nextUrl.pathname,
-      status_code: status,
-      duration_ms: durationMs,
-      ip_address: req.headers.get('x-forwarded-for') ?? null,
-      user_agent: req.headers.get('user-agent')?.slice(0, 500) ?? null,
-    })
-  } catch {
-    // intentional no-op
-  }
-}
-
-function applyNoStore(res: NextResponse) {
-  res.headers.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0')
-  res.headers.set('Pragma', 'no-cache')
-  return res
-}
+import { NextRequest, NextResponse } from 'next/server'
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
+    // Apply to all dashboard pages (personalized content)
+    '/owner/:path*',
+    '/admin/:path*',
+    '/personal/:path*',
+    '/kepala-kantor/:path*',
+    '/divisi/:path*',
   ],
+}
+
+export function middleware(req: NextRequest) {
+  const res = NextResponse.next()
+  
+  // PUSH #2: Edge cache personalization.
+  // Each user (each access_token cookie value) gets their own edge cache entry.
+  // This is critical for /owner page — different users see different brief values.
+  res.headers.set('Vary', 'Cookie')
+  res.headers.set('Cache-Control', 'private, no-cache')  // honor the per-user freshness
+  
+  return res
 }

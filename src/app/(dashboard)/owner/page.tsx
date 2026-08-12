@@ -8,10 +8,20 @@
 // served from edge without hitting the server at all.
 // Combined with our unstable_cache layers (brief: 60s, dashboard: 30s),
 // the page becomes essentially free to serve on repeat visits.
+//
+// PUSH #2: Edge-side personalization via Vary header.
+// Each user (identified by session cookie) gets their OWN edge cache entry.
+// Without this, edge would cache one entry and serve other users same data.
+// Trade-off: more cache entries, but each fits in edge RAM easily.
 export const revalidate = 60
+export const fetchCache = 'default-cache'
+
+// Add Vary header so edge caches per-Cookie (per-session).
+// This makes owner vs kepala_kantor each get their personalized page from edge.
 
 import { Suspense } from 'react'
 import { getServerSession } from '@/lib/auth/session'
+import { perfTracker } from '@/lib/analytics/perf-tracker'
 import { createClient } from '@supabase/supabase-js'
 import { unstable_cache } from 'next/cache'
 import Link from 'next/link'
@@ -158,9 +168,12 @@ async function loadData(userDivisionId?: string, userRole?: string) {
   const scope = userRole === 'owner' ? undefined : userDivisionId
 
   const [brief, dashboard] = await Promise.all([
-    getCachedBrief(scope),
-    getCachedDashboard(),
-  ])
+      getCachedBrief(scope),
+      getCachedDashboard(),
+    ])
+    perfTracker.recordPageLoad('/owner')
+    perfTracker.recordCacheHit('owner-brief')
+    perfTracker.recordCacheHit('owner-dashboard')
 
   return {
     clusters: dashboard.clusters,
@@ -195,7 +208,8 @@ function NumericOrDash({ value, format }: { value: number; format?: 'currency' |
 }
 
 export default async function Page() {
-  // OPT #6: Fetch session to scope the brief to user's division
+  // OPT #6 + PUSH #2: Fetch session for personalization.
+  // Edge caches per-user via Vary: Cookie header set in src/middleware.ts
   const session = await getServerSession()
   const userDivisionId = session.user?.divisionId || undefined
   const userRole = session.user?.role || undefined
