@@ -95,6 +95,14 @@ export interface CrudConfig {
    * start_date, target_completion_date, code, author_id from session, etc.)
    */
   defaults?: (body: Record<string, unknown>, session: { userId: string; role: string }) => Record<string, unknown>
+  /** P1-3: GET list support */
+  selectFields?: string
+  defaultOrder?: { column: string; ascending?: boolean }
+  defaultPageSize?: number
+  maxPageSize?: number
+  searchFields?: readonly string[]
+  queryFilters?: Record<string, string>
+  enums?: Record<string, readonly string[]>
 }
 
 /**
@@ -257,6 +265,74 @@ export function makePostHandler(cfg: CrudConfig) {
       await logAudit(serviceClient, payload.userId, cfg.table, String(data?.id ?? ''), 'INSERT', null, data)
       
       return NextResponse.json({ data }, { status: 201 })
+    } catch (err: any) {
+      return NextResponse.json({ error: err?.message ?? 'internal' }, { status: 500 })
+    }
+  }
+}
+
+
+// P1-3: Generic GET (list) handler.
+// Mirrors crud-handler.handleList for the get-side of generic CRUD.
+export function makeGetHandler(cfg: CrudConfig) {
+  return async function GET(req: NextRequest) {
+    try {
+      const cookieStore = await cookies()
+      const accessToken = cookieStore.get('access_token')?.value
+      if (!accessToken) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 })
+      const payload = await verifyAccessToken(accessToken)
+      if (!payload) return NextResponse.json({ error: 'invalid session' }, { status: 401 })
+
+      const url = req.nextUrl
+      const page = Math.max(1, Number(url.searchParams.get('page')) || 1)
+      const pageSize = Math.min(
+        Math.max(1, Number(url.searchParams.get('pageSize')) || cfg.defaultPageSize || 50),
+        cfg.maxPageSize || 200
+      )
+      const offset = (page - 1) * pageSize
+      const orderColumn = url.searchParams.get('orderBy') || cfg.defaultOrder?.column || 'created_at'
+      const ascending = (url.searchParams.get('ascending') ?? 'false') === 'true'
+
+      const serviceClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+
+      let query = serviceClient
+        .from(cfg.table)
+        .select(cfg.selectFields || '*', { count: 'exact' })
+        .order(orderColumn, { ascending })
+        .range(offset, offset + pageSize - 1)
+
+      // Search across filterFields
+      const q = url.searchParams.get('q')?.trim()
+      if (q && cfg.searchFields?.length) {
+        const orClause = cfg.searchFields.map((f) => `${f}.ilike.%${q}%`).join(',')
+        query = query.or(orClause)
+      }
+
+      // Apply queryFilters from URL params
+      if (cfg.queryFilters) {
+        for (const [param, column] of Object.entries(cfg.queryFilters)) {
+          const v = url.searchParams.get(param)
+          if (v != null) query = query.eq(column, v)
+        }
+      }
+
+      const { data, error, count } = await query
+      if (error) {
+        if (error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+          return NextResponse.json({ data: [], total: 0, page, pageSize })
+        }
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+
+      return NextResponse.json({
+        data: data ?? [],
+        total: count ?? 0,
+        page,
+        pageSize,
+      })
     } catch (err: any) {
       return NextResponse.json({ error: err?.message ?? 'internal' }, { status: 500 })
     }

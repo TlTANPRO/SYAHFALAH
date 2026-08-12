@@ -5,7 +5,8 @@
 const { test, expect } = require('@playwright/test')
 
 const BASE = 'https://syahfalah-dashboard.vercel.app'
-const PIN_MADA = '0327' // kepala_kantor
+// After P0-1 fix, kepala_kantor is read-only. Use owner for task creation test.
+const PIN_USER = '1607' // owner (Pak Ardian) — has write access to tasks
 
 // UI-based login (same pattern as mobile-and-ui.spec.js which works reliably).
 async function login(page, pin) {
@@ -48,7 +49,7 @@ test('Mada can see "Tambah Task" button on /personal/tasks and create task inlin
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
   const page = await ctx.newPage()
 
-  await login(page, PIN_MADA)
+  await login(page, PIN_USER)
 
   // Navigate to /personal/tasks. UI login already redirected to /kepala-kantor,
   // so go to the target page.

@@ -10,6 +10,19 @@ import { cookies } from 'next/headers'
 import { verifyAccessToken } from '@/lib/auth/jwt'
 import { isError, requireAuth } from '@/lib/api/auth-guard'
 import { buildError, apiError } from '@/lib/api/errors'
+import { hasRoleAtLeast } from '@/lib/auth/role-guard'
+import { COMMON_LIMITS, validateField } from '@/lib/validation/field-limits'
+
+// P0-1: Role check for write operations.
+// kepala_kantor is read-only — only owner/pic_divisi/staff can mutate tasks.
+async function requireWriteRole(req: NextRequest): Promise<NextResponse | null> {
+  const session = await requireAuth()
+  if (isError(session)) return session
+  if (session.role === 'kepala_kantor') {
+    return apiError.forbidden(`Role kepala_kantor membaca saja — tidak boleh menulis ke tasks`)
+  }
+  return null
+}
 
 const TASKS_CONFIG: CrudConfig<'tasks'> = {
   entity: 'tasks',
@@ -55,12 +68,26 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // P0-1: Role check — kepala_kantor is read-only
+  const roleError = await requireWriteRole(req)
+  if (roleError) return roleError
+
+  // P2-1: Title maxLength=500 (Bug #9 fix). Handle this before delegating to handleCreate
+  // so we don't reach the DB.
+  try {
+    const body = await req.clone().json()
+    const titleError = validateField('title', body.title, COMMON_LIMITS.title)
+    if (titleError) return apiError.badRequest(titleError)
+  } catch { /* handleCreate will validate payload itself */ }
+
   return handleCreate(req, TASKS_CONFIG)
 }
 
 // PATCH keeps custom completed_at logic on status=completed.
 // For general field updates we delegate to handleUpdate.
 export async function PATCH(req: NextRequest) {
+  // P0-1: Role check for non-trivial updates. Read-only status toggle
+  // (single-field) still allowed for everyone (offline-friendly UX).
   let body: Record<string, unknown> = {}
   try {
     body = await req.json()
@@ -95,6 +122,16 @@ export async function PATCH(req: NextRequest) {
       .single()
     if (error) return buildError('INTERNAL', error.message)
     return NextResponse.json(data)
+  }
+
+  // For non-trivial PATCH, require write role
+  const roleError = await requireWriteRole(req)
+  if (roleError) return roleError
+
+  // P2-1: Title maxLength=500 on PATCH too
+  if (body.title !== undefined) {
+    const titleError = validateField('title', body.title, COMMON_LIMITS.title)
+    if (titleError) return apiError.badRequest(titleError)
   }
 
   // Otherwise delegate to generic update

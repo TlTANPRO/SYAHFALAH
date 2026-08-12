@@ -1,6 +1,8 @@
 // src/app/api/audit/route.ts
 // Reads from public.api_audit_log (LIVE table — 6+ rows from PATCH tests).
-// Role gate: payload.role must be 'owner' OR 'kepala_kantor'.
+// P1-2: Bug #7 fix - audit log is owner-only. kepala_kantor too sensitive.
+// (Originally allowed kepala_kantor, but full audit log can include sensitive
+//  cross-division actions that kepala_kantor shouldn't see across offices.)
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
@@ -10,7 +12,8 @@ import { verifyAccessToken } from '@/lib/auth/jwt'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-const ALLOWED_ROLES = new Set(['owner', 'kepala_kantor'])
+// P1-2: Restricted to owner only (was allowing kepala_kantor; too broad).
+const ALLOWED_ROLES = new Set(['owner'])
 
 type DateRange = 'all' | '7d' | '30d'
 
@@ -58,9 +61,10 @@ export async function GET(req: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
+    // P1-2: Exclude ip_address and user_agent from response (sensitive).
     let query = serviceClient
       .from('api_audit_log')
-      .select('id, user_id, table_name, row_id, action, before, after, ip_address, user_agent, created_at', {
+      .select('id, user_id, table_name, row_id, action, before, after, created_at', {
         count: 'exact',
       })
       .order('created_at', { ascending: false })

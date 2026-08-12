@@ -70,9 +70,27 @@ function LoginForm() {
         isActive: is_active,
       }
       setUser(normalizedUser as any)
-            // Force full reload so server-side middleware/RSC reads fresh cookies
-            // (router.push is client-only and does not re-evaluate middleware)
-            window.location.href = redirect
+
+      // P1-1: Bug #5 fix - role-based redirect.
+      // Honor explicit ?redirect= for deep-link preservation, otherwise
+      // send each role to its home: owner → /owner, kepala_kantor → /kepala-kantor,
+      // pic_divisi → /divisi/{divisionId}, staff → /personal.
+      const finalRedirect = (() => {
+        if (redirect && redirect !== '/') return redirect
+        const role = normalizedUser.role
+        if (role === 'owner') return '/owner'
+        if (role === 'kepala_kantor') return '/kepala-kantor'
+        if (role === 'pic_divisi') {
+          return normalizedUser.divisionId
+            ? `/divisi/${normalizedUser.divisionId}`
+            : '/divisi'
+        }
+        return '/personal'
+      })()
+
+      // Force full reload so server-side middleware/RSC reads fresh cookies
+      // (router.push is client-only and does not re-evaluate middleware)
+      window.location.href = finalRedirect
     } catch {
       setError('Terjadi kesalahan. Silakan coba lagi.')
     } finally {

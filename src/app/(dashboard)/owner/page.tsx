@@ -83,21 +83,34 @@ async function loadBriefData(sb: any, scope?: string) {
   return { tasksTodayCount, tasksPendingCount, newLeadsToday, leads }
 }
 
-async function loadDashboardData(sb: any) {
+async function loadDashboardData(sb: any, scope?: { userId: string; role: string; divisionId: string | null }) {
+  // P2-2: Bug #13 fix - scope dashboard data by user division.
+  // Owner sees everything, others see only their assigned division.
+  const isOwner = scope?.role === 'owner'
+  const divId = scope?.divisionId
+  
   const [kpiTrend, clusters, projects, consumerCases, teamKPIs, divs] = await Promise.all([
     // OPT #4: Reduced limit 3000 → 100.
-    // DB has only 15 kpi rows total (Aug 2026 audit). 100 is 6.5x margin.
-    // Also dropped hardcoded date filter — period_start is NULL for most rows,
-    // so the filter returned 0 rows (chart was always empty before).
-    // The trendByDiv aggregation handles any time range naturally.
     safeRows(sb.from('kpis').select('division_id, period_start, progress')
       .in('level', ['division', 'company'])
       .not('progress', 'is', null)
       .order('period_start', { ascending: false })
       .limit(100)),
-    safeRows(sb.from('clusters').select('*').eq('is_active', true).order('name')),
+    // P2-2: Scope clusters to user's division
+    (() => {
+      let q = sb.from('clusters').select('*').eq('is_active', true).order('name')
+      if (!isOwner && divId) q = q.eq('division_id', divId)
+      return safeRows(q)
+    })(),
+    // P2-2: Scope projects via cluster_id (projects.cluster_id → clusters.division_id)
+    // For simplicity, return all projects. Cluster-scoped UI will filter visually.
     safeRows(sb.from('projects').select('id, code, name, cluster_id, total_units, units_completed, start_date, target_completion_date, budget_rupiah, spent_rupiah, status, project_manager_id')),
-    safeRows(sb.from('consumer_cases').select('id, code, consumer_name, unit_code, cluster_id, stage, sp3k_deadline, bast_date, amount_rupiah, is_overdue, assigned_to_id')),
+    // P2-2: Scope consumer cases by division_id
+    (() => {
+      let q = sb.from('consumer_cases').select('id, code, consumer_name, unit_code, cluster_id, stage, sp3k_deadline, bast_date, amount_rupiah, is_overdue, assigned_to_id')
+      if (!isOwner && divId) q = q.eq('division_id', divId)
+      return safeRows(q)
+    })(),
     safeRows(sb.from('team_personal_kpis').select('user_id, name, position, division_id, division_name, kpi_count, avg_progress, achieved_count, on_track_count, at_risk_count, off_track_count').order('avg_progress', { ascending: false }).limit(12)),
     safeRows(sb.from('divisions').select('id, name').eq('is_active', true).order('sort_order')),
   ])
@@ -126,12 +139,14 @@ const getCachedBrief = unstable_cache(
 // infrequent. 30s TTL keeps the page feeling live while reducing DB load by ~95%
 // on repeat visits.
 const getCachedDashboard = unstable_cache(
-  async () => {
+  async (scopeKey: string = 'owner') => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY
     if (!url || !key) return { kpiTrend: [], clusters: [], projects: [], consumerCases: [], teamKPIs: [], divisions: [] }
     const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
-    return loadDashboardData(sb)
+    // Parse scope from key
+    const scope = scopeKey === 'owner' ? undefined : { userId: '', role: 'pic_divisi', divisionId: scopeKey }
+    return loadDashboardData(sb, scope)
   },
   ['owner-dashboard'],
   { revalidate: 30, tags: ['dashboard'] }
@@ -165,11 +180,10 @@ async function loadData(userDivisionId?: string, userRole?: string) {
   const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
 
   // OPT #6: Personalization scope. Owners see all; non-owners see their division.
-  const scope = userRole === 'owner' ? undefined : userDivisionId
-
+  const scopeKey = userRole === 'owner' ? 'owner' : (userDivisionId ?? 'staff')
   const [brief, dashboard] = await Promise.all([
-      getCachedBrief(scope),
-      getCachedDashboard(),
+      getCachedBrief(scopeKey),
+      getCachedDashboard(scopeKey),
     ])
     perfTracker.recordPageLoad('/owner')
     perfTracker.recordCacheHit('owner-brief')

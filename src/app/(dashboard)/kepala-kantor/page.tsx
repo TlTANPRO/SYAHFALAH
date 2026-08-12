@@ -112,6 +112,23 @@ export default async function KepalaKantorDashboard() {
     <div className="space-y-8">
       <Breadcrumbs crumbs={[{ label: 'Kepala Kantor' }]} />
 
+      {/* P3-1: Bug #12 fix - read-only banner for kepala_kantor */}
+      <div
+        role="status"
+        aria-live="polite"
+        className="rounded-lg border border-[var(--color-info)]/30 bg-[var(--color-info)]/10 px-4 py-3 flex items-start gap-3"
+      >
+        <Shield className="h-5 w-5 mt-0.5 text-[var(--color-info)] shrink-0" aria-hidden />
+        <div className="text-sm">
+          <p className="font-medium text-[var(--color-text-primary)]">
+            Mode Kepala Kantor — hanya baca
+          </p>
+          <p className="text-[var(--color-text-secondary)] mt-0.5">
+            Anda dapat melihat seluruh data lintas divisi, namun tidak dapat mengubahnya. Perubahan didelegasikan ke PIC atau Staff di divisi masing-masing.
+          </p>
+        </div>
+      </div>
+
       {/* Hero */}
       <HeroSection
         eyebrow={
