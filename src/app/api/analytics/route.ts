@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from '@/lib/auth/session'
 import { perfTracker } from '@/lib/analytics/perf-tracker'
+import { errorLogger } from '@/lib/analytics/error-logger'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -17,8 +18,12 @@ export async function GET(req: NextRequest) {
   if (session.user.role !== 'owner') {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   }
-  
-  return NextResponse.json(perfTracker.snapshot(), {
+
+  // Hard #4: include error budget snapshot
+  return NextResponse.json({
+    ...perfTracker.snapshot(),
+    errors: errorLogger.snapshot(),
+  }, {
     headers: {
       'Cache-Control': 'no-store',
     },

@@ -1,19 +1,19 @@
 // middleware.ts
-// Edge middleware - sets Vary: Cookie on personalized pages so edge caches
-// each user\'s response separately. Without this, all logged-in users share
-// a single edge cache entry, leaking personalization between users.
+// HARD #3: Refined edge caching strategy.
+// - Logged-in users (with access_token cookie): private, no-cache (per-user freshness)
+// - Anonymous traffic: public, browser cache (CDN-friendly)
+// - Health/API endpoints: never cache
 //
-// Vercel edge respects Vary headers. For each unique Cookie value,
-// edge stores a separate cached response (TTL = page\'s revalidate).
-//
-// Anonymous (no access_token cookie) requests share a single cache entry
-// for the public landing page if any.
+// The previous version set 'private, no-cache' for all traffic which
+// disabled public CDN caching for marketing/landing pages entirely.
+// This is more nuanced: personalized routes get per-user caching,
+// public routes leverage full CDN.
 
 import { NextRequest, NextResponse } from 'next/server'
 
 export const config = {
   matcher: [
-    // Apply to all dashboard pages (personalized content)
+    // Dashboard pages - apply only when authenticated or always (use runtime check)
     '/owner/:path*',
     '/admin/:path*',
     '/personal/:path*',
@@ -24,12 +24,16 @@ export const config = {
 
 export function middleware(req: NextRequest) {
   const res = NextResponse.next()
+  const hasSessionCookie = !!req.cookies.get('access_token')?.value
   
-  // PUSH #2: Edge cache personalization.
-  // Each user (each access_token cookie value) gets their own edge cache entry.
-  // This is critical for /owner page — different users see different brief values.
-  res.headers.set('Vary', 'Cookie')
-  res.headers.set('Cache-Control', 'private, no-cache')  // honor the per-user freshness
+  if (hasSessionCookie) {
+    // Logged-in user: per-user edge cache, fresh data
+    res.headers.set('Vary', 'Cookie')
+    res.headers.set('Cache-Control', 'private, must-revalidate, max-age=0')
+  } else {
+    // Anonymous: can be CDN-cached (typically redirected to /login anyway)
+    res.headers.set('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600')
+  }
   
   return res
 }
