@@ -16,6 +16,7 @@
 
 import { useMutation, useQueryClient, type UseMutationOptions } from '@tanstack/react-query'
 import { useUIStore } from '@/stores/uiStore'
+import { parseApiError } from '@/lib/api/client-errors'
 
 export type EntityMethod = 'POST' | 'PATCH' | 'PUT' | 'DELETE'
 
@@ -61,13 +62,9 @@ export function useEntityMutation<TInput = unknown, TResponse = unknown>(
         ...(method === 'DELETE' ? {} : { body: JSON.stringify(input) }),
       })
       if (!res.ok) {
-        // Try to extract the standardized error message
-        const err = await res.json().catch(() => ({}))
-        const message =
-          err?.error?.message ??
-          (typeof err?.error === 'string' ? err.error : null) ??
-          `HTTP ${res.status}`
-        throw new Error(message)
+        // Use the typed parser to extract the standardized error message
+        const apiErr = await parseApiError(res)
+        throw apiErr
       }
       // 204 No Content has no body
       if (res.status === 204) return undefined as TResponse
