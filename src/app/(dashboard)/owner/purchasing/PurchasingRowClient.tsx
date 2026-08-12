@@ -1,10 +1,9 @@
 // app/(dashboard)/owner/purchasing/PurchasingRowClient.tsx
 'use client'
 import * as React from 'react'
-import { useRouter } from 'next/navigation'
 import { SmartInlineEdit } from '@/components/ui/smart-inline-edit'
 import { DetailSheet } from '@/components/ui/detail-sheet'
-import { useQueryClient } from '@tanstack/react-query'
+import { useRowSave } from '@/hooks/useRowSave'
 import { useConflictResolver } from '@/hooks/use-conflict-resolver'
 
 interface Props {
@@ -27,12 +26,12 @@ const TAB_TO_FIELD: Record<Props['tab'], string> = {
 }
 
 export function PurchasingRowClient({ row, tab }: Props) {
-  const router = useRouter()
-  const queryClient = useQueryClient()
   const [open, setOpen] = React.useState(false)
-  const { handleConflict } = useConflictResolver()
   const entity = TAB_TO_ENTITY[tab]
   const field = TAB_TO_FIELD[tab]
+  // /api/purchasing/<entity>/<id> + invalidate ['purchasing'].
+  const save = useRowSave({ endpoint: `purchasing/${entity}`, queryKey: 'purchasing' })
+  const { handleConflict } = useConflictResolver()
 
   return (
     <div className="flex items-center gap-2">
@@ -48,27 +47,9 @@ export function PurchasingRowClient({ row, tab }: Props) {
           table: entity,
           rowLabel: String(row[field] ?? ''),
           baseRow: row as unknown as Parameters<typeof handleConflict>[0]['baseRow'],
-          save: async (values) => {
-            await fetch(`/api/purchasing/${entity}/${row.id}`, {
-              method: 'PATCH',
-              credentials: 'include',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(values),
-            })
-            queryClient.invalidateQueries({ queryKey: ['purchasing'] })
-            router.refresh()
-          },
+          save: (values) => save.patch({ id: row.id, values }),
         })}
-        onSave={async (newValue) => {
-          await fetch(`/api/purchasing/${entity}/${row.id}`, {
-            method: 'PATCH',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ [field]: newValue }),
-          })
-          queryClient.invalidateQueries({ queryKey: ['purchasing'] })
-          router.refresh()
-        }}
+        onSave={(newValue) => save.patch({ id: row.id, values: { [field]: newValue } })}
         className="font-medium hover:underline cursor-pointer"
       />
       <button
@@ -86,14 +67,8 @@ export function PurchasingRowClient({ row, tab }: Props) {
         open={open}
         onOpenChange={setOpen}
         mode="edit"
-        onSaved={() => {
-          queryClient.invalidateQueries({ queryKey: ['purchasing'] })
-          router.refresh()
-        }}
-        onDeleted={() => {
-          queryClient.invalidateQueries({ queryKey: ['purchasing'] })
-          router.refresh()
-        }}
+        onSaved={save.invalidate}
+        onDeleted={save.invalidate}
       />
     </div>
   )

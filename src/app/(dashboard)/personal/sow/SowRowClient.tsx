@@ -1,16 +1,16 @@
 // app/(dashboard)/personal/sow/SowRowClient.tsx
 'use client'
 import * as React from 'react'
-import { useRouter } from 'next/navigation'
 import { SmartInlineEdit } from '@/components/ui/smart-inline-edit'
 import { DetailSheet } from '@/components/ui/detail-sheet'
-import { useQueryClient } from '@tanstack/react-query'
+import { useRowSave } from '@/hooks/useRowSave'
 import { useConflictResolver } from '@/hooks/use-conflict-resolver'
 
 export function SowRowClient({ sow }: { sow: any }) {
-  const router = useRouter()
-  const queryClient = useQueryClient()
   const [open, setOpen] = React.useState(false)
+  // /api/sow-tasks/<id> + invalidate ['sow'].
+  // Note: endpoint is kebab-case (sow-tasks) not snake_case (sow_tasks).
+  const save = useRowSave({ endpoint: 'sow-tasks', queryKey: 'sow' })
   const { handleConflict } = useConflictResolver()
 
   return (
@@ -27,27 +27,9 @@ export function SowRowClient({ sow }: { sow: any }) {
           table: 'sow_tasks',
           rowLabel: sow.title,
           baseRow: sow as unknown as Parameters<typeof handleConflict>[0]['baseRow'],
-          save: async (values) => {
-            await fetch(`/api/sow-tasks/${sow.id}`, {
-              method: 'PATCH',
-              credentials: 'include',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(values),
-            })
-            queryClient.invalidateQueries({ queryKey: ['sow'] })
-            router.refresh()
-          },
+          save: (values) => save.patch({ id: sow.id, values }),
         })}
-        onSave={async (newTitle) => {
-          await fetch(`/api/sow-tasks/${sow.id}`, {
-            method: 'PATCH',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: newTitle }),
-          })
-          queryClient.invalidateQueries({ queryKey: ['sow'] })
-          router.refresh()
-        }}
+        onSave={(newTitle) => save.patch({ id: sow.id, values: { title: newTitle } })}
         className="hover:underline cursor-pointer"
       />
       <button
@@ -68,14 +50,8 @@ export function SowRowClient({ sow }: { sow: any }) {
         open={open}
         onOpenChange={setOpen}
         mode="edit"
-        onSaved={() => {
-          queryClient.invalidateQueries({ queryKey: ['sow'] })
-          router.refresh()
-        }}
-        onDeleted={() => {
-          queryClient.invalidateQueries({ queryKey: ['sow'] })
-          router.refresh()
-        }}
+        onSaved={save.invalidate}
+        onDeleted={save.invalidate}
       />
     </div>
   )

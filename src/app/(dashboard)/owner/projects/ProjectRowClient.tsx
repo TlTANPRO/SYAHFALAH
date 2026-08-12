@@ -1,17 +1,15 @@
 // app/(dashboard)/owner/projects/ProjectRowClient.tsx
 'use client'
 import * as React from 'react'
-import { useRouter } from 'next/navigation'
 import { SmartInlineEdit } from '@/components/ui/smart-inline-edit'
 import { DetailSheet } from '@/components/ui/detail-sheet'
-import { useQueryClient } from '@tanstack/react-query'
+import { useRowSave } from '@/hooks/useRowSave'
 import { useUndoToast } from '@/hooks/use-undo-toast'
 import { useConflictResolver } from '@/hooks/use-conflict-resolver'
 
 export function ProjectRowClient({ row }: { row: any }) {
-  const router = useRouter()
-  const queryClient = useQueryClient()
   const [open, setOpen] = React.useState(false)
+  const save = useRowSave({ queryKey: 'projects' })
   const showUndoToast = useUndoToast()
   const { handleConflict } = useConflictResolver()
 
@@ -28,16 +26,7 @@ export function ProjectRowClient({ row }: { row: any }) {
           showUndoToast({
             title: 'Nama project diperbarui',
             message: `${oldName} → ${newName}`,
-            onUndo: async () => {
-              await fetch(`/api/projects/projects/${row.id}`, {
-                method: 'PATCH',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: oldName }),
-              })
-              queryClient.invalidateQueries({ queryKey: ['projects'] })
-              router.refresh()
-            },
+            onUndo: () => save.patch({ id: row.id, values: { name: oldName } }),
           })
         }}
         baseRow={row}
@@ -45,27 +34,9 @@ export function ProjectRowClient({ row }: { row: any }) {
           table: 'projects',
           rowLabel: row.name,
           baseRow: row,
-          save: async (values) => {
-            await fetch(`/api/projects/projects/${row.id}`, {
-              method: 'PATCH',
-              credentials: 'include',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(values),
-            })
-            queryClient.invalidateQueries({ queryKey: ['projects'] })
-            router.refresh()
-          },
+          save: (values) => save.patch({ id: row.id, values }),
         })}
-        onSave={async (newName) => {
-          await fetch(`/api/projects/projects/${row.id}`, {
-            method: 'PATCH',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: newName }),
-          })
-          queryClient.invalidateQueries({ queryKey: ['projects'] })
-          router.refresh()
-        }}
+        onSave={(newName) => save.patch({ id: row.id, values: { name: newName } })}
         className="hover:underline cursor-pointer"
       />
       <button
@@ -83,14 +54,8 @@ export function ProjectRowClient({ row }: { row: any }) {
         open={open}
         onOpenChange={setOpen}
         mode="edit"
-        onSaved={() => {
-          queryClient.invalidateQueries({ queryKey: ['projects'] })
-          router.refresh()
-        }}
-        onDeleted={() => {
-          queryClient.invalidateQueries({ queryKey: ['projects'] })
-          router.refresh()
-        }}
+        onSaved={save.invalidate}
+        onDeleted={save.invalidate}
       />
     </>
   )

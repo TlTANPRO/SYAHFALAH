@@ -1,9 +1,7 @@
 // app/(dashboard)/kepala-kantor/coaching/CoachingRowClient.tsx
 'use client'
-import * as React from 'react'
-import { useRouter } from 'next/navigation'
 import { SmartInlineEdit } from '@/components/ui/smart-inline-edit'
-import { useQueryClient } from '@tanstack/react-query'
+import { useRowSave } from '@/hooks/useRowSave'
 import { useConflictResolver } from '@/hooks/use-conflict-resolver'
 
 interface Props {
@@ -12,8 +10,7 @@ interface Props {
 }
 
 export function CoachingRowClient({ taskId, title }: Props) {
-  const router = useRouter()
-  const queryClient = useQueryClient()
+  const save = useRowSave({ queryKey: 'coaching' })
   const { handleConflict } = useConflictResolver()
 
   return (
@@ -29,27 +26,9 @@ export function CoachingRowClient({ taskId, title }: Props) {
         table: 'tasks',
         rowLabel: title,
         baseRow: { id: taskId, title } as unknown as Parameters<typeof handleConflict>[0]['baseRow'],
-        save: async (values) => {
-          await fetch(`/api/tasks/${taskId}`, {
-            method: 'PATCH',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(values),
-          })
-          queryClient.invalidateQueries({ queryKey: ['coaching'] })
-          router.refresh()
-        },
+        save: (values) => save.patch({ id: taskId, values }),
       })}
-      onSave={async (newTitle) => {
-        await fetch(`/api/tasks/${taskId}`, {
-          method: 'PATCH',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: newTitle }),
-        })
-        queryClient.invalidateQueries({ queryKey: ['coaching'] })
-        router.refresh()
-      }}
+      onSave={(newTitle) => save.patch({ id: taskId, values: { title: newTitle } })}
       className="font-medium hover:underline cursor-pointer"
     />
   )

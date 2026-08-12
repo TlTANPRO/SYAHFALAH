@@ -1,9 +1,7 @@
 // app/(dashboard)/owner/reports/ReportsRowClient.tsx
 'use client'
-import * as React from 'react'
-import { useRouter } from 'next/navigation'
 import { SmartInlineEdit } from '@/components/ui/smart-inline-edit'
-import { useQueryClient } from '@tanstack/react-query'
+import { useRowSave } from '@/hooks/useRowSave'
 import { useConflictResolver } from '@/hooks/use-conflict-resolver'
 
 interface Props {
@@ -16,33 +14,9 @@ interface Props {
 }
 
 export function ReportsRowClient({ division }: Props) {
-  const router = useRouter()
-  const queryClient = useQueryClient()
+  // PATCH /api/divisions/<id> + invalidate ['owner-reports'].
+  const save = useRowSave({ queryKey: ['owner-reports', 'divisions'], endpoint: 'divisions' })
   const { handleConflict } = useConflictResolver()
-
-  const handleSave = async (field: string, value: string | number) => {
-    const resp = await fetch(`/api/divisions/${division.id}`, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ [field]: value }),
-    })
-    if (!resp.ok) throw new Error('Gagal menyimpan')
-    queryClient.invalidateQueries({ queryKey: ['owner-reports'] })
-    router.refresh()
-  }
-
-  const handleConflictSave = async (values: Record<string, unknown>) => {
-    const resp = await fetch(`/api/divisions/${division.id}`, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(values),
-    })
-    if (!resp.ok) throw new Error('Gagal menyimpan')
-    queryClient.invalidateQueries({ queryKey: ['owner-reports'] })
-    router.refresh()
-  }
 
   return (
     <div className="flex items-center gap-2 w-full">
@@ -59,9 +33,9 @@ export function ReportsRowClient({ division }: Props) {
             table: 'divisions',
             rowLabel: division.name,
             baseRow: division as unknown as Parameters<typeof handleConflict>[0]['baseRow'],
-            save: handleConflictSave,
+            save: (values) => save.patch({ id: division.id, values }),
           })}
-          onSave={async (newName) => handleSave('name', newName)}
+          onSave={(newName) => save.patch({ id: division.id, values: { name: newName } })}
           className="font-medium"
         />
       </h3>

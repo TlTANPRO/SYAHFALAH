@@ -10,3 +10,4 @@ export { useEntityList, type ListResponse, type UseEntityListOptions } from './u
 export { useEntityMutation, type EntityMethod, type UseEntityMutationOptions } from './useEntityMutation'
 export { useEntityOne, type UseEntityOneOptions } from './useEntityOne'
 export { useEntityFilters, type FilterChipConfig, type UseEntityFiltersOptions, type UseEntityFiltersResult } from './useEntityFilters'
+export { useRowSave, type UseRowSaveOptions, type UseRowSaveResult } from './useRowSave'
