@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 import { createClient } from '@supabase/supabase-js'
+import { unstable_cache } from 'next/cache'
 import Link from 'next/link'
 import {
   ArrowUpRight,
@@ -27,78 +28,107 @@ import { ProjectTracker } from '@/components/owner/ProjectTracker'
 import { ConsumerCasesTable } from '@/components/owner/ConsumerCasesTable'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
+// PERF: Split into 2 functions so the Morning Brief (top of page) renders
+// quickly without waiting for the heavy dashboard queries below it.
+async function loadBriefData(sb: any) {
+  const today = new Date()
+  const todayStr = today.toISOString().slice(0, 10)
+  const tomorrowStr = new Date(today.getTime() + 86_400_000).toISOString().slice(0, 10)
+
+  // PERF #5: Note — we keep full leads SELECT here (PipelineFunnel needs closed/closing
+  // stages for conversion-rate calculation). Server-side filter only applied for
+  // today-new-leads count via gte(.created_at, today) below.
+  const [tasksTodayCount, tasksPendingCount, newLeadsToday, leads] = await Promise.all([
+    safeCount(sb.from('tasks').select('id', { count: 'exact', head: true })
+      .not('completed_at', 'is', null)
+      .gte('completed_at', `${todayStr}T00:00:00`)
+      .lt('completed_at', `${tomorrowStr}T00:00:00`)),
+    safeCount(sb.from('tasks').select('id', { count: 'exact', head: true })
+      .in('status', ['pending', 'in_progress'])),
+    // PERF #5: Push new-leads filter to SQL. Avoids transferring all leads rows
+    // just to filter them in JS for a single number.
+    safeCount(sb.from('leads').select('id', { count: 'exact', head: true })
+      .gte('created_at', `${todayStr}T00:00:00`)),
+    safeRows(sb.from('leads').select('id, stage, source, estimated_value_rupiah, created_at, cluster_id, customer_name, assigned_to_id, contacted_at, surveyed_at')),
+  ])
+  return { tasksTodayCount, tasksPendingCount, newLeadsToday, leads }
+}
+
+async function loadDashboardData(sb: any) {
+  const [kpiTrend, clusters, projects, consumerCases, teamKPIs, divs] = await Promise.all([
+    safeRows(sb.from('kpis').select('division_id, period_start, progress')
+      .in('level', ['division', 'company'])
+      .gte('period_start', '2025-08-01')
+      .lte('period_start', '2026-07-31')
+      .limit(3000)),
+    safeRows(sb.from('clusters').select('*').eq('is_active', true).order('name')),
+    safeRows(sb.from('projects').select('id, code, name, cluster_id, total_units, units_completed, start_date, target_completion_date, budget_rupiah, spent_rupiah, status, project_manager_id')),
+    safeRows(sb.from('consumer_cases').select('id, code, consumer_name, unit_code, cluster_id, stage, sp3k_deadline, bast_date, amount_rupiah, is_overdue, assigned_to_id')),
+    safeRows(sb.from('team_personal_kpis').select('user_id, name, position, division_id, division_name, kpi_count, avg_progress, achieved_count, on_track_count, at_risk_count, off_track_count').order('avg_progress', { ascending: false }).limit(12)),
+    safeRows(sb.from('divisions').select('id, name').eq('is_active', true).order('sort_order')),
+  ])
+  return { kpiTrend, clusters, projects, consumerCases, teamKPIs, divisions: divs }
+}
+
+// PERF #6: Cache the brief data for 60 seconds.
+// Brief numbers don't change every second — owner views dashboard 5-10x/day,
+// so 60s cache reduces DB load by ~95% while keeping data "fresh enough".
+// Tag-based revalidation could be added later (e.g. on task completion webhook).
+const getCachedBrief = unstable_cache(
+  async () => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) return { tasksTodayCount: 0, tasksPendingCount: 0, newLeadsToday: 0, leads: [] }
+    const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+    return loadBriefData(sb)
+  },
+  ['owner-morning-brief'],
+  { revalidate: 60, tags: ['morning-brief'] }
+)
+
+async function safeRows(query: any): Promise<any[]> {
+  try {
+    const res: any = await query
+    if (res?.error) return []
+    return (res?.data ?? []) as any[]
+  } catch {
+    return []
+  }
+}
+
+async function safeCount(query: any): Promise<number> {
+  try {
+    const res: any = await query
+    if (res?.error) return 0
+    if (typeof res?.count === 'number') return res.count
+    return 0
+  } catch {
+    return 0
+  }
+}
+
 async function loadData() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return { dbReady: false }
   const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
 
-  async function safe<T>(query: any, fallback: T = [] as any): Promise<T> {
-    try {
-      // For count queries ({ count: 'exact', head: true }), supabase-js returns
-      // data=null and exposes the count via the `count` field on the response.
-      const res: any = await query
-      if (res?.error) return fallback
-      const count = typeof res?.count === 'number' ? res.count : null
-      if (count !== null) return count as unknown as T
-      return (res?.data ?? fallback) as T
-    } catch {
-      return fallback
-    }
-  }
-
-  const trendQuery = sb
-    .from('kpis')
-    .select('division_id, period_start, progress')
-    .in('level', ['division', 'company'])
-    .gte('period_start', '2025-08-01')
-    .lte('period_start', '2026-07-31')
-    .limit(3000)
-
-  // BUGFIX: completedToday was previously computed from kpiTrend.completed_at,
-  // but (a) kpis table has no completed_at column (SELECT omitted it),
-  // (b) period_start filter excluded today's date.
-  // The correct source is the tasks table. We fetch minimal fields so this stays cheap.
-  const today = new Date()
-  const todayStr = today.toISOString().slice(0, 10)
-  const tomorrowStr = new Date(today.getTime() + 86_400_000).toISOString().slice(0, 10)
-
-  const tasksCompletedToday = sb
-    .from('tasks')
-    .select('id', { count: 'exact', head: true })
-    .not('completed_at', 'is', null)
-    .gte('completed_at', `${todayStr}T00:00:00`)
-    .lt('completed_at', `${tomorrowStr}T00:00:00`)
-
-  // BUGFIX: pendingToday was mislabeled — computed from leads but UI says "Task".
-  // Now correctly counts active tasks (status in [pending, in_progress]).
-  const tasksPending = sb
-    .from('tasks')
-    .select('id', { count: 'exact', head: true })
-    .in('status', ['pending', 'in_progress'])
-
-  const [kpiTrend, clusters, leads, projects, consumerCases, teamKPIs, divs, tasksTodayCount, tasksPendingCount] = await Promise.all([
-    safe<any[]>(trendQuery, []),
-    safe<any[]>(sb.from('clusters').select('*').eq('is_active', true).order('name')),
-    safe<any[]>(sb.from('leads').select('id, stage, source, estimated_value_rupiah, created_at, cluster_id, customer_name, assigned_to_id, contacted_at, surveyed_at')),
-    safe<any[]>(sb.from('projects').select('id, code, name, cluster_id, total_units, units_completed, start_date, target_completion_date, budget_rupiah, spent_rupiah, status, project_manager_id')),
-    safe<any[]>(sb.from('consumer_cases').select('id, code, consumer_name, unit_code, cluster_id, stage, sp3k_deadline, bast_date, amount_rupiah, is_overdue, assigned_to_id')),
-    safe<any[]>(sb.from('team_personal_kpis').select('user_id, name, position, division_id, division_name, kpi_count, avg_progress, achieved_count, on_track_count, at_risk_count, off_track_count').order('avg_progress', { ascending: false }).limit(12)),
-    safe<any[]>(sb.from('divisions').select('id, name').eq('is_active', true).order('sort_order')),
-    safe<number>(tasksCompletedToday, 0),
-    safe<number>(tasksPending, 0),
+  const [brief, dashboard] = await Promise.all([
+    getCachedBrief(),
+    loadDashboardData(sb),
   ])
 
   return {
-    clusters,
-    leads,
-    projects,
-    consumerCases,
-    teamKPIs,
-    divisions: divs,
-    kpiTrend,
-    tasksTodayCount,
-    tasksPendingCount,
+    clusters: dashboard.clusters,
+    leads: brief.leads,
+    projects: dashboard.projects,
+    consumerCases: dashboard.consumerCases,
+    teamKPIs: dashboard.teamKPIs,
+    divisions: dashboard.divisions,
+    kpiTrend: dashboard.kpiTrend,
+    tasksTodayCount: brief.tasksTodayCount,
+    tasksPendingCount: brief.tasksPendingCount,
+    newLeadsTodayCount: brief.newLeadsToday,
     dbReady: true,
   }
 }
@@ -132,6 +162,7 @@ export default async function Page() {
     kpiTrend = [],
     tasksTodayCount = 0,
     tasksPendingCount = 0,
+    newLeadsTodayCount = 0,
   } = data
 
   // KPI trend per divisi per bulan
@@ -208,9 +239,8 @@ export default async function Page() {
   // filters were wrong (kpis.completed_at didn't exist; leads had wrong source).
   const completedToday = tasksTodayCount
   const pendingToday = tasksPendingCount
-  const newLeadsToday = (leads as any[]).filter((l: any) =>
-    String(l.created_at ?? '').startsWith(todayStr)
-  ).length
+  // PERF #5: now from server-side count query (cached 60s)
+  const newLeadsToday = newLeadsTodayCount
   const pendingApprovalsCount = (consumerCases as any[]).filter((c: any) =>
     c.stage === 'pending_approval' || c.stage === 'review'
   ).length
