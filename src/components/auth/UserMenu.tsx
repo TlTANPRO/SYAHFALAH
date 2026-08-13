@@ -5,26 +5,61 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useLayoutEffect } from "react"
+import { createPortal } from "react-dom"
 import Link from "next/link"
 import Image from "next/image"
 import { LogOut, User as UserIcon, Settings, ChevronDown } from "lucide-react"
 import { useAuthStore } from "@/stores/authStore"
 import { useUIStore } from "@/stores/uiStore"
 
+// Use isomorphic layout effect to avoid SSR warnings.
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect
+
 export function UserMenu({ user }: { user: any }) {
   const router = useRouter()
   const { logout } = useAuthStore()
   const { addToast } = useUIStore()
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [mounted, setMounted] = useState(false)
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useIsomorphicLayoutEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Compute position from trigger button. Position: fixed is used to escape
+  // <header>'s overflow-x-hidden + backdrop-blur stacking context (which would
+  // otherwise clip the dropdown). We position it via getBoundingClientRect
+  // from the trigger so it works at any scroll offset.
+  useIsomorphicLayoutEffect(() => {
+    if (!open || !triggerRef.current) return
+    function update() {
+      const rect = triggerRef.current!.getBoundingClientRect()
+      setPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    }
+    update()
+    window.addEventListener("scroll", update, true)
+    window.addEventListener("resize", update)
+    return () => {
+      window.removeEventListener("scroll", update, true)
+      window.removeEventListener("resize", update)
+    }
+  }, [open])
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      const target = e.target as Node
+      if (menuRef.current && menuRef.current.contains(target)) return
+      if (triggerRef.current && triggerRef.current.contains(target)) return
+      setOpen(false)
     }
-    if (open) document.addEventListener("mousedown", onClick)
-    return () => document.removeEventListener("mousedown", onClick)
+    if (open) {
+      document.addEventListener("mousedown", onClick)
+      return () => document.removeEventListener("mousedown", onClick)
+    }
   }, [open])
 
   const handleLogout = async () => {
@@ -44,8 +79,9 @@ export function UserMenu({ user }: { user: any }) {
     .slice(0, 2)
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative">
       <button
+        ref={triggerRef}
         onClick={() => setOpen((s) => !s)}
         className="flex items-center gap-2 px-3 h-9 rounded-md text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
         aria-label="User menu"
@@ -63,13 +99,15 @@ export function UserMenu({ user }: { user: any }) {
         <ChevronDown className="h-3.5 w-3.5 text-[var(--color-text-tertiary)]" />
       </button>
 
-      {open && (
+      {mounted && open && pos && createPortal(
         <div
-          // Use fixed positioning so dropdown escapes the parent
-          // <header>'s overflow-x-hidden (which clips it otherwise).
-          // Position calculated from the trigger button's right edge.
-          className="fixed right-4 top-[52px] w-64 rounded-lg bg-[var(--color-surface-1)] shadow-[var(--shadow-elevated)] border border-[var(--color-border-subtle)] overflow-hidden z-50"
-          style={{ animation: "slideUp 150ms ease-out" }}
+          ref={menuRef}
+          // Portal-rendered so it escapes the <header>'s overflow-x-hidden
+          // AND its backdrop-blur stacking context (which would otherwise clip
+          // fixed-positioned children). Position computed from trigger rect
+          // so the dropdown tracks the button at any scroll position.
+          className="fixed w-64 rounded-lg bg-[var(--color-surface-1)] shadow-[var(--shadow-elevated)] border border-[var(--color-border-subtle)] overflow-hidden"
+          style={{ top: pos.top, right: pos.right, zIndex: 100 }}
         >
           <div className="p-4 border-b border-[var(--color-border-subtle)]">
             <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{user.name}</p>
@@ -107,7 +145,8 @@ export function UserMenu({ user }: { user: any }) {
               <span>Sign Out</span>
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
