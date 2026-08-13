@@ -6,6 +6,7 @@
 // sow_with_tasks) don't have to pull in the rest.
 
 import { useQuery } from '@tanstack/react-query'
+import { safeFetch } from '@/lib/api/safe-fetch'
 import { useSupabase } from '@/providers/SupabaseProvider'
 
 export type SowWithTasks = {
@@ -44,7 +45,7 @@ export function useNotifications(userId: string | undefined) {
     queryKey: ['notifications', userId],
     queryFn: async () => {
       if (!userId) return [] as Notification[]
-      const res = await fetch('/api/notifications?limit=20', { credentials: 'include' })
+      const res = await safeFetch('/api/notifications?limit=20')
       if (!res.ok) return [] as Notification[]
       return (await res.json()) as Notification[]
     },

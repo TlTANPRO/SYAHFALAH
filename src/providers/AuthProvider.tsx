@@ -43,25 +43,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initAuth = async () => {
       setIsLoading(true)
       setLoading(true)
-      
+
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (session?.user) {
-        // Fetch full user profile
+        // Fetch full user profile from Supabase
         const { data: profile } = await supabase
           .from('users')
           .select('*')
           .eq('id', session.user.id)
           .single()
-        
+
         if (profile) {
           setUser(normalizeUser(profile))
         }
       } else if (storedUser) {
-        // Use stored user if no session
-        setUser(storedUser)
+        // localStorage has a user from a previous session.
+        // We MUST validate against the server because:
+        // 1. The JWT cookie may have expired (15min TTL).
+        // 2. localStorage persists across sessions but server-side cookie does not.
+        // 3. Without validation, every fetch fires 401 storms.
+        // Fix (Bug Mada-401): use safeFetch which handles 401 gracefully.
+        try {
+          const { safeFetch } = await import('@/lib/api/safe-fetch')
+          const res = await safeFetch('/api/auth/me')
+          if (res.ok) {
+            // Server confirms user is still valid — refresh from server.
+            const me = await res.json()
+            setUser(normalizeUser(me))
+          } else {
+            // safeFetch already handled the 401 (cleared state + redirect).
+            // Don't setUser(null) again; safeFetch did that.
+          }
+        } catch {
+          // Network error — keep stored user; they can retry on next action.
+          setUser(storedUser)
+        }
       }
-      
+
       setIsLoading(false)
       setLoading(false)
     }

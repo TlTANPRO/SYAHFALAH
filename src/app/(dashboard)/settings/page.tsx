@@ -22,7 +22,10 @@ interface PrefsResponse {
 }
 
 async function fetchPrefs(): Promise<PrefsResponse> {
-  const res = await fetch('/api/notifications/preferences', { credentials: 'include' })
+  // safeFetch handles 401 globally (clears auth, redirects to login) so we
+  // only need to handle other errors here.
+  const { safeFetch } = await import('@/lib/api/safe-fetch')
+  const res = await safeFetch('/api/notifications/preferences')
   if (!res.ok) throw new Error('Failed to load preferences')
   return res.json()
 }
