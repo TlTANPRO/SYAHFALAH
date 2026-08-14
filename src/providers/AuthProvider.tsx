@@ -1,6 +1,5 @@
 // providers/AuthProvider.tsx
 // Authentication provider with Supabase integration
-//
 // The DB row from `public.users` uses snake_case (`full_name`,
 // `division_id`, etc.) but the rest of the frontend reads camelCase
 // (`name`, `divisionId`). normalizeUser() maps once so consumers
@@ -35,16 +34,27 @@ const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { setUser, setLoading, user: storedUser } = useAuthStore()
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false) // Initial false to avoid spinner flash; middleware handles protection
   const supabase = createClient()
 
   useEffect(() => {
-    // Initial session check
+    // SAFETY: force isLoading=false within 3s so dashboard never hangs on spinner
+    const safetyTimer = setTimeout(() => {
+      console.warn('[AuthProvider] init timeout - forcing loading=false')
+      setIsLoading(false)
+      setLoading(false)
+    }, 3000)
+
     const initAuth = async () => {
       setIsLoading(true)
       setLoading(true)
 
-      const { data: { session } } = await supabase.auth.getSession()
+      // Race Supabase getSession against 2s timeout - prevents hangs
+      const sessionResult: any = await Promise.race([
+        supabase.auth.getSession(),
+        new Promise((resolve) => setTimeout(() => resolve({ data: { session: null } }), 2000)),
+      ])
+      const session = sessionResult?.data?.session
 
       if (session?.user) {
         // Fetch full user profile from Supabase
@@ -59,30 +69,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } else if (storedUser) {
         // localStorage has a user from a previous session.
-        // We MUST validate against the server because:
-        // 1. The JWT cookie may have expired (15min TTL).
+        // Validate against the server because:
+        // 1. JWT cookie may have expired (15min TTL).
         // 2. localStorage persists across sessions but server-side cookie does not.
         // 3. Without validation, every fetch fires 401 storms.
-        // Fix (Bug Mada-401): use safeFetch which handles 401 gracefully.
         try {
           const { safeFetch } = await import('@/lib/api/safe-fetch')
           const res = await safeFetch('/api/auth/me')
           if (res.ok) {
-            // Server confirms user is still valid — refresh from server.
             const me = await res.json()
             setUser(normalizeUser(me))
-          } else {
-            // safeFetch already handled the 401 (cleared state + redirect).
-            // Don't setUser(null) again; safeFetch did that.
           }
+          // else: safeFetch already handled 401 (cleared state + redirect)
         } catch {
-          // Network error — keep stored user; they can retry on next action.
+          // Network error - keep stored user; they can retry on next action
           setUser(storedUser)
         }
       }
 
       setIsLoading(false)
       setLoading(false)
+      clearTimeout(safetyTimer)
     }
 
     initAuth()
@@ -106,26 +113,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       subscription.unsubscribe()
+      clearTimeout(safetyTimer)
     }
   }, [setUser, setLoading, storedUser, supabase])
 
   const signIn = async (pin: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Find user by PIN - we need to verify against all users
-      // In production, you'd want to use a more secure approach
       const { data: users, error } = await supabase
         .from('users')
         .select('*')
         .eq('is_active', true)
-      
+
       if (error || !users) {
         return { success: false, error: 'Authentication failed' }
       }
-
-      // Verify PIN against each user (in production, use a proper lookup)
-      // For now, we'll use a simple approach with phone/email as identifier
-      // This is a simplified version - you'd want proper PIN verification
-      
       return { success: false, error: 'Use PIN login via API route' }
     } catch {
       return { success: false, error: 'Authentication failed' }
@@ -153,12 +154,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ 
-      user: storedUser, 
-      isLoading, 
-      signIn, 
-      signOut, 
-      refreshUser 
+    <AuthContext.Provider value={{
+      user: storedUser,
+      isLoading,
+      signIn,
+      signOut,
+      refreshUser,
     }}>
       {children}
     </AuthContext.Provider>

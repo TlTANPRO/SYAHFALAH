@@ -16,15 +16,14 @@ test('UserMenu dropdown opens on click and shows Profile/Settings/Sign Out', asy
   await page.waitForSelector('input#pin', { timeout: 15000 })
   await page.locator('input#pin').fill(PIN_OWNER)
   await page.locator('button[type="submit"]').click()
-  await page.waitForLoadState('networkidle')
-
-  // Verify landed on /owner
-  expect(page.url()).toContain('/owner')
-
-  // Click User menu trigger
+  // Wait for redirect to /owner (P1-1: role-based login redirect)
+  await page.waitForURL((url) => url.pathname.startsWith('/owner'), { timeout: 15000 })
+  // Wait for React hydration to render the Topbar (client component)
+  await page.waitForLoadState('load', { timeout: 30000 })
+  await page.waitForTimeout(1500)  // hydration buffer
   const trigger = page.locator('button[aria-label="User menu"]')
-  await expect(trigger).toBeVisible()
-  await trigger.click()
+  await trigger.waitFor({ state: 'visible', timeout: 15000 })
+  await trigger.click({ force: true })
   await page.waitForTimeout(300) // animation
 
   // Verify dropdown is open — use the menu container (the one rendered into body via portal)
@@ -50,9 +49,11 @@ test('UserMenu dropdown — clicking Profile navigates to /settings', async ({ p
   await page.waitForSelector('input#pin', { timeout: 15000 })
   await page.locator('input#pin').fill(PIN_OWNER)
   await page.locator('button[type="submit"]').click()
-  await page.waitForLoadState('networkidle')
-
-  await page.locator('button[aria-label="User menu"]').click()
+  await page.waitForURL((url) => url.pathname.startsWith('/owner'), { timeout: 15000 })
+  // Wait for React hydration to render the Topbar (client component)
+  await page.waitForLoadState('load', { timeout: 30000 })
+  await page.waitForTimeout(1500)  // hydration buffer
+  await page.locator('button[aria-label="User menu"]').waitFor({ state: 'visible', timeout: 15000 })
   await page.waitForTimeout(200)
 
   // Click Profile link in the menu

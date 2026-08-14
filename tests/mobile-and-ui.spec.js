@@ -12,7 +12,7 @@ const PIN_STAFF = '6478';
 
 async function login(page, pin) {
   await page.goto(`${BASE}/login`);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
   await page.waitForSelector('input[inputmode="numeric"], input[type="password"], input[type="tel"]', { timeout: 20000 });
   await page.waitForTimeout(500);
   const types = ['password', 'tel', 'text', 'number'];
@@ -61,7 +61,7 @@ test.describe('Mobile responsive', () => {
       await login(page, PIN_STAFF);
 
       await page.goto(`${BASE}/personal/tasks`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000);
 
       // 1. No horizontal overflow
@@ -210,7 +210,7 @@ test.describe('DetailSheet inline confirm click flow', () => {
     console.log('Created task:', taskId);
 
     await page.goto(`${BASE}/personal/tasks`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1500);
 
     // Click on row's Detail button (aria-label="Edit detail") — that's the

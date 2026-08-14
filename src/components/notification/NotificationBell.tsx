@@ -11,7 +11,6 @@ import { Badge } from '@/components/ui/badge'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { formatRelativeTime } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
-import { safeFetch } from '@/lib/api/safe-fetch'
 import { useAuthStore } from '@/stores/authStore'
 
 interface Notification {
@@ -31,7 +30,12 @@ export function NotificationBell() {
     queryKey: ['notifications', user?.id],
     queryFn: async () => {
       if (!user?.id) return []
-      const res = await safeFetch('/api/notifications?limit=20')
+      const res = await fetch('/api/notifications?limit=20', { credentials: 'include' })
+      // On 401, fire window event for global handler
+      if (res.status === 401 && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth:401'))
+        return []
+      }
       if (!res.ok) return []
       const j = await res.json() as { data?: Notification[] }
       // /api/notifications returns { data, total, page, pageSize }; fallback to []

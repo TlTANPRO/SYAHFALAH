@@ -19,10 +19,10 @@ test.describe('Mada (kepala_kantor) — bug hunt', () => {
     await page.goto('https://syahfalah-dashboard.vercel.app/login')
     await page.locator('input#pin').fill('0327')
     await page.locator('button[type="submit"]').click()
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     await page.goto('https://syahfalah-dashboard.vercel.app/personal/tasks')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
     // Look for inline trigger testid
     const trigger = await page.locator('[data-testid="inline-new-task-trigger"]').count()
     console.log('inline-new-task-trigger count:', trigger)
@@ -33,10 +33,10 @@ test.describe('Mada (kepala_kantor) — bug hunt', () => {
     await page.goto('https://syahfalah-dashboard.vercel.app/login')
     await page.locator('input#pin').fill('0327')
     await page.locator('button[type="submit"]').click()
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     await page.goto('https://syahfalah-dashboard.vercel.app/kepala-kantor')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     // Should see greeting with Mada's name or division label
     const bodyText = await page.locator('body').textContent()

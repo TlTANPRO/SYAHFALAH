@@ -26,7 +26,9 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       isAuthenticated: false,
-      isLoading: true,
+      // Default false to avoid spinner flash on hydration.
+      // AuthProvider sets isLoading=true during its async session check.
+      isLoading: false,
       permissions: [],
       
       setUser: (user) => {

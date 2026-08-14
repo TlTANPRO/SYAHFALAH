@@ -11,7 +11,7 @@ const PIN_USER = '1607' // owner (Pak Ardian) — has write access to tasks
 // UI-based login (same pattern as mobile-and-ui.spec.js which works reliably).
 async function login(page, pin) {
   await page.goto(`${BASE}/login`)
-  await page.waitForLoadState('networkidle')
+  await page.waitForLoadState('domcontentloaded')
   await page.waitForSelector('input[inputmode="numeric"], input[type="password"], input[type="tel"]', { timeout: 20000 })
   await page.waitForTimeout(500)
   const types = ['password', 'tel', 'text', 'number']
