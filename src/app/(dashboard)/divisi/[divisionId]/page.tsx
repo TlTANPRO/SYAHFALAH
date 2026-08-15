@@ -27,6 +27,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { StatCard } from '@/components/layout/StatCard'
 import { KpiTile } from '@/components/layout/KpiTile'
 import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
+import { TeamGrid, loadTeamData } from '@/components/manager/TeamGrid'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
@@ -76,6 +77,7 @@ async function load(divisionId: string) {
     teamKPIs: teamRes.data ?? [],
     taskSummary: taskRes.data,
     sows: sowRes.data ?? [],
+    team: await loadTeamData(supabase, { divisionId }),
     error: null,
   }
 }
@@ -89,7 +91,7 @@ function renderKpiValue(value: any, unit: string | null): string {
 
 export default async function DivisionDashboard({ params }: PageProps) {
   const { divisionId } = await params
-  const { division, divisionKPIs, teamKPIs, taskSummary, sows, error } = await load(divisionId)
+  const { division, divisionKPIs, teamKPIs, taskSummary, sows, team, error } = await load(divisionId)
 
   if (error === 'config') {
     return (
@@ -336,6 +338,16 @@ export default async function DivisionDashboard({ params }: PageProps) {
             action={{ label: 'Buka SOW Editor', href: '/admin/sow' }}
           />
         )}
+      </section>
+
+      {/* ==================== TEAM GRID (PIC divisi scope) ==================== */}
+      <section>
+        <TeamGrid
+          members={team.members}
+          divisions={team.divisions}
+          stats={team.stats}
+          scope="division"
+        />
       </section>
     </div>
   )

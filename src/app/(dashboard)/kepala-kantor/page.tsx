@@ -18,6 +18,7 @@ import { HeroSection } from '@/components/layout/HeroSection'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { StatCard } from '@/components/layout/StatCard'
 import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
+import { TeamGrid, loadTeamData } from '@/components/manager/TeamGrid'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ErrorState } from '@/components/ui/error-state'
@@ -51,7 +52,14 @@ async function load() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) {
-    return { teamKPIs: [], divisionSummaries: [], taskSummary: [], divisions: [], error: 'config' as const }
+    return {
+      teamKPIs: [],
+      divisionSummaries: [],
+      taskSummary: [],
+      divisions: [],
+      team: { members: [], divisions: [], stats: {} },
+      error: 'config' as const,
+    }
   }
   const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
   const [teamRes, divRes, taskRes, divisionsRes] = await Promise.all([
@@ -81,12 +89,13 @@ async function load() {
     divisionSummaries: divRes.data ?? [],
     taskSummary: taskRes.data ?? [],
     divisions: divisionsRes.data ?? [],
+    team: await loadTeamData(supabase),
     error: teamRes.error || divRes.error || taskRes.error ? 'fetch' : null,
   }
 }
 
 export default async function KepalaKantorDashboard() {
-  const { teamKPIs, divisionSummaries, taskSummary, divisions, error } = await load()
+  const { teamKPIs, divisionSummaries, taskSummary, divisions, team, error } = await load()
 
   if (error === 'config') {
     return (
@@ -365,6 +374,15 @@ export default async function KepalaKantorDashboard() {
           </div>
         </section>
       )}
+
+      {/* ==================== TEAM GRID (manager control) ==================== */}
+      <section>
+        <TeamGrid
+          members={team.members}
+          divisions={team.divisions}
+          stats={team.stats}
+        />
+      </section>
     </div>
   )
 }

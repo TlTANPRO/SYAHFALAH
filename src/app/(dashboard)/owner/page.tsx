@@ -37,6 +37,7 @@ import {
 } from 'lucide-react'
 import { PersonalKpiTable } from '@/components/kpi/PersonalKpiTable'
 import { MorningBrief } from '@/components/owner/MorningBrief'
+import { TeamGrid, loadTeamData } from '@/components/manager/TeamGrid'
 import { KpiTrendChart } from '@/components/charts/KpiTrendChart'
 import { PipelineFunnel } from '@/components/owner/PipelineFunnel'
 import { ClusterGrid } from '@/components/owner/ClusterGrid'
@@ -201,6 +202,7 @@ async function loadData(userDivisionId?: string, userRole?: string) {
     tasksPendingCount: brief.tasksPendingCount,
     newLeadsTodayCount: brief.newLeadsToday,
     dbReady: true,
+    team: await loadTeamData(sb, userRole === 'owner' ? undefined : { divisionId: userDivisionId }),
   }
 }
 
@@ -240,6 +242,7 @@ export default async function Page() {
     tasksTodayCount = 0,
     tasksPendingCount = 0,
     newLeadsTodayCount = 0,
+    team = { members: [], divisions: [], stats: {} },
   } = data
 
   // KPI trend per divisi per bulan
@@ -548,6 +551,15 @@ export default async function Page() {
           hrefLabel="Lihat semua"
         />
         <PersonalKpiTable members={teamKPIs} />
+      </section>
+
+      {/* ==================== TEAM GRID (manager control) ==================== */}
+      <section>
+        <TeamGrid
+          members={team.members}
+          divisions={team.divisions}
+          stats={team.stats}
+        />
       </section>
 
       {/* ==================== EMPTY STATE (when no data) ==================== */}
