@@ -3,9 +3,11 @@
 // GET: list approvals (filter by status / requester / approver / mine-only).
 // POST: create new approval request.
 //
-// Ownership: anyone logged-in can list/create approvals.
-// Decision endpoints (/api/approvals/[id]/decision) are owner-only
-// (only owner decides), matches existing role hierarchy.
+// Ownership is enforced at the API layer using the session role:
+//   owner / kepala_kantor: see all
+//   pic_divisi: see own division
+//   staff: see only own (requester or approver)
+// RLS policies also enforce the same at the DB layer as a backstop.
 
 import { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
@@ -49,7 +51,24 @@ export async function GET(req: NextRequest) {
   if (status) q = q.eq('status', status)
   if (requesterId) q = q.eq('requester_id', requesterId)
   if (approverId) q = q.eq('approver_id', approverId)
-  if (mine) q = q.eq('requester_id', session.userId)
+
+  // Visibility by role — fix IDOR: staff used to see all 6 rows.
+  if (mine || session.role === 'staff') {
+    q = q.or(`requester_id.eq.${session.userId},approver_id.eq.${session.userId}`)
+  } else if (session.role === 'pic_divisi' && session.divisionId) {
+    // PIC divisi: own division's approvals (requester OR approver in same division)
+    const { data: divUsers } = await sb
+      .from('users')
+      .select('id')
+      .eq('division_id', session.divisionId)
+    const ids = (divUsers ?? []).map((u) => u.id)
+    if (ids.length === 0) {
+      return NextResponse.json({ data: [], total: 0, page, pageSize })
+    }
+    const list = ids.join(',')
+    q = q.or(`requester_id.in.(${list}),approver_id.in.(${list})`)
+  }
+  // owner / kepala_kantor: no extra filter (see all)
 
   const { data, error, count } = await q
   if (error) return buildError('INTERNAL', error.message)
