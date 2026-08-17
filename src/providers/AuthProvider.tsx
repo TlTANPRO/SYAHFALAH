@@ -7,7 +7,7 @@
 
 'use client'
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/authStore'
 import type { User as DomainUser } from '@/types/domain'
@@ -33,13 +33,21 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { setUser, setLoading, user: storedUser } = useAuthStore()
+  // Selectors so the Provider only re-renders for the fields it reads.
+  // Whole-store subscription + new supabase client on each render caused the
+  // init useEffect to re-fire on every render → spinner loop ("Memuat dashboard").
+  const setUser = useAuthStore(s => s.setUser)
+  const setLoading = useAuthStore(s => s.setLoading)
+  const storedUser = useAuthStore(s => s.user)
   const [isLoading, setIsLoading] = useState(false) // Initial false to avoid spinner flash; middleware handles protection
-  const supabase = createClient()
+  // Singleton client — createClient() is expensive and would change ref each render.
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
+    let cancelled = false
     // SAFETY: force isLoading=false within 3s so dashboard never hangs on spinner
     const safetyTimer = setTimeout(() => {
+      if (cancelled) return
       console.warn('[AuthProvider] init timeout - forcing loading=false')
       setIsLoading(false)
       setLoading(false)
@@ -54,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         supabase.auth.getSession(),
         new Promise((resolve) => setTimeout(() => resolve({ data: { session: null } }), 2000)),
       ])
+      if (cancelled) return
       const session = sessionResult?.data?.session
 
       if (session?.user) {
@@ -87,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      if (cancelled) return
       setIsLoading(false)
       setLoading(false)
       clearTimeout(safetyTimer)
@@ -96,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (cancelled) return
       if (event === 'SIGNED_IN' && session?.user) {
         const { data: profile } = await supabase
           .from('users')
@@ -112,10 +123,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     return () => {
+      cancelled = true
       subscription.unsubscribe()
       clearTimeout(safetyTimer)
     }
-  }, [setUser, setLoading, storedUser, supabase])
+    // Intentionally one-shot: setUser/setLoading are stable Zustand setters,
+    // supabase is memoized, storedUser read happens once at mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const signIn = async (pin: string): Promise<{ success: boolean; error?: string }> => {
     try {
