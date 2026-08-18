@@ -1,0 +1,26 @@
+# .github/workflows/sync-sheets-cron.yml
+# Sheets → Supabase sync via GitHub Actions cron (every 15 min).
+# Free for public repos. Trigger webhook receiver on Vercel with CRON_SECRET.
+name: Sync Sheets
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Trigger Vercel cron endpoint
+        run: |
+          RESPONSE=$(curl -sS -o /tmp/sync.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://syahfalah-dashboard.vercel.app/api/cron/sync-sheets")
+          echo "status: $RESPONSE"
+          cat /tmp/sync.json
+          if [ "$RESPONSE" != "200" ]; then
+            echo "::error::Sync failed with $RESPONSE"
+            exit 1
+          fi

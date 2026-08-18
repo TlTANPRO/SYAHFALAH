@@ -44,10 +44,6 @@
     {
       "path": "/api/cron/snapshot",
       "schedule": "0 19 * * *"
-    },
-    {
-      "path": "/api/cron/sync-sheets",
-      "schedule": "0 * * * *"
     }
   ]
 }
