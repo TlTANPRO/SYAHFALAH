@@ -3,7 +3,7 @@
  Quick smoke test for expandRrule — verify rrule API works.
  Usage: bun run scripts/test-expandRrule.ts
 */
-import { expandRrule, occurrencesFor } from '../src/lib/tasks/expandRrule.ts';
+import { expandRrule, occurrencesFor } from '../src/lib/tasks/expandRrule';
 
 // 1. Weekly Monday for 3 weeks
 const weekly = expandRrule('FREQ=WEEKLY;BYDAY=MO', {
