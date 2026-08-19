@@ -5,6 +5,9 @@ import { redirect } from 'next/navigation'
 import { getServerSession } from '@/lib/auth/session'
 import { createClient } from '@/lib/supabase/server'
 
+// Always run server-side per request — Supabase client requires runtime env.
+export const dynamic = 'force-dynamic'
+
 export default async function HomePage() {
   const session = await getServerSession()
   
