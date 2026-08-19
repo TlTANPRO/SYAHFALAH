@@ -47,7 +47,7 @@ async function dump(): Promise<void> {
 
   const lines: string[] = [];
   lines.push(`-- SYAHFALAH DB backup ${ts}`);
-  lines.push(`-- Source: ${DATABASE_URL.replace(/:[^:@]+@/, ':***@')}`);
+  lines.push(`-- Source: ${DATABASE_URL!.replace(/:[^:@]+@/, ':***@')}`);
   lines.push(`-- Tables: ${TABLES.join(', ')}`);
   lines.push('');
   lines.push('BEGIN;');
