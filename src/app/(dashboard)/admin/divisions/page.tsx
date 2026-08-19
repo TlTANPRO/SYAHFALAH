@@ -10,6 +10,9 @@ import { Building2, FileText, Users, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
+// Supabase client requires runtime env. Skip prerender.
+export const dynamic = 'force-dynamic'
+
 interface Division {
   id: string
   code: string

@@ -8,6 +8,9 @@ import { createClient } from '@/lib/supabase/server'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 
+// Supabase client requires runtime env. Skip prerender.
+export const dynamic = 'force-dynamic'
+
 type Division = { id: string; name: string; description: string | null }
 
 export default async function DivisiHubPage() {
