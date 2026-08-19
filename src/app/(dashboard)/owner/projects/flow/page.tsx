@@ -9,6 +9,9 @@
 import { getServerSession } from '@/lib/auth/session'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+
+// Skip prerender — Supabase client requires runtime env.
+export const dynamic = 'force-dynamic'
 import {
   ArrowRight,
   Pen,

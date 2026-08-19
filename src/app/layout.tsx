@@ -5,6 +5,12 @@ import type { Metadata, Viewport } from 'next'
 import { Providers } from '@/providers/Providers'
 import './globals.css'
 
+// Every page reads NEXT_PUBLIC_SUPABASE_URL via createServerClient. Without
+// `force-dynamic` here, Next tries to prerender at build time when that env
+// is empty (Vercel prerender), and the build crashes before any in-component
+// dynamic flag takes effect.
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: {
     default: 'Syahfalah Operations',
