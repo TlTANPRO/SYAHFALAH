@@ -29,13 +29,20 @@ export async function POST(req: Request): Promise<Response> {
     const c = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
     try {
       await c.connect();
+      // PostgREST ON CONFLICT requires a full UNIQUE constraint, not a
+      // partial index. Drop the partial one we tried first, then add a
+      // plain UNIQUE constraint so upsert matches.
+      await c.query('DROP INDEX IF EXISTS public.uq_tasks_external_id');
       await c.query(
-        'CREATE UNIQUE INDEX IF NOT EXISTS uq_tasks_external_id ON public.tasks (external_id) WHERE external_id IS NOT NULL'
+        "ALTER TABLE public.tasks DROP CONSTRAINT IF EXISTS uq_tasks_external_id"
+      );
+      await c.query(
+        'ALTER TABLE public.tasks ADD CONSTRAINT uq_tasks_external_id UNIQUE (external_id)'
       );
       const v = await c.query(
-        "SELECT indexname FROM pg_indexes WHERE schemaname='public' AND tablename='tasks' AND indexname='uq_tasks_external_id'"
+        "SELECT conname FROM pg_constraint WHERE conrelid='public.tasks'::regclass AND conname='uq_tasks_external_id'"
       );
-      return NextResponse.json({ ok: true, indexRows: v.rowCount, rows: v.rows });
+      return NextResponse.json({ ok: true, constraintRows: v.rowCount, rows: v.rows });
     } finally {
       await c.end().catch(() => {});
     }
