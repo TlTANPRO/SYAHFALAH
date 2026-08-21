@@ -45,12 +45,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false
-    // SAFETY: force isLoading=false within 3s so dashboard never hangs on spinner
+    // SAFETY: force isLoading=false within 3s so dashboard never hangs on spinner.
+    // BUGFIX 2026-08-22: this MUST clear the Zustand store isLoading too. The
+    // dashboard layout reads isLoading from useAuthStore() (see app/(dashboard)
+    // /layout.tsx), not from this Provider's local state. If initAuth throws or
+    // hangs between the setLoading(true) call and the explicit setLoading(false)
+    // at the end of the async function, the store stayed true forever and the
+    // "Memuat dashboard" spinner never resolved — the user's reported
+    // "unlimited loop". Also explicitly logout() when no user is in the store
+    // so the layout's !isAuthenticated branch redirects to /login.
     const safetyTimer = setTimeout(() => {
       if (cancelled) return
-      console.warn('[AuthProvider] init timeout - forcing loading=false')
+      console.warn('[AuthProvider] init timeout - forcing loading=false on local + store')
       setIsLoading(false)
       setLoading(false)
+      if (!useAuthStore.getState().user) {
+        useAuthStore.getState().logout()
+      }
     }, 3000)
 
     const initAuth = async () => {

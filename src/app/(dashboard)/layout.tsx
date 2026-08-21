@@ -3,7 +3,7 @@
 
 'use client'
 
-import { ReactNode, useEffect } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAuthStore } from '@/stores/authStore'
@@ -60,7 +60,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [])
 
   // Loading state
-  if (isLoading) {
+  // BUGFIX 2026-08-22: hard 5s escape hatch. If the store somehow still reports
+  // isLoading=true past this point, we render the dashboard anyway — better to
+  // show an unauthenticated shell than to leave the user staring at "Memuat
+  // dashboard" forever (the prior "unlimited loop" report). The safety timer
+  // in AuthProvider should normally clear this in 3s; this is defense in depth.
+  const [loadingEscaped, setLoadingEscaped] = useState(false)
+  useEffect(() => {
+    if (!isLoading) {
+      setLoadingEscaped(false)
+      return
+    }
+    const t = window.setTimeout(() => setLoadingEscaped(true), 5000)
+    return () => window.clearTimeout(t)
+  }, [isLoading])
+  if (isLoading && !loadingEscaped) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-0)]">
         <div className="text-center">
