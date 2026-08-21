@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs20.x';
+export const maxDuration = 60;
 
 const EXPECTED_TOKEN = process.env.CRON_SECRET;
 
