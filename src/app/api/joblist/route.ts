@@ -68,6 +68,7 @@ export async function GET(req: NextRequest) {
   const today = new Date().toISOString().slice(0, 10)
   const kpi = { today: 0, total: 0, overdue: 0, done: 0 }
   const bySheet: Record<string, JoblistRow[]> = {}
+  const sheetNamesSeen = new Set<string>()
 
   for (const t of data ?? []) {
     const ext = (t.external_id ?? '') as string
@@ -93,6 +94,7 @@ export async function GET(req: NextRequest) {
       lastSyncedAt: (t.last_synced_at ?? null) as string | null,
     }
     bySheet[sheetKey].push(row)
+    sheetNamesSeen.add(sheetKey)
     kpi.total++
     if (row.status === 'completed') kpi.done++
     if (row.dueDate === today) kpi.today++
@@ -105,5 +107,9 @@ export async function GET(req: NextRequest) {
     sheets: SHEET_REGISTRY,
     bySheet,
     generatedAt: new Date().toISOString(),
+    diagnostic: {
+      onlyOneTab: kpi.total > 0 && sheetNamesSeen.size === 1,
+      sheetsWithData: Array.from(sheetNamesSeen),
+    },
   })
 }

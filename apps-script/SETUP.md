@@ -56,23 +56,40 @@ After the first install the script only catches future edits. To pull all 9 shee
 
 ## 9 tracked tabs
 
-| Tab | gid (fill in) | Kind |
+| Tab name (as in Google Sheets) | gviz `sheet=` value | Kind |
 |---|---|---|
-| MASTER | 1890167304 | master |
-| NISYA | (resolve from sheet URL) | master |
-| TDL NISYA HARIAN | (resolve) | personal → Bu Nisya |
-| TDL RIZAL HARIAN | (resolve) | personal → Pak Rizal |
-| NOFITA | (resolve) | master |
-| MADA | (resolve) | master |
-| RIZAL | (resolve) | master |
-| AMIR | (resolve) | master |
-| SDEX | (resolve) | master |
-| BACKUP TM | (resolve) | backup |
-| BACKUP WT | (resolve) | backup |
+| MASTER | `MASTER` | master (gid 1890167304) |
+| NISYA | `NISYA` | master |
+| TDL NISYA HARIAN | `TDL NISYA HARIAN` | personal → Bu Nisya |
+| TDL RIZAL HARIAN | `TDL RIZAL HARIAN` | personal → Pak Rizal |
+| NOFITA | `NOFITA` | master |
+| MADA | `MADA` | master |
+| RIZAL | `RIZAL` | master |
+| AMIR | `AMIR` | master |
+| SDEX | `SDEX` | master |
+| BACKUP TM | `BACKUP TM` | backup |
+| BACKUP WT | `BACKUP WT` | backup |
 
-To find a `gid`: open the tab in the browser — URL ends with `#gid=<number>`.
+**Important caveat about tab names vs gids:** The Google Visualization API endpoint
+`/gviz/tq?tqx=out:csv&sheet=<NAME>` accepts the **tab name** (not gid) and works
+for any tab whose containing spreadsheet is publicly viewable. We use this
+instead of the gid-based CSV export because tab gids are not exposed in the
+public metadata — they're only visible to authenticated editors.
 
-**Update `SHEET_REGISTRY` in `src/lib/sheets/sync.ts`** with the resolved gids, then redeploy. Until gids are non-zero, the cron path will skip those sheets with a `gid unset` note.
+If the spreadsheet is set to "Anyone with the link can view" the Visualization
+API works for every tab by name. If a specific tab is hidden or restricted,
+the API silently returns the first tab (MASTER) for that request — meaning
+tabs beyond MASTER may all return the same content until access is granted.
+
+If your joblist data lives in a tab that isn't `MASTER`, ensure:
+
+1. The whole spreadsheet is set to "Anyone with the link can view" (File →
+   Share → General access → Anyone with the link → Viewer).
+2. Each tab is not hidden via right-click → Hide sheet.
+
+If you see "header row not found" for some tabs in the cron response, that
+tab is either restricted or has a different schema. Re-share the spreadsheet
+publicly and re-run `replayAll()` from the Apps Script editor.
 
 ## Cron safety net
 

@@ -35,11 +35,13 @@ export default async function JoblistPage() {
 
   const kpi = { today: 0, total: 0, overdue: 0, done: 0 }
   const bySheet: Record<string, JoblistRow[]> = {}
+  const sheetNamesSeen = new Set<string>()
 
   for (const t of data ?? []) {
     const ext = (t.external_id ?? '') as string
     const parts = ext.split(':')
     const sheetKey = (parts[1] ?? 'MASTER') as SheetKey
+    sheetNamesSeen.add(sheetKey)
     if (!bySheet[sheetKey]) bySheet[sheetKey] = []
     const rowIdxMatch = (parts[2] ?? '').match(/^R(\d+)$/)
     const rowIdx = rowIdxMatch ? Number(rowIdxMatch[1]) : 0
@@ -67,11 +69,18 @@ export default async function JoblistPage() {
     if ((t.status as string) !== 'completed' && t.due_date && (t.due_date as string) < today) kpi.overdue++
   }
 
+  // Diagnostic: if we have rows but they're all from one tab, the other tabs
+  // are likely failing to sync (header not found, sheet restricted, etc).
+  // Surface this so user can see the state without checking Vercel logs.
+  const hasAnyData = kpi.total > 0
+  const onlyOneTab = hasAnyData && sheetNamesSeen.size === 1
+
   const initial: JoblistResponse = {
     ok: true,
     kpi,
     bySheet: bySheet as Record<SheetKey, JoblistRow[]>,
     generatedAt: new Date().toISOString(),
+    diagnostic: { onlyOneTab, sheetsWithData: Array.from(sheetNamesSeen) },
   }
 
   return <JoblistClient initial={initial} />

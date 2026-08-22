@@ -41,6 +41,7 @@ export interface JoblistResponse {
   kpi: { today: number; total: number; overdue: number; done: number }
   bySheet: Record<SheetKey, JoblistRow[]>
   generatedAt: string
+  diagnostic?: { onlyOneTab: boolean; sheetsWithData: string[] }
 }
 
 // --- sheet config ---
@@ -166,6 +167,21 @@ export function JoblistClient({ initial }: Props) {
         <KpiCard label="Terlambat" value={kpi.overdue} icon={AlertTriangle} tone="danger" />
         <KpiCard label="Selesai" value={kpi.done} icon={CheckCircle} tone="success" />
       </div>
+
+      {data?.diagnostic?.onlyOneTab && (
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-md border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 px-4 py-3 text-sm"
+        >
+          <AlertTriangle className="h-4 w-4 mt-0.5 text-[var(--color-warning)] flex-shrink-0" aria-hidden />
+          <div>
+            <div className="font-medium text-[var(--color-text-primary)]">Hanya 1 tab yang sync</div>
+            <div className="mt-0.5 text-[var(--color-text-secondary)]">
+              Cuma <code className="px-1 bg-[var(--color-surface-2)] rounded">{data.diagnostic.sheetsWithData[0]}</code> yang punya data. Tab lain kemungkinan restricted atau punya schema beda. Buka <code className="px-1 bg-[var(--color-surface-2)] rounded">/vercel-logs</code> untuk lihat detail, atau share spreadsheet sebagai "Anyone with the link can view".
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-thin">
         {SHEET_ORDER.map((s) => {
